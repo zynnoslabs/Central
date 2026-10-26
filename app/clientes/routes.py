@@ -135,6 +135,20 @@ def toggle_instalacion(inst_id):
     return redirect(url_for("clientes.detalle", cliente_id=inst.cliente_id))
 
 
+# ─── Notas rápidas ────────────────────────────────────────────────────────────
+
+@clientes_bp.route("/<int:cliente_id>/notas", methods=["POST"])  ### CAMBIO AQUÍ ###
+@login_required
+def guardar_notas(cliente_id):
+    cliente = Cliente.query.get_or_404(cliente_id)
+    texto = request.form.get("notas", "").strip()
+    cliente.notas = texto or None
+    _log(current_user.id, cliente.id, "cliente.notas", {"chars": len(texto)})
+    db.session.commit()
+    flash("Notas guardadas.", "success")
+    return redirect(url_for("clientes.detalle", cliente_id=cliente.id))
+
+
 # ─── Helper ────────────────────────────────────────────────────────────────────
 
 def _log(usuario_id, cliente_id, accion, detalle_dict):

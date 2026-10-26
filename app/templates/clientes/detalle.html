@@ -38,12 +38,21 @@
       <p>{{ cliente.creado_en.strftime('%d/%m/%Y') }}</p>
     </div>
   </div>
-  {% if cliente.notas %}
+  <!-- ### CAMBIO AQUÍ ### Notas inline editables -->
   <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
     <p class="text-muted text-small mb-1">Notas internas</p>
-    <p style="white-space:pre-line;">{{ cliente.notas }}</p>
+    <form method="POST" action="{{ url_for('clientes.guardar_notas', cliente_id=cliente.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="notas" rows="4"
+        placeholder="Observaciones internas sobre este cliente…"
+        style="width:100%; padding:.5rem .65rem; border:1px solid var(--border); border-radius:6px;
+               background:var(--bg); color:var(--fg); font-size:.9rem; resize:vertical;
+               box-sizing:border-box; font-family:inherit; line-height:1.5;">{{ cliente.notas or '' }}</textarea>
+      <div style="margin-top:.5rem; text-align:right;">
+        <button type="submit" class="btn btn-primary" style="font-size:.85rem; padding:.3rem .75rem;">Guardar notas</button>
+      </div>
+    </form>
   </div>
-  {% endif %}
 </div>
 
 <!-- Instalaciones -->
