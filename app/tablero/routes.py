@@ -1,493 +1,194 @@
-"""Módulo de cobros: planes, pagos mensuales, facturas y métricas de monotributo."""
-import json
-from datetime import date, datetime, timezone
-from calendar import monthrange
-from decimal import Decimal
+import time
+import requests as http
+from flask import Blueprint, render_template, request, jsonify, current_app, abort
+from flask_login import login_required
+from flask_wtf.csrf import validate_csrf
+from wtforms import ValidationError
 
-from flask import (
-    Blueprint, render_template, redirect, url_for,
-    flash, request, current_app, abort, jsonify
-)
-from flask_login import login_required, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, DecimalField, IntegerField, DateField, SelectField, TextAreaField
-from wtforms.validators import DataRequired, NumberRange, Optional, Length
+from app.models import db, Instalacion, EventoSalud, Cliente, Pago, Aviso  ### CAMBIO AQUÍ ###
 
-from app.models import db, Cliente, PlanCliente, Pago, Factura, Auditoria
+from app.avisos.routes import enviar_alerta_caida, enviar_alerta_recuperacion
 
-cobros_bp = Blueprint("cobros", __name__)
+tablero_bp = Blueprint("tablero", __name__)
+
+TIMEOUT_SALUD = 10
+HISTORIAL_TARJETA = 10
 
 
-# ─── Formularios ──────────────────────────────────────────────────────────────
-
-class PlanForm(FlaskForm):
-    descripcion = StringField("Descripción", validators=[DataRequired(), Length(max=255)])
-    monto_ars = DecimalField("Monto mensual (ARS)", validators=[DataRequired(), NumberRange(min=0)])
-    dia_vencimiento = IntegerField("Día de vencimiento", validators=[DataRequired(), NumberRange(min=1, max=28)], default=10)
-    vigente_desde = DateField("Vigente desde", validators=[DataRequired()])
-    vigente_hasta = DateField("Vigente hasta (dejar vacío si es actual)", validators=[Optional()])
-
-
-class PagoForm(FlaskForm):
-    anio = IntegerField("Año", validators=[DataRequired(), NumberRange(min=2024, max=2099)])
-    mes = SelectField("Mes", coerce=int, choices=[
-        (1,"Enero"),(2,"Febrero"),(3,"Marzo"),(4,"Abril"),
-        (5,"Mayo"),(6,"Junio"),(7,"Julio"),(8,"Agosto"),
-        (9,"Septiembre"),(10,"Octubre"),(11,"Noviembre"),(12,"Diciembre")
-    ])
-    monto_esperado = DecimalField("Monto esperado (ARS)", validators=[DataRequired(), NumberRange(min=0)])
-    monto_recibido = DecimalField("Monto recibido (ARS)", validators=[Optional(), NumberRange(min=0)])
-    estado = SelectField("Estado", choices=[
-        ("pendiente","Pendiente"),("pagado","Pagado"),
-        ("atrasado","Atrasado"),("perdonado","Perdonado")
-    ])
-    fecha_pago = DateField("Fecha de pago", validators=[Optional()])
-    notas = TextAreaField("Notas", validators=[Optional(), Length(max=500)])
-
-
-class FacturaForm(FlaskForm):
-    cliente_id = SelectField("Cliente", coerce=int, validators=[DataRequired()])
-    numero = StringField("Número (ej: 0001-00000042)", validators=[DataRequired(), Length(max=20)])
-    fecha = DateField("Fecha", validators=[DataRequired()])
-    monto_ars = DecimalField("Monto (ARS)", validators=[DataRequired(), NumberRange(min=0)])
-    concepto = StringField("Concepto", validators=[Optional(), Length(max=500)])
-    notas = TextAreaField("Notas", validators=[Optional(), Length(max=1000)])
-
-
-# ─── Panel general de cobros ──────────────────────────────────────────────────
-
-@cobros_bp.route("/")
+@tablero_bp.route("/tablero")
 @login_required
 def inicio():
-    """Vista principal: estado de pagos del mes actual y métricas de monotributo."""
-    hoy = date.today()
-    anio, mes = hoy.year, hoy.month
-
-    # Pagos del mes actual
-    pagos_mes = (
-        Pago.query
-        .filter_by(anio=anio, mes=mes)
+    instalaciones = (
+        Instalacion.query
         .join(Cliente)
-        .order_by(Cliente.nombre)
+        .filter(Instalacion.activa == True)
+        .order_by(Cliente.nombre, Instalacion.nombre)
         .all()
     )
 
-    # Clientes activos sin pago registrado este mes
-    clientes_activos = Cliente.query.filter_by(estado="activo").all()
-    ids_con_pago = {p.cliente_id for p in pagos_mes}
-    sin_pago = [c for c in clientes_activos if c.id not in ids_con_pago]
-
-    # Métricas del mes
-    total_esperado = sum(p.monto_esperado for p in pagos_mes)
-    total_cobrado = sum(p.monto_recibido or 0 for p in pagos_mes if p.estado == "pagado")
-    pendientes = [p for p in pagos_mes if p.estado in ("pendiente", "atrasado")]
-
-    # Control de monotributo: facturado en los últimos 12 meses
-    facturado_12m = _facturado_ultimos_12_meses()
-
-    return render_template(
-        "cobros/inicio.html",
-        pagos_mes=pagos_mes,
-        sin_pago=sin_pago,
-        total_esperado=total_esperado,
-        total_cobrado=total_cobrado,
-        pendientes=pendientes,
-        facturado_12m=facturado_12m,
-        anio=anio,
-        mes=mes,
-        nombre_mes=_nombre_mes(mes),
-    )
-
-
-# ─── Pagos ────────────────────────────────────────────────────────────────────
-
-@cobros_bp.route("/pagos")
-@login_required
-def lista_pagos():
-    """Lista de pagos, filtrable por año/mes."""
-    hoy = date.today()
-    anio = request.args.get("anio", hoy.year, type=int)
-    mes = request.args.get("mes", hoy.month, type=int)
-
-    pagos = (
-        Pago.query
-        .filter_by(anio=anio, mes=mes)
-        .join(Cliente)
-        .order_by(Cliente.nombre)
-        .all()
-    )
-
-    return render_template(
-        "cobros/pagos.html",
-        pagos=pagos,
-        anio=anio,
-        mes=mes,
-        nombre_mes=_nombre_mes(mes),
-        meses=_lista_meses(),
-    )
-
-
-@cobros_bp.route("/clientes/<int:cliente_id>/pago/nuevo", methods=["GET", "POST"])
-@login_required
-def nuevo_pago(cliente_id):
-    cliente = db.get_or_404(Cliente, cliente_id)
-    hoy = date.today()
-
-    # Pre-rellenar con el plan activo del cliente
-    plan_activo = _plan_activo(cliente_id)
-    monto_sugerido = plan_activo.monto_ars if plan_activo else Decimal("0")
-
-    form = PagoForm(
-        anio=hoy.year,
-        mes=hoy.month,
-        monto_esperado=monto_sugerido,
-    )
-
-    if form.validate_on_submit():
-        # Evitar duplicado
-        existente = Pago.query.filter_by(
-            cliente_id=cliente_id,
-            anio=form.anio.data,
-            mes=form.mes.data
-        ).first()
-        if existente:
-            flash(f"Ya existe un pago registrado para {_nombre_mes(form.mes.data)} {form.anio.data}.", "warning")
-            return redirect(url_for("cobros.nuevo_pago", cliente_id=cliente_id))
-
-        pago = Pago(
-            cliente_id=cliente_id,
-            plan_id=plan_activo.id if plan_activo else None,
-            anio=form.anio.data,
-            mes=form.mes.data,
-            monto_esperado=form.monto_esperado.data,
-            monto_recibido=form.monto_recibido.data,
-            estado=form.estado.data,
-            fecha_pago=form.fecha_pago.data,
-            notas=form.notas.data,
+    resumen = []
+    for inst in instalaciones:
+        ultimo = inst.ultimo_estado()
+        historial = (
+            EventoSalud.query
+            .filter_by(instalacion_id=inst.id)
+            .order_by(EventoSalud.chequeado_en.desc())
+            .limit(HISTORIAL_TARJETA)
+            .all()
         )
-        db.session.add(pago)
-        _auditar("cobros.pago_nuevo", cliente_id, {"anio": form.anio.data, "mes": form.mes.data})
-        db.session.commit()
-        flash("Pago registrado.", "success")
-        return redirect(url_for("cobros.detalle_cliente", cliente_id=cliente_id))
-
-    return render_template("cobros/form_pago.html", form=form, cliente=cliente, plan_activo=plan_activo)
-
-
-@cobros_bp.route("/pagos/<int:pago_id>/editar", methods=["GET", "POST"])
-@login_required
-def editar_pago(pago_id):
-    pago = db.get_or_404(Pago, pago_id)
-    form = PagoForm(obj=pago)
-
-    if form.validate_on_submit():
-        pago.monto_esperado = form.monto_esperado.data
-        pago.monto_recibido = form.monto_recibido.data
-        pago.estado = form.estado.data
-        pago.fecha_pago = form.fecha_pago.data
-        pago.notas = form.notas.data
-        _auditar("cobros.pago_editar", pago.cliente_id, {"pago_id": pago_id, "estado": form.estado.data})
-        db.session.commit()
-        flash("Pago actualizado.", "success")
-        return redirect(url_for("cobros.detalle_cliente", cliente_id=pago.cliente_id))
-
-    return render_template("cobros/form_pago.html", form=form, cliente=pago.cliente, editar=True)
-
-
-@cobros_bp.route("/pagos/<int:pago_id>/marcar-pagado", methods=["POST"])
-@login_required
-def marcar_pagado(pago_id):
-    """Acción rápida: marcar un pago como pagado con la fecha de hoy."""
-    pago = db.get_or_404(Pago, pago_id)
-    pago.estado = "pagado"
-    pago.fecha_pago = date.today()
-    if not pago.monto_recibido:
-        pago.monto_recibido = pago.monto_esperado
-    _auditar("cobros.pago_marcar_pagado", pago.cliente_id, {"pago_id": pago_id})
-    db.session.commit()
-    flash("Pago marcado como pagado.", "success")
-    next_url = request.referrer or url_for("cobros.inicio")
-    return redirect(next_url)
-
-
-# ─── Planes ───────────────────────────────────────────────────────────────────
-
-@cobros_bp.route("/clientes/<int:cliente_id>/plan/nuevo", methods=["GET", "POST"])
-@login_required
-def nuevo_plan(cliente_id):
-    cliente = db.get_or_404(Cliente, cliente_id)
-    form = PlanForm(vigente_desde=date.today())
-
-    if form.validate_on_submit():
-        # Desactivar plan anterior si existe
-        plan_prev = _plan_activo(cliente_id)
-        if plan_prev:
-            plan_prev.activo = False
-            plan_prev.vigente_hasta = form.vigente_desde.data
-
-        plan = PlanCliente(
-            cliente_id=cliente_id,
-            descripcion=form.descripcion.data,
-            monto_ars=form.monto_ars.data,
-            dia_vencimiento=form.dia_vencimiento.data,
-            vigente_desde=form.vigente_desde.data,
-            vigente_hasta=form.vigente_hasta.data,
-        )
-        db.session.add(plan)
-        _auditar("cobros.plan_nuevo", cliente_id, {"monto": str(form.monto_ars.data)})
-        db.session.commit()
-        flash("Plan guardado.", "success")
-        return redirect(url_for("cobros.detalle_cliente", cliente_id=cliente_id))
-
-    return render_template("cobros/form_plan.html", form=form, cliente=cliente)
-
-
-# ─── Facturas ─────────────────────────────────────────────────────────────────
-
-@cobros_bp.route("/facturas")
-@login_required
-def lista_facturas():
-    facturas = (
-        Factura.query
-        .join(Cliente)
-        .order_by(Factura.fecha.desc())
-        .all()
-    )
-    return render_template("cobros/facturas.html", facturas=facturas)
-
-
-@cobros_bp.route("/facturas/nueva", methods=["GET", "POST"])
-@login_required
-def nueva_factura():
-    form = FacturaForm()
-    form.cliente_id.choices = [
-        (c.id, c.nombre)
-        for c in Cliente.query.order_by(Cliente.nombre).all()
-    ]
-
-    if form.validate_on_submit():
-        factura = Factura(
-            cliente_id=form.cliente_id.data,
-            numero=form.numero.data.strip(),
-            fecha=form.fecha.data,
-            monto_ars=form.monto_ars.data,
-            concepto=form.concepto.data,
-            notas=form.notas.data,
-        )
-        db.session.add(factura)
-        _auditar("cobros.factura_nueva", form.cliente_id.data, {
-            "numero": form.numero.data,
-            "monto": str(form.monto_ars.data)
+        resumen.append({
+            "inst": inst,
+            "ultimo": ultimo,
+            "semaforo": _semaforo(ultimo),
+            "historial": list(reversed(historial)),
         })
-        db.session.commit()
-        flash("Factura registrada.", "success")
-        return redirect(url_for("cobros.lista_facturas"))
 
-    return render_template("cobros/form_factura.html", form=form)
+    orden = {"error": 0, "sin_datos": 1, "ok": 2}
+    resumen.sort(key=lambda r: orden.get(r["semaforo"], 1))
 
+    total = len(resumen)
+    ok_count = sum(1 for r in resumen if r["semaforo"] == "ok")
+    error_count = sum(1 for r in resumen if r["semaforo"] == "error")
 
-@cobros_bp.route("/facturas/<int:factura_id>/eliminar", methods=["POST"])
-@login_required
-def eliminar_factura(factura_id):
-    factura = db.get_or_404(Factura, factura_id)
-    _auditar("cobros.factura_eliminar", factura.cliente_id, {"numero": factura.numero})
-    db.session.delete(factura)
-    db.session.commit()
-    flash("Factura eliminada.", "info")
-    return redirect(url_for("cobros.lista_facturas"))
+    ### CAMBIO AQUÍ ### — métricas adicionales para tiles del tablero
+    from datetime import date
+    hoy = date.today()
 
+    clientes_activos = Cliente.query.filter_by(estado="activo").count()
 
-# ─── Detalle de cobros por cliente ───────────────────────────────────────────
+    cobros_pendientes = Pago.query.filter(
+        Pago.estado.in_(["pendiente", "atrasado"]),
+        Pago.anio == hoy.year,
+        Pago.mes == hoy.month,
+    ).count()
 
-@cobros_bp.route("/clientes/<int:cliente_id>")
-@login_required
-def detalle_cliente(cliente_id):
-    cliente = db.get_or_404(Cliente, cliente_id)
-    plan_activo = _plan_activo(cliente_id)
-    pagos = (
-        Pago.query
-        .filter_by(cliente_id=cliente_id)
-        .order_by(Pago.anio.desc(), Pago.mes.desc())
-        .all()
-    )
-    facturas = (
-        Factura.query
-        .filter_by(cliente_id=cliente_id)
-        .order_by(Factura.fecha.desc())
-        .all()
-    )
-    total_facturado = sum(f.monto_ars for f in facturas)
-    total_cobrado = sum(p.monto_recibido or 0 for p in pagos if p.estado == "pagado")
+    avisos_pendientes = Aviso.query.filter_by(estado="pendiente").count()
 
     return render_template(
-        "cobros/detalle_cliente.html",
-        cliente=cliente,
-        plan_activo=plan_activo,
-        pagos=pagos,
-        facturas=facturas,
-        total_facturado=total_facturado,
-        total_cobrado=total_cobrado,
+        "tablero/inicio.html",
+        resumen=resumen,
+        total=total,
+        ok_count=ok_count,
+        error_count=error_count,
+        clientes_activos=clientes_activos,
+        cobros_pendientes=cobros_pendientes,
+        avisos_pendientes=avisos_pendientes,
     )
 
 
-# ─── Métricas de monotributo ──────────────────────────────────────────────────
-
-@cobros_bp.route("/monotributo")
+@tablero_bp.route("/rechequear/<int:inst_id>", methods=["POST"])
 @login_required
-def monotributo():
-    """Control del tope del monotributo: facturado en los últimos 12 meses."""
-    facturado_12m = _facturado_ultimos_12_meses()
-
-    # Desglose mes a mes (últimos 12)
-    desglose = _desglose_mensual_12m()
-
-    # Categorías de monotributo 2024 (actualizar según RG AFIP vigente)
-    # Fuente: valores orientativos — actualizar con los oficiales de ARCA
-    categorias = [
-        {"letra": "A", "tope": 3_300_000},
-        {"letra": "B", "tope": 4_950_000},
-        {"letra": "C", "tope": 6_600_000},
-        {"letra": "D", "tope": 9_900_000},
-        {"letra": "E", "tope": 13_200_000},
-        {"letra": "F", "tope": 16_500_000},
-        {"letra": "G", "tope": 19_800_000},
-        {"letra": "H", "tope": 30_000_000},
-        {"letra": "I", "tope": 38_250_000},
-        {"letra": "J", "tope": 47_250_000},
-        {"letra": "K", "tope": 57_750_000},
-    ]
-
-    categoria_actual = None
-    proxima_categoria = None
-    for i, cat in enumerate(categorias):
-        if float(facturado_12m) <= cat["tope"]:
-            categoria_actual = cat
-            if i + 1 < len(categorias):
-                proxima_categoria = categorias[i + 1]
-            break
-
-    return render_template(
-        "cobros/monotributo.html",
-        facturado_12m=facturado_12m,
-        desglose=desglose,
-        categorias=categorias,
-        categoria_actual=categoria_actual,
-        proxima_categoria=proxima_categoria,
+def rechequear(inst_id):
+    token = (
+        request.headers.get("X-CSRFToken")
+        or request.form.get("_csrf_token")
+        or ""
     )
+    try:
+        validate_csrf(token)
+    except ValidationError:
+        abort(400, "Token CSRF inválido.")
+
+    inst = db.session.get(Instalacion, inst_id)
+    if not inst or not inst.activa:
+        abort(404)
+
+    estado_previo = inst.ultimo_estado()
+    evento = _chequear_instalacion(inst)
+
+    if estado_previo is not None:
+        if not evento.ok and estado_previo.ok:
+            enviar_alerta_caida(inst, evento)
+        elif evento.ok and not estado_previo.ok:
+            enviar_alerta_recuperacion(inst)
+    elif not evento.ok:
+        enviar_alerta_caida(inst, evento)
+
+    return jsonify({
+        "ok": evento.ok,
+        "tiempo_ms": evento.tiempo_ms,
+        "codigo_http": evento.codigo_http,
+        "detalle": evento.detalle,
+        "chequeado_en": evento.chequeado_en.strftime("%d/%m/%Y %H:%M:%S"),
+    })
 
 
-# ─── Cron: generación automática de pagos mensuales ──────────────────────────
+@tablero_bp.route("/cron/chequear-salud")
+def chequear_salud_cron():
+    token_esperado = current_app.config.get("CRON_TOKEN", "")
+    token_recibido = request.headers.get("X-Cron-Token") or request.args.get("token", "")
 
-@cobros_bp.route("/cron/generar-pagos", methods=["POST"])
-def cron_generar_pagos():  ### CAMBIO AQUÍ ###
-    """Crea pagos del mes para todos los clientes activos con plan activo.
-    Llamar el día 1 de cada mes via cron externo (cron-job.org).
-    Requiere header X-Cron-Token con el valor de la env var CRON_TOKEN.
-    """
-    token = request.headers.get("X-Cron-Token", "")
-    if not token or token != current_app.config.get("CRON_TOKEN", ""):
-        abort(403)
+    if not token_esperado or token_recibido != token_esperado:
+        return jsonify({"error": "No autorizado"}), 401
 
-    hoy = date.today()
-    anio, mes = hoy.year, hoy.month
+    instalaciones = Instalacion.query.filter_by(activa=True).all()
+    resultados = []
 
-    # Clientes activos con plan activo
-    clientes = (
-        Cliente.query
-        .filter_by(estado="activo")
-        .join(PlanCliente, (PlanCliente.cliente_id == Cliente.id) & (PlanCliente.activo == True))
-        .all()
+    for inst in instalaciones:
+        estado_previo = inst.ultimo_estado()
+        evento = _chequear_instalacion(inst)
+
+        if estado_previo is not None:
+            if not evento.ok and estado_previo.ok:
+                enviar_alerta_caida(inst, evento)
+            elif evento.ok and not estado_previo.ok:
+                enviar_alerta_recuperacion(inst)
+        elif not evento.ok:
+            enviar_alerta_caida(inst, evento)
+
+        resultados.append({
+            "instalacion": inst.nombre,
+            "ok": evento.ok,
+            "tiempo_ms": evento.tiempo_ms,
+            "codigo_http": evento.codigo_http,
+        })
+
+    return jsonify({"chequeadas": len(resultados), "resultados": resultados})
+
+
+@tablero_bp.route("/salud")
+def salud_panel():
+    try:
+        db.session.execute(db.text("SELECT 1"))
+        return jsonify({"ok": True, "db": "ok"})
+    except Exception as e:
+        return jsonify({"ok": False, "db": str(e)}), 500
+
+
+def _chequear_instalacion(inst: Instalacion) -> EventoSalud:
+    ok = False
+    tiempo_ms = None
+    codigo_http = None
+    detalle = None
+
+    try:
+        inicio = time.time()
+        resp = http.get(inst.url_salud, timeout=TIMEOUT_SALUD)
+        tiempo_ms = int((time.time() - inicio) * 1000)
+        codigo_http = resp.status_code
+        ok = resp.status_code == 200
+        if not ok:
+            detalle = f"HTTP {resp.status_code}"
+    except http.exceptions.Timeout:
+        detalle = f"Timeout ({TIMEOUT_SALUD}s)"
+    except http.exceptions.ConnectionError as e:
+        detalle = f"Error de conexión: {str(e)[:120]}"
+    except Exception as e:
+        detalle = f"Error inesperado: {str(e)[:120]}"
+
+    evento = EventoSalud(
+        instalacion_id=inst.id,
+        ok=ok,
+        tiempo_ms=tiempo_ms,
+        codigo_http=codigo_http,
+        detalle=detalle,
     )
-
-    creados = 0
-    omitidos = 0
-    for cliente in clientes:
-        plan = _plan_activo(cliente.id)
-        if not plan:
-            continue
-        # No duplicar si ya existe pago para este mes
-        existente = Pago.query.filter_by(
-            cliente_id=cliente.id,
-            anio=anio,
-            mes=mes,
-        ).first()
-        if existente:
-            omitidos += 1
-            continue
-        pago = Pago(
-            cliente_id=cliente.id,
-            plan_id=plan.id,
-            anio=anio,
-            mes=mes,
-            monto_esperado=plan.monto_ars,
-            estado="pendiente",
-        )
-        db.session.add(pago)
-        creados += 1
-
+    db.session.add(evento)
     db.session.commit()
-    return jsonify({"ok": True, "creados": creados, "omitidos": omitidos, "periodo": f"{anio}/{mes:02d}"})
+    return evento
 
 
-# ─── Helpers privados ─────────────────────────────────────────────────────────
-
-def _plan_activo(cliente_id):
-    return PlanCliente.query.filter_by(cliente_id=cliente_id, activo=True).first()
-
-
-def _facturado_ultimos_12_meses():
-    """Suma de facturas emitidas en los últimos 12 meses corridos."""
-    from sqlalchemy import func
-    hoy = date.today()
-    # primer día hace 12 meses
-    if hoy.month == 12:
-        desde = date(hoy.year - 1, 1, 1)
-    else:
-        desde = date(hoy.year - 1, hoy.month + 1, 1)
-    result = db.session.query(
-        func.coalesce(func.sum(Factura.monto_ars), 0)
-    ).filter(Factura.fecha >= desde).scalar()
-    return result or Decimal("0")
-
-
-def _desglose_mensual_12m():
-    """Lista de {anio, mes, nombre_mes, total} para los últimos 12 meses."""
-    from sqlalchemy import func
-    hoy = date.today()
-    resultado = []
-    for i in range(11, -1, -1):
-        # retroceder i meses
-        mes = hoy.month - i
-        anio = hoy.year
-        while mes <= 0:
-            mes += 12
-            anio -= 1
-        total = db.session.query(
-            func.coalesce(func.sum(Factura.monto_ars), 0)
-        ).filter(
-            db.extract('year', Factura.fecha) == anio,
-            db.extract('month', Factura.fecha) == mes
-        ).scalar() or Decimal("0")
-        resultado.append({"anio": anio, "mes": mes, "nombre_mes": _nombre_mes(mes), "total": total})
-    return resultado
-
-
-def _nombre_mes(mes: int) -> str:
-    nombres = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio",
-               "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
-    return nombres[mes]
-
-
-def _lista_meses():
-    return [(i, _nombre_mes(i)) for i in range(1, 13)]
-
-
-def _auditar(accion, cliente_id, detalle_dict):
-    log = Auditoria(
-        usuario_id=current_user.id,
-        cliente_id=cliente_id,
-        accion=accion,
-        detalle=json.dumps(detalle_dict, ensure_ascii=False),
-        ip=request.remote_addr,
-    )
-    db.session.add(log)
+def _semaforo(ultimo: EventoSalud | None) -> str:
+    if ultimo is None:
+        return "sin_datos"
+    return "ok" if ultimo.ok else "error"
