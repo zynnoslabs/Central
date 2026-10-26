@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — Zynnos Central{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;">
+  <p class="text-muted text-small mb-1">
+    <a href="{{ url_for('avisos.lista') }}" style="color:var(--fg-muted); text-decoration:none;">← Avisos</a>
+  </p>
+  <h1 class="page-title">{{ titulo }}</h1>
+
+  <div class="card">
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.titulo.label(class="form-label") }}
+        {{ form.titulo(class="form-control", placeholder="Ej: Revisar vencimiento plan Adriano") }}
+        {% for e in form.titulo.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.cuerpo.label(class="form-label") }}
+        {{ form.cuerpo(class="form-control", rows=4, placeholder="Descripción opcional del aviso...") }}
+        {% for e in form.cuerpo.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.prioridad.label(class="form-label") }}
+        {{ form.prioridad(class="form-control") }}
+      </div>
+
+      <div class="form-group">
+        {{ form.cliente_id.label(class="form-label") }}
+        {{ form.cliente_id(class="form-control") }}
+        <p class="text-muted text-small" style="margin-top:.25rem;">Opcional: vinculá el aviso a un cliente.</p>
+      </div>
+
+      <div class="flex gap-1" style="flex-wrap:wrap; margin-top:1.5rem;">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{{ url_for('avisos.lista') }}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

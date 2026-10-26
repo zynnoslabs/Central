@@ -297,3 +297,38 @@ class Factura(db.Model):
 
     def __repr__(self):
         return f"<Factura {self.numero} ${self.monto_ars}>"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MÓDULO DE AVISOS — ETAPA 5
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### CAMBIO AQUÍ ### — Aviso interno con seguimiento
+class Aviso(db.Model):
+    """
+    Aviso interno del panel: tarea, recordatorio o alerta con prioridad y estado.
+    Puede estar vinculado opcionalmente a un cliente.
+    """
+    __tablename__ = "avisos"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    titulo = db.Column(db.String(255), nullable=False)
+    cuerpo = db.Column(db.Text, nullable=True)
+
+    # alta / media / baja
+    prioridad = db.Column(db.String(10), nullable=False, default="media")
+
+    # pendiente / resuelto
+    estado = db.Column(db.String(15), nullable=False, default="pendiente")
+
+    # Vínculo opcional a un cliente
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=True)
+
+    creado_en = db.Column(db.DateTime(timezone=True), default=ahora)
+    resuelto_en = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    cliente = db.relationship("Cliente", backref=db.backref("avisos", lazy="dynamic"))
+
+    def __repr__(self):
+        return f"<Aviso {self.id} [{self.prioridad}] {self.titulo[:40]}>"
