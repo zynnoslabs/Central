@@ -189,7 +189,7 @@
       <a href="{{ url_for('clientes.lista') }}"
          class="{{ 'activo' if request.endpoint and request.endpoint.startswith('clientes') }}">Clientes</a>
       <a href="{{ url_for('cobros.inicio') }}"
-         class="{{ 'activo' if request.endpoint and request.endpoint.startswith('cobros') }}">Cobros</a>  ### CAMBIO AQUÍ ###
+         class="{{ 'activo' if request.endpoint and request.endpoint.startswith('cobros') }}">Cobros</a>
       <a href="{{ url_for('auth.logout') }}">Salir</a>
     </div>
   </nav>
