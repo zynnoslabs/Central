@@ -8,17 +8,26 @@ from flask import (
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField
-from wtforms.validators import DataRequired, Email, Length
+import re
+from wtforms.validators import DataRequired, Length, ValidationError
 
 from app.models import db, Usuario, Auditoria
 
 auth_bp = Blueprint("auth", __name__)
 
 
+# ─── Validador de email sin dependencia externa ────────────────────────────────
+
+def _validar_email(form, field):  ### CAMBIO AQUÍ ###
+    patron = r'^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    if not re.match(patron, field.data or ""):
+        raise ValidationError("Ingresá un email válido.")
+
+
 # ─── Formulario de login ───────────────────────────────────────────────────────
 
 class LoginForm(FlaskForm):
-    email = StringField("Email", validators=[DataRequired(), Email()])
+    email = StringField("Email", validators=[DataRequired(), _validar_email])
     password = PasswordField("Contraseña", validators=[DataRequired(), Length(min=8)])
     recordarme = BooleanField("Recordarme 8 horas")
 
