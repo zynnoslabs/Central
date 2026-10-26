@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Monotributo — control de tope{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Monotributo</h1>
+  <a href="{{ url_for('cobros.inicio') }}" class="btn btn-ghost">← Cobros</a>
+</div>
+
+<div class="info-box mb-4">
+  ⚠ Los topes son orientativos (escala 2024). Verificá los valores vigentes en ARCA antes de tomar decisiones.
+</div>
+
+{# ── Categoría actual ── #}
+{% if categoria_actual %}
+<div class="categoria-banner mb-4">
+  <div class="cat-letra">{{ categoria_actual.letra }}</div>
+  <div class="cat-info">
+    <span class="cat-label">Categoría actual</span>
+    <span class="cat-tope">Tope: $ {{ "{:,.0f}".format(categoria_actual.tope) }}</span>
+    {% if proxima_categoria %}
+    <span class="cat-proximo">
+      Próxima categoría ({{ proxima_categoria.letra }}): $ {{ "{:,.0f}".format(proxima_categoria.tope) }}
+      — te faltan $ {{ "{:,.0f}".format(proxima_categoria.tope - facturado_12m|float) }}
+    </span>
+    {% else %}
+    <span class="cat-proximo">Estás en la categoría máxima (K)</span>
+    {% endif %}
+  </div>
+  <div class="cat-facturado">
+    <span class="cat-label">Facturado últimos 12m</span>
+    <span class="cat-monto">$ {{ "{:,.0f}".format(facturado_12m) }}</span>
+  </div>
+</div>
+
+{# ── Barra de progreso hacia el tope ── #}
+{% if proxima_categoria %}
+{% set pct = [(facturado_12m|float / proxima_categoria.tope * 100), 100]|min %}
+<div class="progress-wrap mb-4">
+  <div class="progress-labels">
+    <span>$ 0</span>
+    <span>{{ "%.1f"|format(pct) }}%</span>
+    <span>$ {{ "{:,.0f}".format(proxima_categoria.tope) }}</span>
+  </div>
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill {% if pct >= 90 %}fill-danger{% elif pct >= 70 %}fill-warning{% else %}fill-ok{% endif %}"
+         style="width:{{ pct }}%"></div>
+  </div>
+</div>
+{% endif %}
+{% else %}
+<div class="alert-box mb-4">
+  El monto facturado supera la categoría K. Consultá con tu contador.
+</div>
+{% endif %}
+
+{# ── Desglose mensual ── #}
+<section class="card mb-4">
+  <div class="card-header">
+    <h2 class="card-title">Facturado mes a mes (últimos 12)</h2>
+  </div>
+  <div class="card-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Mes</th><th>Año</th><th>Facturado</th></tr>
+        </thead>
+        <tbody>
+          {% for d in desglose %}
+          <tr {% if d.total == 0 %}class="row-cero"{% endif %}>
+            <td>{{ d.nombre_mes }}</td>
+            <td>{{ d.anio }}</td>
+            <td>{% if d.total > 0 %}$ {{ "{:,.0f}".format(d.total) }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2"><strong>Total 12 meses</strong></td>
+            <td><strong>$ {{ "{:,.0f}".format(facturado_12m) }}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</section>
+
+{# ── Tabla de categorías ── #}
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Escala de categorías</h2>
+  </div>
+  <div class="card-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Categoría</th><th>Tope anual (ARS)</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          {% for cat in categorias %}
+          <tr class="{% if categoria_actual and cat.letra == categoria_actual.letra %}row-activa{% endif %}">
+            <td><strong>{{ cat.letra }}</strong></td>
+            <td>$ {{ "{:,.0f}".format(cat.tope) }}</td>
+            <td>
+              {% if categoria_actual and cat.letra == categoria_actual.letra %}
+              <span class="badge badge-activa">✓ Actual</span>
+              {% elif categoria_actual and cat.tope > categoria_actual.tope %}
+              <span class="text-muted text-sm">Superior</span>
+              {% else %}
+              <span class="text-muted text-sm">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+.info-box { background:rgba(244,162,97,.12); border:1px solid rgba(244,162,97,.35); border-radius:var(--radius); padding:.75rem 1rem; font-size:.9rem; }
+.alert-box { background:rgba(214,40,57,.08); border:1px solid rgba(214,40,57,.25); border-radius:var(--radius); padding:.75rem 1rem; font-size:.9rem; }
+.mb-4 { margin-bottom:1.25rem; }
+.categoria-banner { background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:var(--radius); padding:1rem 1.5rem; display:flex; flex-wrap:wrap; gap:1rem 2.5rem; align-items:center; }
+.cat-letra { font-size:3rem; font-weight:900; color:var(--accent); line-height:1; }
+.cat-info, .cat-facturado { display:flex; flex-direction:column; gap:.2rem; }
+.cat-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--fg-muted); }
+.cat-tope { font-size:1rem; font-weight:600; }
+.cat-proximo { font-size:.85rem; color:var(--fg-muted); }
+.cat-monto { font-size:1.5rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.progress-wrap { max-width:600px; }
+.progress-labels { display:flex; justify-content:space-between; font-size:.78rem; color:var(--fg-muted); margin-bottom:.3rem; }
+.progress-bar-bg { background:rgba(0,0,0,.08); border-radius:99px; height:14px; overflow:hidden; }
+.progress-bar-fill { height:100%; border-radius:99px; transition:width .4s; }
+.fill-ok { background:var(--success); }
+.fill-warning { background:var(--warning); }
+.fill-danger { background:var(--danger); }
+.row-activa td { background:rgba(67,97,238,.06); }
+.row-cero td { opacity:.5; }
+.text-sm { font-size:.85rem; }
+.badge-activa { background:rgba(67,97,238,.15); color:var(--accent); font-size:.78rem; padding:.2em .6em; border-radius:99px; }
+</style>
+{% endblock %}

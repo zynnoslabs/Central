@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Nueva factura{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Registrar factura</h1>
+  <a href="{{ url_for('cobros.lista_facturas') }}" class="btn btn-ghost">← Facturas</a>
+</div>
+
+<div class="info-box mb-4">
+  Solo se registra el número. La factura la generás vos en ARCA.
+</div>
+
+<section class="card card-form">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.cliente_id.label(class="form-label") }}
+        {{ form.cliente_id(class="form-control") }}
+        {% for e in form.cliente_id.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          {{ form.numero.label(class="form-label") }}
+          {{ form.numero(class="form-control mono", placeholder="0001-00000042") }}
+          {% for e in form.numero.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          {{ form.fecha.label(class="form-label") }}
+          {{ form.fecha(class="form-control") }}
+          {% for e in form.fecha.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        {{ form.monto_ars.label(class="form-label") }}
+        {{ form.monto_ars(class="form-control", placeholder="0.00") }}
+        {% for e in form.monto_ars.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.concepto.label(class="form-label") }}
+        {{ form.concepto(class="form-control", placeholder="Ej: Mensualidad PalermitanHost – Octubre 2024") }}
+        {% for e in form.concepto.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.notas.label(class="form-label") }}
+        {{ form.notas(class="form-control", rows=3) }}
+        {% for e in form.notas.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('cobros.lista_facturas') }}" class="btn btn-ghost">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar factura</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+.info-box { background:rgba(67,97,238,.08); border:1px solid rgba(67,97,238,.2); border-radius:var(--radius); padding:.75rem 1rem; font-size:.9rem; }
+.mb-4 { margin-bottom:1.25rem; }
+.card-form { max-width:600px; }
+.form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+@media(max-width:480px) { .form-row-2 { grid-template-columns:1fr; } }
+.form-group { display:flex; flex-direction:column; gap:.3rem; margin-bottom:1rem; }
+.form-actions { display:flex; justify-content:flex-end; gap:.75rem; margin-top:1.25rem; }
+.mono { font-family:monospace; }
+</style>
+{% endblock %}

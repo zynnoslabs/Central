@@ -6,14 +6,14 @@ load_dotenv()
 
 class Config:
     # Seguridad
-    SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
+    SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "")  ### CAMBIO AQUÍ ###
     WTF_CSRF_ENABLED = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     PERMANENT_SESSION_LIFETIME = 3600 * 8  # 8 horas
 
     # Base de datos
-    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "")  ### CAMBIO AQUÍ ###
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,

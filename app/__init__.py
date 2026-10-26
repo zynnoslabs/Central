@@ -38,11 +38,13 @@ def create_app(config_class=Config):
     from app.clientes.routes import clientes_bp
     from app.tablero.routes import tablero_bp
     from app.avisos.routes import avisos_bp
+    from app.cobros.routes import cobros_bp  ### CAMBIO AQUÍ ###
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(clientes_bp, url_prefix="/clientes")
     app.register_blueprint(tablero_bp, url_prefix="/tablero")
     app.register_blueprint(avisos_bp, url_prefix="/avisos")
+    app.register_blueprint(cobros_bp, url_prefix="/cobros")  ### CAMBIO AQUÍ ###
 
     # ─── Crear tablas y usuario admin inicial ──────────────────────────────────
     with app.app_context():

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{% if editar %}Editar pago{% else %}Nuevo pago{% endif %} — {{ cliente.nombre }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{% if editar %}Editar pago{% else %}Registrar pago{% endif %}</h1>
+  <a href="{{ url_for('cobros.detalle_cliente', cliente_id=cliente.id) }}" class="btn btn-ghost">← {{ cliente.nombre }}</a>
+</div>
+
+{% if plan_activo %}
+<div class="info-box mb-4">
+  <strong>Plan activo:</strong> {{ plan_activo.descripcion }} —
+  $ {{ "{:,.0f}".format(plan_activo.monto_ars) }} / mes
+  (vence día {{ plan_activo.dia_vencimiento }})
+</div>
+{% endif %}
+
+<section class="card card-form">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+
+      <div class="form-row-2">
+        <div class="form-group">
+          {{ form.anio.label(class="form-label") }}
+          {{ form.anio(class="form-control") }}
+          {% for e in form.anio.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          {{ form.mes.label(class="form-label") }}
+          {{ form.mes(class="form-control") }}
+          {% for e in form.mes.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          {{ form.monto_esperado.label(class="form-label") }}
+          {{ form.monto_esperado(class="form-control", placeholder="0.00") }}
+          {% for e in form.monto_esperado.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          {{ form.monto_recibido.label(class="form-label") }}
+          {{ form.monto_recibido(class="form-control", placeholder="0.00") }}
+          {% for e in form.monto_recibido.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          {{ form.estado.label(class="form-label") }}
+          {{ form.estado(class="form-control") }}
+          {% for e in form.estado.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          {{ form.fecha_pago.label(class="form-label") }}
+          {{ form.fecha_pago(class="form-control") }}
+          {% for e in form.fecha_pago.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        {{ form.notas.label(class="form-label") }}
+        {{ form.notas(class="form-control", rows=3) }}
+        {% for e in form.notas.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('cobros.detalle_cliente', cliente_id=cliente.id) }}" class="btn btn-ghost">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+          {% if editar %}Guardar cambios{% else %}Registrar pago{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+.info-box { background:rgba(67,97,238,.08); border:1px solid rgba(67,97,238,.2); border-radius:var(--radius); padding:.75rem 1rem; font-size:.9rem; }
+.mb-4 { margin-bottom:1.25rem; }
+.card-form { max-width:640px; }
+.form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+@media(max-width:480px) { .form-row-2 { grid-template-columns:1fr; } }
+.form-group { display:flex; flex-direction:column; gap:.3rem; margin-bottom:1rem; }
+.form-actions { display:flex; justify-content:flex-end; gap:.75rem; margin-top:1.25rem; }
+</style>
+{% endblock %}

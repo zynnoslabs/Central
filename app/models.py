@@ -62,6 +62,10 @@ class Cliente(db.Model):
         "Instalacion", back_populates="cliente", cascade="all, delete-orphan"
     )
     auditoria = db.relationship("Auditoria", back_populates="cliente")
+    ### CAMBIO AQUÍ ### — relaciones nuevas de cobros
+    planes = db.relationship("PlanCliente", back_populates="cliente", cascade="all, delete-orphan")
+    pagos = db.relationship("Pago", back_populates="cliente", cascade="all, delete-orphan")
+    facturas = db.relationship("Factura", back_populates="cliente", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Cliente {self.nombre}>"
@@ -107,6 +111,9 @@ class Instalacion(db.Model):
     # Estado
     activa = db.Column(db.Boolean, default=True)
     creado_en = db.Column(db.DateTime(timezone=True), default=ahora)
+
+    ### CAMBIO AQUÍ ### — costo mensual de esta instalación (Render, etc.) en USD
+    costo_usd = db.Column(db.Numeric(10, 2), nullable=True, default=0)
 
     cliente = db.relationship("Cliente", back_populates="instalaciones")
     producto = db.relationship("Producto", back_populates="instalaciones")
@@ -158,3 +165,96 @@ class Auditoria(db.Model):
 
     usuario = db.relationship("Usuario")
     cliente = db.relationship("Cliente", back_populates="auditoria")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MÓDULO DE COBROS — ETAPA 2
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### CAMBIO AQUÍ ### — Plan de mensualidad de un cliente
+
+class PlanCliente(db.Model):
+    """Registra el plan vigente de un cliente: producto, monto en ARS y período."""
+    __tablename__ = "planes_clientes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+
+    # Descripción del plan
+    descripcion = db.Column(db.String(255), nullable=False)  # ej: "PalermitanHost Plan Base"
+    monto_ars = db.Column(db.Numeric(12, 2), nullable=False) # monto mensual en pesos
+    dia_vencimiento = db.Column(db.Integer, default=10)      # día del mes que vence el pago
+
+    # Vigencia
+    vigente_desde = db.Column(db.Date, nullable=False)
+    vigente_hasta = db.Column(db.Date, nullable=True)        # None = activo actualmente
+    activo = db.Column(db.Boolean, default=True)
+
+    creado_en = db.Column(db.DateTime(timezone=True), default=ahora)
+
+    cliente = db.relationship("Cliente", back_populates="planes")
+    pagos = db.relationship("Pago", back_populates="plan")
+
+    def __repr__(self):
+        return f"<PlanCliente {self.descripcion} ${self.monto_ars}>"
+
+
+### CAMBIO AQUÍ ### — Registro de un pago mensual
+
+class Pago(db.Model):
+    """Un pago mensual de un cliente. Un registro por mes por cliente."""
+    __tablename__ = "pagos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey("planes_clientes.id"), nullable=True)
+
+    # Período que cubre este pago
+    anio = db.Column(db.Integer, nullable=False)
+    mes = db.Column(db.Integer, nullable=False)              # 1–12
+
+    # Montos
+    monto_esperado = db.Column(db.Numeric(12, 2), nullable=False)
+    monto_recibido = db.Column(db.Numeric(12, 2), nullable=True)
+
+    # Estado: pendiente / pagado / atrasado / perdonado
+    estado = db.Column(db.String(20), nullable=False, default="pendiente")
+
+    fecha_pago = db.Column(db.Date, nullable=True)           # cuándo pagó realmente
+    notas = db.Column(db.Text, nullable=True)
+
+    creado_en = db.Column(db.DateTime(timezone=True), default=ahora)
+    actualizado_en = db.Column(db.DateTime(timezone=True), default=ahora, onupdate=ahora)
+
+    cliente = db.relationship("Cliente", back_populates="pagos")
+    plan = db.relationship("PlanCliente", back_populates="pagos")
+
+    __table_args__ = (
+        db.UniqueConstraint("cliente_id", "anio", "mes", name="uq_pago_cliente_mes"),
+    )
+
+    def __repr__(self):
+        return f"<Pago {self.cliente_id} {self.anio}/{self.mes} {self.estado}>"
+
+
+### CAMBIO AQUÍ ### — Factura emitida (registrada a mano, no generada)
+
+class Factura(db.Model):
+    """Factura C emitida en ARCA. Solo se registra, no se genera aquí."""
+    __tablename__ = "facturas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+
+    numero = db.Column(db.String(20), nullable=False)        # ej: "0001-00000042"
+    fecha = db.Column(db.Date, nullable=False)
+    monto_ars = db.Column(db.Numeric(12, 2), nullable=False)
+    concepto = db.Column(db.String(500), nullable=True)      # descripción libre
+    notas = db.Column(db.Text, nullable=True)
+
+    creado_en = db.Column(db.DateTime(timezone=True), default=ahora)
+
+    cliente = db.relationship("Cliente", back_populates="facturas")
+
+    def __repr__(self):
+        return f"<Factura {self.numero} ${self.monto_ars}>"

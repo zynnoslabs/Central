@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Pagos — {{ nombre_mes }} {{ anio }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Historial de pagos</h1>
+  <a href="{{ url_for('cobros.inicio') }}" class="btn btn-ghost">← Cobros</a>
+</div>
+
+{# ── Filtro año/mes ── #}
+<form method="GET" class="filtro-row">
+  <select name="anio" class="form-control form-control-sm">
+    {% for y in range(2024, anio + 2) %}
+    <option value="{{ y }}" {% if y == anio %}selected{% endif %}>{{ y }}</option>
+    {% endfor %}
+  </select>
+  <select name="mes" class="form-control form-control-sm">
+    {% for num, nombre in meses %}
+    <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nombre }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+</form>
+
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">{{ nombre_mes }} {{ anio }}</h2>
+    <span class="badge-count">{{ pagos|length }} pagos</span>
+  </div>
+  <div class="card-body">
+    {% if pagos %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Esperado</th>
+            <th>Recibido</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Notas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pagos %}
+          <tr>
+            <td><a href="{{ url_for('cobros.detalle_cliente', cliente_id=p.cliente_id) }}">{{ p.cliente.nombre }}</a></td>
+            <td>$ {{ "{:,.0f}".format(p.monto_esperado) }}</td>
+            <td>{% if p.monto_recibido %}$ {{ "{:,.0f}".format(p.monto_recibido) }}{% else %}—{% endif %}</td>
+            <td><span class="badge badge-pago-{{ p.estado }}">{{ p.estado }}</span></td>
+            <td>{{ p.fecha_pago.strftime('%d/%m/%Y') if p.fecha_pago else '—' }}</td>
+            <td class="text-muted text-sm">{{ p.notas[:60] ~ '…' if p.notas and p.notas|length > 60 else p.notas or '' }}</td>
+            <td class="actions">
+              {% if p.estado != 'pagado' %}
+              <form method="POST" action="{{ url_for('cobros.marcar_pagado', pago_id=p.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-success">✓</button>
+              </form>
+              {% endif %}
+              <a href="{{ url_for('cobros.editar_pago', pago_id=p.id) }}" class="btn btn-sm btn-ghost">Editar</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td><strong>Total</strong></td>
+            <td><strong>$ {{ "{:,.0f}".format(pagos | sum(attribute='monto_esperado')) }}</strong></td>
+            <td><strong>$ {{ "{:,.0f}".format(pagos | selectattr('estado','eq','pagado') | sum(attribute='monto_recibido') | default(0)) }}</strong></td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No hay pagos registrados para este período.</p>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+.filtro-row { display:flex; align-items:center; gap:.5rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+.badge-count { font-size:.75rem; background:var(--accent); color:#fff; border-radius:99px; padding:.2em .65em; }
+.text-sm { font-size:.85rem; }
+.badge-pago-pagado { background:rgba(45,198,83,.15); color:var(--success); }
+.badge-pago-pendiente { background:rgba(244,162,97,.15); color:var(--warning); }
+.badge-pago-atrasado { background:rgba(214,40,57,.15); color:var(--danger); }
+.badge-pago-perdonado { background:rgba(108,117,125,.15); color:var(--fg-muted); }
+</style>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Facturas{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Facturas emitidas</h1>
+  <div class="header-actions">
+    <a href="{{ url_for('cobros.inicio') }}" class="btn btn-ghost">← Cobros</a>
+    <a href="{{ url_for('cobros.nueva_factura') }}" class="btn btn-primary">+ Nueva factura</a>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card-body">
+    {% if facturas %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Monto</th>
+            <th>Concepto</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in facturas %}
+          <tr>
+            <td class="mono">{{ f.numero }}</td>
+            <td>{{ f.fecha.strftime('%d/%m/%Y') }}</td>
+            <td>{{ f.cliente.nombre }}</td>
+            <td>$ {{ "{:,.0f}".format(f.monto_ars) }}</td>
+            <td class="text-muted text-sm">{{ f.concepto[:70] ~ '…' if f.concepto and f.concepto|length > 70 else f.concepto or '—' }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('cobros.eliminar_factura', factura_id=f.id) }}"
+                    onsubmit="return confirm('¿Eliminar factura {{ f.numero }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-danger-ghost">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3"><strong>Total</strong></td>
+            <td><strong>$ {{ "{:,.0f}".format(facturas | sum(attribute='monto_ars')) }}</strong></td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Todavía no registraste ninguna factura.</p>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+.header-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+.mono { font-family:monospace; font-size:.9rem; }
+.text-sm { font-size:.85rem; }
+.btn-danger-ghost { color:var(--danger); border:1px solid var(--danger); background:transparent; }
+.btn-danger-ghost:hover { background:rgba(214,40,57,.1); }
+</style>
+{% endblock %}

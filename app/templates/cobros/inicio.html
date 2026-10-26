@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Cobros — {{ nombre_mes }} {{ anio }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Cobros</h1>
+  <div class="header-actions">
+    <a href="{{ url_for('cobros.lista_facturas') }}" class="btn btn-ghost">Facturas</a>
+    <a href="{{ url_for('cobros.monotributo') }}" class="btn btn-ghost">Monotributo</a>
+    <a href="{{ url_for('cobros.nueva_factura') }}" class="btn btn-primary">+ Factura</a>
+  </div>
+</div>
+
+{# ── Métricas del mes ── #}
+<div class="metrics-row">
+  <div class="metric-card">
+    <span class="metric-label">Esperado {{ nombre_mes }}</span>
+    <span class="metric-value">$ {{ "{:,.0f}".format(total_esperado) }}</span>
+  </div>
+  <div class="metric-card metric-success">
+    <span class="metric-label">Cobrado</span>
+    <span class="metric-value">$ {{ "{:,.0f}".format(total_cobrado) }}</span>
+  </div>
+  <div class="metric-card {% if pendientes %}metric-warning{% endif %}">
+    <span class="metric-label">Pendientes</span>
+    <span class="metric-value">{{ pendientes|length }}</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-label">Facturado 12m</span>
+    <span class="metric-value">$ {{ "{:,.0f}".format(facturado_12m) }}</span>
+  </div>
+</div>
+
+{# ── Clientes sin pago registrado ── #}
+{% if sin_pago %}
+<section class="card mb-4">
+  <div class="card-header">
+    <h2 class="card-title">⚠ Sin pago registrado este mes</h2>
+  </div>
+  <div class="card-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Cliente</th><th>Estado</th><th>Acción</th></tr></thead>
+        <tbody>
+          {% for c in sin_pago %}
+          <tr>
+            <td>{{ c.nombre }}</td>
+            <td><span class="badge badge-{{ c.estado }}">{{ c.estado }}</span></td>
+            <td>
+              <a href="{{ url_for('cobros.nuevo_pago', cliente_id=c.id) }}" class="btn btn-sm btn-primary">Registrar pago</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Pagos del mes ── #}
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Pagos — {{ nombre_mes }} {{ anio }}</h2>
+    <div class="card-header-actions">
+      <a href="{{ url_for('cobros.lista_pagos') }}" class="btn btn-sm btn-ghost">Ver historial</a>
+    </div>
+  </div>
+  <div class="card-body">
+    {% if pagos_mes %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Esperado</th>
+            <th>Recibido</th>
+            <th>Estado</th>
+            <th>Fecha pago</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pagos_mes %}
+          <tr>
+            <td><a href="{{ url_for('cobros.detalle_cliente', cliente_id=p.cliente_id) }}">{{ p.cliente.nombre }}</a></td>
+            <td>$ {{ "{:,.0f}".format(p.monto_esperado) }}</td>
+            <td>{% if p.monto_recibido %}$ {{ "{:,.0f}".format(p.monto_recibido) }}{% else %}—{% endif %}</td>
+            <td><span class="badge badge-pago-{{ p.estado }}">{{ p.estado }}</span></td>
+            <td>{{ p.fecha_pago.strftime('%d/%m/%Y') if p.fecha_pago else '—' }}</td>
+            <td class="actions">
+              {% if p.estado != 'pagado' %}
+              <form method="POST" action="{{ url_for('cobros.marcar_pagado', pago_id=p.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-success">✓ Pagado</button>
+              </form>
+              {% endif %}
+              <a href="{{ url_for('cobros.editar_pago', pago_id=p.id) }}" class="btn btn-sm btn-ghost">Editar</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No hay pagos registrados para este mes.</p>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+.header-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+.metrics-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+.metric-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; display:flex; flex-direction:column; gap:.25rem; }
+.metric-card.metric-success { border-left:4px solid var(--success); }
+.metric-card.metric-warning { border-left:4px solid var(--warning); }
+.metric-label { font-size:.75rem; color:var(--fg-muted); text-transform:uppercase; letter-spacing:.04em; }
+.metric-value { font-size:1.5rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.mb-4 { margin-bottom:1.5rem; }
+.badge-pago-pagado { background:rgba(45,198,83,.15); color:var(--success); }
+.badge-pago-pendiente { background:rgba(244,162,97,.15); color:var(--warning); }
+.badge-pago-atrasado { background:rgba(214,40,57,.15); color:var(--danger); }
+.badge-pago-perdonado { background:rgba(108,117,125,.15); color:var(--fg-muted); }
+</style>
+{% endblock %}
