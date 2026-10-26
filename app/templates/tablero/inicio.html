@@ -4,7 +4,7 @@
 {% block content %}
 <h1 class="page-title">Tablero</h1>
 
-<!-- Tiles resumen -->  ### CAMBIO AQUÍ ###
+<!-- Tiles resumen -->
 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
   <div class="card" style="text-align:center;">
     <p style="font-size:2.2rem; font-weight:700; color:var(--fg);">{{ total }}</p>
@@ -47,7 +47,6 @@
 
     <!-- Encabezado: nombre + badge -->
     <div class="flex gap-1" style="justify-content:space-between; align-items:flex-start; margin-bottom:.5rem;">
-      <!-- ### CAMBIO AQUÍ ### Nombre como link al detalle -->
       <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}"
          style="font-weight:600; font-size:.95rem; color:var(--fg); text-decoration:none;">
         {{ r.inst.nombre }}
@@ -108,7 +107,6 @@
         {{ r.inst.url_sistema[:40] }}{% if r.inst.url_sistema|length > 40 %}…{% endif %} ↗
       </a>
       <div class="flex gap-1">
-        <!-- ### CAMBIO AQUÍ ### Link a detalle -->
         <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}"
            class="btn btn-secondary"
            style="font-size:.75rem; padding:.25rem .6rem; white-space:nowrap;">
