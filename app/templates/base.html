@@ -199,6 +199,8 @@
          class="{{ 'activo' if request.endpoint and request.endpoint.startswith('avisos') }}">Avisos</a>
       <a href="{{ url_for('actividad.feed') }}"
          class="{{ 'activo' if request.endpoint and request.endpoint.startswith('actividad') }}">Actividad</a>
+      <a href="{{ url_for('ajustes.inicio') }}"
+         class="{{ 'activo' if request.endpoint and request.endpoint.startswith('ajustes') }}">Ajustes</a>
       <a href="{{ url_for('auth.logout') }}">Salir</a>
     </div>
   </nav>
