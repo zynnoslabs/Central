@@ -10,6 +10,10 @@
     <a href="{{ url_for('cobros.exportar_pagos', anio=anio) }}" class="btn btn-ghost" title="Descargar pagos del año como CSV">↓ CSV Pagos</a>
     <a href="{{ url_for('cobros.exportar_facturas', anio=anio) }}" class="btn btn-ghost" title="Descargar facturas del año como CSV">↓ CSV Facturas</a>
     <a href="{{ url_for('cobros.exportar_resumen_mensual') }}" class="btn btn-ghost" title="Resumen mensual histórico">↓ Resumen</a>
+    <!-- ### CAMBIO AQUÍ ### botones exportación CSV (Etapa I) -->
+    <a href="{{ url_for('cobros.exportar_pagos', anio=anio) }}" class="btn btn-ghost" title="Descargar pagos del año como CSV">↓ CSV Pagos</a>
+    <a href="{{ url_for('cobros.exportar_facturas', anio=anio) }}" class="btn btn-ghost" title="Descargar facturas del año como CSV">↓ CSV Facturas</a>
+    <a href="{{ url_for('cobros.exportar_resumen_mensual') }}" class="btn btn-ghost" title="Resumen mensual histórico">↓ Resumen</a>
     <a href="{{ url_for('cobros.nueva_factura') }}" class="btn btn-primary">+ Factura</a>
   </div>
 </div>

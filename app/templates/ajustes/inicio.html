@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Ajustes{% endblock %}
+{% block content %}
+<div class="page-header">  {# ### CAMBIO AQUÍ ### nuevo blueprint ajustes #}
+  <h1>Ajustes</h1>
+</div>
+
+{# ── Mensajes flash ── #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}" style="margin-bottom:1rem;">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="ajustes-grid">
+
+  {# ── Cambiar email ── #}
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Cambiar email</h2>
+    </div>
+    <div class="card-body">
+      <p class="text-muted" style="margin-bottom:1rem;">Email actual: <strong>{{ current_user.email }}</strong></p>
+      <form method="POST" action="{{ url_for('ajustes.cambiar_email') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <label for="email_nuevo">Nuevo email</label>
+          {{ form_email.email_nuevo(id="email_nuevo", class="form-control", autocomplete="email") }}
+        </div>
+        <div class="form-group">
+          <label for="pass_confirm_email">Contraseña actual (para confirmar)</label>
+          {{ form_email.password_actual(id="pass_confirm_email", class="form-control", autocomplete="current-password") }}
+        </div>
+        <button type="submit" class="btn btn-primary">Actualizar email</button>
+      </form>
+    </div>
+  </section>
+
+  {# ── Cambiar contraseña ── #}
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Cambiar contraseña</h2>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('ajustes.cambiar_password') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <label for="pass_actual">Contraseña actual</label>
+          {{ form_password.password_actual(id="pass_actual", class="form-control", autocomplete="current-password") }}
+        </div>
+        <div class="form-group">
+          <label for="pass_nuevo">Nueva contraseña</label>
+          {{ form_password.password_nuevo(id="pass_nuevo", class="form-control", autocomplete="new-password") }}
+          <small class="text-muted">Mínimo 8 caracteres.</small>
+        </div>
+        <div class="form-group">
+          <label for="pass_confirmar">Confirmar nueva contraseña</label>
+          {{ form_password.password_confirmar(id="pass_confirmar", class="form-control", autocomplete="new-password") }}
+        </div>
+        <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+      </form>
+    </div>
+  </section>
+
+  {# ── Alertas ── #}
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Alertas por email</h2>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('ajustes.guardar_alertas') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group form-check">
+          {{ form_alertas.alertas_email(id="alertas_email", class="form-check-input") }}
+          <label for="alertas_email" class="form-check-label">
+            Recibir alertas de caída y recuperación por email
+          </label>
+          <small class="text-muted d-block" style="margin-top:.25rem;">
+            Te notificamos cuando una instalación cambia de estado (caída → recuperada o viceversa).
+          </small>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar preferencias</button>
+      </form>
+    </div>
+  </section>
+
+</div>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+.ajustes-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.5rem; }
+.form-group { margin-bottom:1rem; }
+.form-group label { display:block; font-size:.875rem; font-weight:500; margin-bottom:.35rem; color:var(--fg); }
+.form-control { width:100%; padding:.45rem .75rem; border:1px solid var(--border); border-radius:6px; background:var(--bg); color:var(--fg); font-size:.9rem; box-sizing:border-box; }
+.form-control:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(67,97,238,.15); }
+.form-check { display:flex; align-items:flex-start; gap:.5rem; }
+.form-check-input { margin-top:.2rem; flex-shrink:0; width:1rem; height:1rem; accent-color:var(--accent); }
+.form-check-label { font-size:.9rem; }
+.alert { padding:.75rem 1rem; border-radius:var(--radius); font-size:.9rem; }
+.alert-success { background:rgba(45,198,83,.12); color:var(--success); border:1px solid rgba(45,198,83,.3); }
+.alert-danger  { background:rgba(214,40,57,.12);  color:var(--danger);  border:1px solid rgba(214,40,57,.3); }
+.alert-warning { background:rgba(244,162,97,.12); color:var(--warning); border:1px solid rgba(244,162,97,.3); }
+.alert-info    { background:rgba(67,97,238,.1);   color:var(--accent);  border:1px solid rgba(67,97,238,.25); }
+.d-block { display:block; }
+</style>
+{% endblock %}

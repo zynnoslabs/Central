@@ -23,6 +23,7 @@ class Usuario(UserMixin, db.Model):
     bloqueado_hasta = db.Column(db.DateTime(timezone=True), nullable=True)
     creado_en = db.Column(db.DateTime(timezone=True), default=ahora)
     ultimo_acceso = db.Column(db.DateTime(timezone=True), nullable=True)
+    alertas_email = db.Column(db.Boolean, default=True, nullable=False, server_default="true")  ### CAMBIO AQUÍ ###
 
     def set_password(self, password: str):
         self.password_hash = bcrypt.hashpw(
