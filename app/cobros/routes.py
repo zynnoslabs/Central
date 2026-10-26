@@ -376,6 +376,59 @@ def monotributo():
     )
 
 
+# ─── Cron: generación automática de pagos mensuales ──────────────────────────
+
+@cobros_bp.route("/cron/generar-pagos", methods=["POST"])
+def cron_generar_pagos():  ### CAMBIO AQUÍ ###
+    """Crea pagos del mes para todos los clientes activos con plan activo.
+    Llamar el día 1 de cada mes via cron externo (cron-job.org).
+    Requiere header X-Cron-Token con el valor de la env var CRON_TOKEN.
+    """
+    token = request.headers.get("X-Cron-Token", "")
+    if not token or token != current_app.config.get("CRON_TOKEN", ""):
+        abort(403)
+
+    hoy = date.today()
+    anio, mes = hoy.year, hoy.month
+
+    # Clientes activos con plan activo
+    clientes = (
+        Cliente.query
+        .filter_by(estado="activo")
+        .join(PlanCliente, (PlanCliente.cliente_id == Cliente.id) & (PlanCliente.activo == True))
+        .all()
+    )
+
+    creados = 0
+    omitidos = 0
+    for cliente in clientes:
+        plan = _plan_activo(cliente.id)
+        if not plan:
+            continue
+        # No duplicar si ya existe pago para este mes
+        existente = Pago.query.filter_by(
+            cliente_id=cliente.id,
+            anio=anio,
+            mes=mes,
+        ).first()
+        if existente:
+            omitidos += 1
+            continue
+        pago = Pago(
+            cliente_id=cliente.id,
+            plan_id=plan.id,
+            anio=anio,
+            mes=mes,
+            monto_esperado=plan.monto_ars,
+            estado="pendiente",
+        )
+        db.session.add(pago)
+        creados += 1
+
+    db.session.commit()
+    return jsonify({"ok": True, "creados": creados, "omitidos": omitidos, "periodo": f"{anio}/{mes:02d}"})
+
+
 # ─── Helpers privados ─────────────────────────────────────────────────────────
 
 def _plan_activo(cliente_id):
