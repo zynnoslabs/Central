@@ -1,11 +1,15 @@
+import secrets
 import time
 import requests as http
-from flask import Blueprint, render_template, request, jsonify, current_app, abort
+from flask import Blueprint, render_template, request, jsonify, current_app, abort, flash, redirect, url_for
 from flask_login import login_required
+from flask_wtf import FlaskForm
 from flask_wtf.csrf import validate_csrf
+from wtforms import StringField, BooleanField, DecimalField
+from wtforms.validators import DataRequired, Length, Optional, URL
 from wtforms import ValidationError
 
-from app.models import db, Instalacion, EventoSalud, Cliente, Pago, Aviso  ### CAMBIO AQUÍ ###
+from app.models import db, Instalacion, EventoSalud, Cliente, Pago, Aviso
 
 from app.avisos.routes import enviar_alerta_caida, enviar_alerta_recuperacion
 
@@ -13,7 +17,24 @@ tablero_bp = Blueprint("tablero", __name__)
 
 TIMEOUT_SALUD = 10
 HISTORIAL_TARJETA = 10
+HISTORIAL_DETALLE = 200  ### CAMBIO AQUÍ ###
 
+
+# ─── Formulario de edición de instalación ─────────────────────────────────────
+
+### CAMBIO AQUÍ ###
+class InstalacionForm(FlaskForm):
+    nombre          = StringField("Nombre", validators=[DataRequired(), Length(max=255)])
+    url_sistema     = StringField("URL sistema", validators=[DataRequired(), URL(), Length(max=500)])
+    url_salud       = StringField("URL salud", validators=[DataRequired(), URL(), Length(max=500)])
+    render_service_id = StringField("Render Service ID", validators=[Optional(), Length(max=100)])
+    neon_project_id = StringField("Neon Project ID", validators=[Optional(), Length(max=100)])
+    sentry_project  = StringField("Sentry Project", validators=[Optional(), Length(max=100)])
+    costo_usd       = DecimalField("Costo mensual (USD)", validators=[Optional()], places=2, default=0)
+    activa          = BooleanField("Activa")
+
+
+# ─── Tablero principal ────────────────────────────────────────────────────────
 
 @tablero_bp.route("/tablero")
 @login_required
@@ -50,7 +71,6 @@ def inicio():
     ok_count = sum(1 for r in resumen if r["semaforo"] == "ok")
     error_count = sum(1 for r in resumen if r["semaforo"] == "error")
 
-    ### CAMBIO AQUÍ ### — métricas adicionales para tiles del tablero
     from datetime import date
     hoy = date.today()
 
@@ -75,6 +95,85 @@ def inicio():
         avisos_pendientes=avisos_pendientes,
     )
 
+
+# ─── Detalle de instalación ───────────────────────────────────────────────────
+
+### CAMBIO AQUÍ ###
+@tablero_bp.route("/instalacion/<int:inst_id>")
+@login_required
+def detalle_instalacion(inst_id):
+    inst = db.session.get(Instalacion, inst_id)
+    if not inst:
+        abort(404)
+
+    ultimo = inst.ultimo_estado()
+    eventos = (
+        EventoSalud.query
+        .filter_by(instalacion_id=inst.id)
+        .order_by(EventoSalud.chequeado_en.desc())
+        .limit(HISTORIAL_DETALLE)
+        .all()
+    )
+
+    total_eventos = len(eventos)
+    ok_eventos = sum(1 for e in eventos if e.ok)
+    uptime_pct = round((ok_eventos / total_eventos * 100), 1) if total_eventos else 0
+
+    return render_template(
+        "tablero/detalle.html",
+        inst=inst,
+        ultimo=ultimo,
+        semaforo=_semaforo(ultimo),
+        eventos=eventos,
+        total_eventos=total_eventos,
+        uptime_pct=uptime_pct,
+    )
+
+
+# ─── Editar instalación ───────────────────────────────────────────────────────
+
+### CAMBIO AQUÍ ###
+@tablero_bp.route("/instalacion/<int:inst_id>/editar", methods=["GET", "POST"])
+@login_required
+def editar_instalacion(inst_id):
+    inst = db.session.get(Instalacion, inst_id)
+    if not inst:
+        abort(404)
+
+    form = InstalacionForm(obj=inst)
+
+    if form.validate_on_submit():
+        inst.nombre           = form.nombre.data
+        inst.url_sistema      = form.url_sistema.data
+        inst.url_salud        = form.url_salud.data
+        inst.render_service_id = form.render_service_id.data or None
+        inst.neon_project_id  = form.neon_project_id.data or None
+        inst.sentry_project   = form.sentry_project.data or None
+        inst.costo_usd        = form.costo_usd.data or 0
+        inst.activa           = form.activa.data
+        db.session.commit()
+        flash("Instalación actualizada.", "success")
+        return redirect(url_for("tablero.detalle_instalacion", inst_id=inst.id))
+
+    return render_template("tablero/editar_instalacion.html", inst=inst, form=form)
+
+
+# ─── Regenerar token del agente ───────────────────────────────────────────────
+
+### CAMBIO AQUÍ ###
+@tablero_bp.route("/instalacion/<int:inst_id>/regenerar-token", methods=["POST"])
+@login_required
+def regenerar_token(inst_id):
+    inst = db.session.get(Instalacion, inst_id)
+    if not inst:
+        abort(404)
+    inst.agente_token = secrets.token_hex(32)
+    db.session.commit()
+    flash("Token regenerado correctamente.", "success")
+    return redirect(url_for("tablero.detalle_instalacion", inst_id=inst.id))
+
+
+# ─── Re-chequeo manual de una instalación ─────────────────────────────────────
 
 @tablero_bp.route("/rechequear/<int:inst_id>", methods=["POST"])
 @login_required
@@ -113,6 +212,8 @@ def rechequear(inst_id):
     })
 
 
+# ─── Endpoint cron: chequear todas las instalaciones ──────────────────────────
+
 @tablero_bp.route("/cron/chequear-salud")
 def chequear_salud_cron():
     token_esperado = current_app.config.get("CRON_TOKEN", "")
@@ -146,6 +247,8 @@ def chequear_salud_cron():
     return jsonify({"chequeadas": len(resultados), "resultados": resultados})
 
 
+# ─── Endpoint de salud de este propio panel ───────────────────────────────────
+
 @tablero_bp.route("/salud")
 def salud_panel():
     try:
@@ -154,6 +257,8 @@ def salud_panel():
     except Exception as e:
         return jsonify({"ok": False, "db": str(e)}), 500
 
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _chequear_instalacion(inst: Instalacion) -> EventoSalud:
     ok = False

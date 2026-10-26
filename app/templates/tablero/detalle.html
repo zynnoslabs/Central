@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}{{ inst.nombre }} — Zynnos Central{% endblock %}
+
+{% block content %}
+<p class="text-muted text-small mb-1">
+  <a href="{{ url_for('tablero.inicio') }}" style="color:var(--fg-muted); text-decoration:none;">← Tablero</a>
+</p>
+
+<!-- Encabezado -->
+<div class="flex" style="justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:.25rem;">{{ inst.nombre }}</h1>
+    <p class="text-muted text-small">
+      {{ inst.cliente.nombre }} · {{ inst.producto.nombre }}
+      {% if not inst.activa %}<span class="badge badge-error" style="margin-left:.4rem;">Inactiva</span>{% endif %}
+    </p>
+  </div>
+  <div class="flex gap-1" style="flex-wrap:wrap;">
+    <a href="{{ inst.url_sistema }}" target="_blank" rel="noopener" class="btn btn-secondary">↗ Abrir sistema</a>
+    <a href="{{ url_for('tablero.editar_instalacion', inst_id=inst.id) }}" class="btn btn-secondary">✎ Editar</a>
+  </div>
+</div>
+
+<!-- Tiles estado -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
+  <div class="card" style="text-align:center; border-left:4px solid {% if semaforo == 'ok' %}var(--success){% elif semaforo == 'error' %}var(--danger){% else %}var(--fg-muted){% endif %};">
+    {% if semaforo == 'ok' %}
+      <p style="font-size:1.8rem;">✅</p>
+      <p class="text-small font-bold" style="color:var(--success);">Sistema OK</p>
+    {% elif semaforo == 'error' %}
+      <p style="font-size:1.8rem;">🔴</p>
+      <p class="text-small font-bold" style="color:var(--danger);">Con errores</p>
+    {% else %}
+      <p style="font-size:1.8rem;">⚪</p>
+      <p class="text-small" style="color:var(--fg-muted);">Sin datos</p>
+    {% endif %}
+  </div>
+  {% if ultimo %}
+  <div class="card" style="text-align:center;">
+    <p style="font-size:1.8rem; font-weight:700; color:var(--fg);">{{ ultimo.tiempo_ms }}ms</p>
+    <p class="text-muted text-small">Último tiempo</p>
+  </div>
+  <div class="card" style="text-align:center;">
+    <p style="font-size:1rem; font-weight:600; color:var(--fg);">{{ ultimo.chequeado_en.strftime('%d/%m %H:%M') }}</p>
+    <p class="text-muted text-small">Último chequeo</p>
+  </div>
+  {% endif %}
+  <div class="card" style="text-align:center;">
+    <p style="font-size:1.8rem; font-weight:700; color:var(--success);">{{ uptime_pct }}%</p>
+    <p class="text-muted text-small">Uptime (últimos {{ total_eventos }} chequeos)</p>
+  </div>
+</div>
+
+<!-- Token del agente -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <p class="font-bold mb-1">🔑 Token del agente</p>
+  <p class="text-muted text-small mb-1">Usá este token en la variable <code>CENTRAL_TOKEN</code> del sistema instalado para que pueda reportar actividad.</p>
+  {% if inst.agente_token %}
+  <div class="flex gap-1" style="flex-wrap:wrap; align-items:center;">
+    <code id="token-val" style="background:var(--bg); padding:.35rem .75rem; border-radius:6px; border:1px solid var(--border); font-size:.85rem; word-break:break-all; flex:1;">{{ inst.agente_token }}</code>
+    <button onclick="copiarToken()" class="btn btn-secondary" style="white-space:nowrap;">Copiar</button>
+  </div>
+  {% else %}
+  <p class="text-muted text-small" style="margin-bottom:.75rem;">Esta instalación no tiene token. Generalo para habilitar el agente.</p>
+  {% endif %}
+  <form method="POST" action="{{ url_for('tablero.regenerar_token', inst_id=inst.id) }}" style="margin-top:.75rem;"
+        onsubmit="return confirm('¿Regenerar token? El token anterior dejará de funcionar.')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-secondary btn-sm">
+      {% if inst.agente_token %}↻ Regenerar token{% else %}+ Generar token{% endif %}
+    </button>
+  </form>
+</div>
+
+<!-- Links de infraestructura -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <p class="font-bold mb-1">🔗 Infraestructura</p>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:.75rem; margin-top:.5rem;">
+    <div>
+      <p class="text-muted text-small">URL sistema</p>
+      <a href="{{ inst.url_sistema }}" target="_blank" rel="noopener" style="font-size:.85rem; word-break:break-all;">{{ inst.url_sistema }}</a>
+    </div>
+    <div>
+      <p class="text-muted text-small">URL salud</p>
+      <a href="{{ inst.url_salud }}" target="_blank" rel="noopener" style="font-size:.85rem; word-break:break-all;">{{ inst.url_salud }}</a>
+    </div>
+    {% if inst.render_service_id %}
+    <div>
+      <p class="text-muted text-small">Render Service ID</p>
+      <code style="font-size:.85rem;">{{ inst.render_service_id }}</code>
+    </div>
+    {% endif %}
+    {% if inst.neon_project_id %}
+    <div>
+      <p class="text-muted text-small">Neon Project ID</p>
+      <code style="font-size:.85rem;">{{ inst.neon_project_id }}</code>
+    </div>
+    {% endif %}
+    {% if inst.sentry_project %}
+    <div>
+      <p class="text-muted text-small">Sentry Project</p>
+      <code style="font-size:.85rem;">{{ inst.sentry_project }}</code>
+    </div>
+    {% endif %}
+    {% if inst.costo_usd %}
+    <div>
+      <p class="text-muted text-small">Costo mensual</p>
+      <p style="font-size:.85rem;">USD {{ "%.2f"|format(inst.costo_usd) }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Historial completo -->
+<div class="card">
+  <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <p class="font-bold">📋 Historial de chequeos</p>
+    <span class="text-muted text-small">{{ eventos|length }} registros</span>
+  </div>
+
+  {% if not eventos %}
+  <p class="text-muted text-small" style="text-align:center; padding:1.5rem 0;">Todavía no se realizó ningún chequeo.</p>
+  {% else %}
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th>Tiempo</th>
+          <th>HTTP</th>
+          <th>Detalle</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in eventos %}
+        <tr>
+          <td>
+            {% if ev.ok %}
+              <span class="badge badge-ok">✓ OK</span>
+            {% else %}
+              <span class="badge badge-error">✗ Error</span>
+            {% endif %}
+          </td>
+          <td>{% if ev.tiempo_ms %}{{ ev.tiempo_ms }}ms{% else %}—{% endif %}</td>
+          <td>{% if ev.codigo_http %}{{ ev.codigo_http }}{% else %}—{% endif %}</td>
+          <td class="text-muted text-small">{{ ev.detalle or '—' }}</td>
+          <td class="text-muted text-small" style="white-space:nowrap;">{{ ev.chequeado_en.strftime('%d/%m/%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function copiarToken() {
+  const val = document.getElementById('token-val')?.textContent?.trim();
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = 'Copiar', 2000);
+  }).catch(() => {
+    const range = document.createRange();
+    range.selectNode(document.getElementById('token-val'));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  });
+}
+</script>
+{% endblock %}

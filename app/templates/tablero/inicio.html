@@ -4,7 +4,7 @@
 {% block content %}
 <h1 class="page-title">Tablero</h1>
 
-<!-- Tiles resumen -->
+<!-- Tiles resumen -->  ### CAMBIO AQUÍ ###
 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
   <div class="card" style="text-align:center;">
     <p style="font-size:2.2rem; font-weight:700; color:var(--fg);">{{ total }}</p>
@@ -18,6 +18,24 @@
     <p style="font-size:2.2rem; font-weight:700; color:{% if error_count > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ error_count }}</p>
     <p class="text-muted text-small">Con errores</p>
   </div>
+  <div class="card" style="text-align:center;">
+    <a href="{{ url_for('clientes.lista') }}" style="text-decoration:none; color:inherit;">
+      <p style="font-size:2.2rem; font-weight:700; color:var(--accent);">{{ clientes_activos }}</p>
+      <p class="text-muted text-small">Clientes activos</p>
+    </a>
+  </div>
+  <div class="card" style="text-align:center;">
+    <a href="{{ url_for('cobros.inicio') }}" style="text-decoration:none; color:inherit;">
+      <p style="font-size:2.2rem; font-weight:700; color:{% if cobros_pendientes > 0 %}var(--warning){% else %}var(--fg-muted){% endif %};">{{ cobros_pendientes }}</p>
+      <p class="text-muted text-small">Cobros pendientes</p>
+    </a>
+  </div>
+  <div class="card" style="text-align:center;">
+    <a href="{{ url_for('avisos.lista') }}" style="text-decoration:none; color:inherit;">
+      <p style="font-size:2.2rem; font-weight:700; color:{% if avisos_pendientes > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ avisos_pendientes }}</p>
+      <p class="text-muted text-small">Avisos pendientes</p>
+    </a>
+  </div>
 </div>
 
 {% if resumen %}
@@ -29,7 +47,11 @@
 
     <!-- Encabezado: nombre + badge -->
     <div class="flex gap-1" style="justify-content:space-between; align-items:flex-start; margin-bottom:.5rem;">
-      <span style="font-weight:600; font-size:.95rem;">{{ r.inst.nombre }}</span>
+      <!-- ### CAMBIO AQUÍ ### Nombre como link al detalle -->
+      <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}"
+         style="font-weight:600; font-size:.95rem; color:var(--fg); text-decoration:none;">
+        {{ r.inst.nombre }}
+      </a>
       {% if r.semaforo == 'ok' %}
         <span class="badge badge-ok" id="badge-{{ r.inst.id }}">✓ OK</span>
       {% elif r.semaforo == 'error' %}
@@ -62,7 +84,7 @@
       {% endif %}
     </div>
 
-    <!-- ### CAMBIO AQUÍ ### Mini-historial visual (barra de pulsos) -->
+    <!-- Mini-historial visual (barra de pulsos) -->
     {% if r.historial %}
     <div style="margin-top:.6rem; margin-bottom:.4rem;">
       <p class="text-muted text-small" style="margin-bottom:.3rem;">Últimos {{ r.historial|length }} chequeos</p>
@@ -79,21 +101,28 @@
     </div>
     {% endif %}
 
-    <!-- Enlace al sistema + botón re-chequear -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:.6rem;">
+    <!-- Enlace al sistema + botones -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:.6rem; gap:.5rem; flex-wrap:wrap;">
       <a href="{{ r.inst.url_sistema }}" target="_blank" rel="noopener"
-         style="color:var(--fg-muted); font-size:.8rem; text-decoration:none; word-break:break-all;">
-        {{ r.inst.url_sistema[:45] }}{% if r.inst.url_sistema|length > 45 %}…{% endif %} ↗
+         style="color:var(--fg-muted); font-size:.8rem; text-decoration:none; word-break:break-all; flex:1; min-width:0;">
+        {{ r.inst.url_sistema[:40] }}{% if r.inst.url_sistema|length > 40 %}…{% endif %} ↗
       </a>
-      <!-- ### CAMBIO AQUÍ ### Botón de re-chequeo manual -->
-      <button
-        class="btn btn-secondary"
-        style="font-size:.75rem; padding:.25rem .6rem; white-space:nowrap; margin-left:.5rem;"
-        onclick="rechequear({{ r.inst.id }}, this)"
-        title="Disparar chequeo ahora"
-        aria-label="Rechequear {{ r.inst.nombre }}">
-        ↺ Chequear
-      </button>
+      <div class="flex gap-1">
+        <!-- ### CAMBIO AQUÍ ### Link a detalle -->
+        <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}"
+           class="btn btn-secondary"
+           style="font-size:.75rem; padding:.25rem .6rem; white-space:nowrap;">
+          Ver detalle
+        </a>
+        <button
+          class="btn btn-secondary"
+          style="font-size:.75rem; padding:.25rem .6rem; white-space:nowrap;"
+          onclick="rechequear({{ r.inst.id }}, this)"
+          title="Disparar chequeo ahora"
+          aria-label="Rechequear {{ r.inst.nombre }}">
+          ↺ Chequear
+        </button>
+      </div>
     </div>
   </div>
   {% endfor %}
@@ -108,7 +137,7 @@
 </div>
 {% endif %}
 
-<!-- ### CAMBIO AQUÍ ### Script de re-chequeo manual con fetch + CSRF -->
+<!-- Script de re-chequeo manual con fetch + CSRF -->
 <script>
 async function rechequear(instId, btn) {
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -116,7 +145,6 @@ async function rechequear(instId, btn) {
   const badge = document.getElementById('badge-' + instId);
   const detalle = document.getElementById('detalle-' + instId);
 
-  // Estado de carga
   btn.disabled = true;
   btn.textContent = '…';
 
@@ -135,11 +163,9 @@ async function rechequear(instId, btn) {
 
     const data = await resp.json();
 
-    // Actualizar borde de la card
     const colorBorde = data.ok ? 'var(--success)' : 'var(--danger)';
     card.style.borderLeftColor = colorBorde;
 
-    // Actualizar badge
     if (data.ok) {
       badge.className = 'badge badge-ok';
       badge.textContent = '✓ OK';
@@ -148,7 +174,6 @@ async function rechequear(instId, btn) {
       badge.textContent = '✗ Error';
     }
 
-    // Actualizar detalle
     if (data.ok) {
       detalle.innerHTML = `
         <p class="text-small">Respondió en <strong>${data.tiempo_ms}ms</strong></p>
