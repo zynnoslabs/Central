@@ -108,6 +108,9 @@ class Instalacion(db.Model):
     neon_project_id = db.Column(db.String(100), nullable=True)
     sentry_project = db.Column(db.String(100), nullable=True)
 
+    ### CAMBIO AQUÍ ### — token único para autenticar eventos del agente de actividad
+    agente_token = db.Column(db.String(64), nullable=True)
+
     # Estado
     activa = db.Column(db.Boolean, default=True)
     creado_en = db.Column(db.DateTime(timezone=True), default=ahora)
@@ -119,6 +122,10 @@ class Instalacion(db.Model):
     producto = db.relationship("Producto", back_populates="instalaciones")
     eventos_salud = db.relationship(
         "EventoSalud", back_populates="instalacion", cascade="all, delete-orphan"
+    )
+    ### CAMBIO AQUÍ ### — eventos de actividad del agente
+    eventos_actividad = db.relationship(
+        "EventoActividad", back_populates="instalacion", cascade="all, delete-orphan"
     )
 
     def ultimo_estado(self):
@@ -148,6 +155,38 @@ class EventoSalud(db.Model):
     chequeado_en = db.Column(db.DateTime(timezone=True), default=ahora)
 
     instalacion = db.relationship("Instalacion", back_populates="eventos_salud")
+
+
+# ─── EVENTOS DE ACTIVIDAD (del agente en cada instalación) ────────────────────
+
+### CAMBIO AQUÍ ### — tabla nueva para recibir actividad anónima desde los sistemas
+class EventoActividad(db.Model):
+    """
+    Registra acciones técnicas y de uso que el agente de cada instalación reporta.
+    NUNCA contiene datos personales de terceros (sin nombres, emails, teléfonos).
+    Solo eventos técnicos: tipo de acción, sección usada, conteo, estado.
+    """
+    __tablename__ = "eventos_actividad"
+
+    id = db.Column(db.Integer, primary_key=True)
+    instalacion_id = db.Column(db.Integer, db.ForeignKey("instalaciones.id"), nullable=False)
+
+    # Tipo de evento (ej: "pagina_vista", "accion", "error_ui", "ia_usada", "login")
+    tipo = db.Column(db.String(50), nullable=False)
+
+    # Subtipo o contexto (ej: "/dashboard", "exportar_informe", "GPT-completions")
+    subtipo = db.Column(db.String(100), nullable=True)
+
+    # Metadatos técnicos opcionales — JSON sin datos personales
+    # Ej: {"tiempo_ms": 320, "resultado": "ok", "tokens_usados": 150}
+    detalle = db.Column(db.Text, nullable=True)
+
+    recibido_en = db.Column(db.DateTime(timezone=True), default=ahora)
+
+    instalacion = db.relationship("Instalacion", back_populates="eventos_actividad")
+
+    def __repr__(self):
+        return f"<EventoActividad {self.tipo} inst={self.instalacion_id}>"
 
 
 # ─── AUDITORÍA ────────────────────────────────────────────────────────────────

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Actividad — {{ cliente.nombre }} — Zynnos Central{% endblock %}
+
+{% block content %}
+<div class="flex gap-1" style="margin-bottom:1.25rem; align-items:center;">
+  <a href="{{ url_for('actividad.feed') }}" style="color:var(--fg-muted); text-decoration:none; font-size:.9rem;">← Feed</a>
+  <span style="color:var(--border);">|</span>
+  <h1 class="page-title" style="margin-bottom:0;">{{ cliente.nombre }}</h1>
+</div>
+
+<!-- Conteo por instalación últimas 24h -->
+{% if cliente.instalaciones %}
+<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+  {% for inst in cliente.instalaciones %}
+  <div class="card" style="text-align:center; padding:1rem;">
+    <p style="font-size:1.6rem; font-weight:700; color:var(--accent);">
+      {{ conteo_inst.get(inst.id, 0) }}
+    </p>
+    <p class="text-muted text-small">{{ inst.nombre }}</p>
+    <p class="text-muted text-small">últimas 24h</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Línea de tiempo -->
+{% if eventos %}
+<div class="card" style="padding:1.25rem;">
+  <p class="text-muted text-small" style="margin-bottom:1rem;">Últimos {{ eventos|length }} eventos</p>
+
+  <div style="position:relative; padding-left:1.5rem; border-left:2px solid var(--border);">
+    {% set ns = namespace(fecha_actual='') %}
+    {% for ev in eventos %}
+      {% set fecha_ev = ev.recibido_en.strftime('%d/%m/%Y') %}
+
+      {% if fecha_ev != ns.fecha_actual %}
+        {% set ns.fecha_actual = fecha_ev %}
+        <div style="position:absolute; left:-1px; width:10px; height:10px; background:var(--accent);
+                    border-radius:50%; margin-top:.3rem; transform:translateX(-50%);"></div>
+        <p style="font-weight:600; font-size:.85rem; margin-bottom:.5rem; margin-top:{% if not loop.first %}1.5rem{% else %}0{% endif %};">
+          {{ fecha_ev }}
+        </p>
+      {% endif %}
+
+      <div style="margin-bottom:.75rem; padding:.5rem .75rem;
+                  background:var(--bg); border-radius:6px; border:1px solid var(--border);">
+        <div class="flex gap-1" style="justify-content:space-between; margin-bottom:.15rem;">
+          <span class="badge {% if ev.tipo == 'error_ui' %}badge-error{% elif ev.tipo == 'ia_usada' %}badge-warn{% elif ev.tipo == 'login' %}badge-ok{% else %}badge-inactivo{% endif %}" style="font-size:.72rem;">
+            {{ ev.tipo }}
+          </span>
+          <span class="text-muted text-small">{{ ev.recibido_en.strftime('%H:%M:%S') }}</span>
+        </div>
+        {% if ev.subtipo %}
+          <p class="text-small" style="margin-bottom:.1rem;">{{ ev.subtipo }}</p>
+        {% endif %}
+        {% if ev.detalle %}
+          <p class="text-muted text-small">{{ ev.detalle }}</p>
+        {% endif %}
+        <p class="text-muted text-small" style="font-size:.75rem; margin-top:.2rem;">
+          {{ ev.instalacion.nombre }}
+        </p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:3rem;">
+  <p style="font-size:2rem; margin-bottom:.75rem;">📭</p>
+  <p class="font-bold mb-1">Sin actividad registrada</p>
+  <p class="text-muted text-small">Instalá el agente en los sistemas de este cliente para ver actividad.</p>
+</div>
+{% endif %}
+{% endblock %}

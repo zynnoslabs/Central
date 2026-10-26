@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Actividad — Zynnos Central{% endblock %}
+
+{% block content %}
+<div class="flex gap-1" style="justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin-bottom:0;">Actividad en vivo</h1>
+  <span class="text-muted text-small">Últimas {{ eventos|length }} acciones</span>
+</div>
+
+<!-- Resumen últimas 24h -->
+{% if resumen_tipos %}
+<div class="card" style="margin-bottom:1.5rem; padding:1rem 1.5rem;">
+  <p class="text-muted text-small" style="margin-bottom:.6rem;">Últimas 24 horas — {{ total_24h }} eventos</p>
+  <div style="display:flex; flex-wrap:wrap; gap:.5rem;">
+    {% for tipo, cnt in resumen_tipos %}
+    <span style="background:var(--bg); border:1px solid var(--border); border-radius:20px;
+                 padding:.2rem .7rem; font-size:.8rem; color:var(--fg-muted);">
+      {{ tipo }} <strong style="color:var(--fg);">{{ cnt }}</strong>
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if eventos %}
+<div class="card" style="padding:0; overflow:hidden;">
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Cuándo</th>
+          <th>Sistema</th>
+          <th>Tipo</th>
+          <th>Subtipo</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in eventos %}
+        <tr>
+          <td class="text-muted text-small" style="white-space:nowrap;">
+            {{ ev.recibido_en.strftime('%d/%m %H:%M:%S') }}
+          </td>
+          <td>
+            <span style="font-size:.85rem;">{{ ev.instalacion.nombre }}</span><br>
+            <span class="text-muted text-small">{{ ev.instalacion.cliente.nombre }}</span>
+          </td>
+          <td>
+            <span class="badge {% if ev.tipo == 'error_ui' %}badge-error{% elif ev.tipo == 'ia_usada' %}badge-warn{% elif ev.tipo == 'login' %}badge-ok{% else %}badge-inactivo{% endif %}">
+              {{ ev.tipo }}
+            </span>
+          </td>
+          <td class="text-small text-muted">{{ ev.subtipo or '—' }}</td>
+          <td class="text-small text-muted" style="max-width:220px; word-break:break-word;">
+            {{ ev.detalle or '—' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:3rem;">
+  <p style="font-size:2rem; margin-bottom:.75rem;">📭</p>
+  <p class="font-bold mb-1">Sin actividad registrada</p>
+  <p class="text-muted text-small">Cuando instales el agente en un sistema, los eventos aparecerán acá.</p>
+</div>
+{% endif %}
+{% endblock %}
