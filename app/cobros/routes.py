@@ -1,4 +1,6 @@
 """Módulo de cobros: planes, pagos mensuales, facturas y métricas de monotributo."""
+import csv
+import io
 import json
 from datetime import date, datetime, timezone
 from calendar import monthrange
@@ -6,7 +8,7 @@ from decimal import Decimal
 
 from flask import (
     Blueprint, render_template, redirect, url_for,
-    flash, request, current_app, abort, jsonify
+    flash, request, current_app, abort, jsonify, Response,  ### CAMBIO AQUÍ ###
 )
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -491,3 +493,129 @@ def _auditar(accion, cliente_id, detalle_dict):
         ip=request.remote_addr,
     )
     db.session.add(log)
+
+
+# ─── Exportación CSV ──────────────────────────────────────────────────────────
+
+### CAMBIO AQUÍ ###
+@cobros_bp.route("/exportar/pagos")
+@login_required
+def exportar_pagos():
+    """Descarga CSV de todos los pagos filtrado por año (opcional)."""
+    anio = request.args.get("anio", type=int)
+
+    q = Pago.query.join(Cliente).order_by(Pago.anio.desc(), Pago.mes.desc(), Cliente.nombre)
+    if anio:
+        q = q.filter(Pago.anio == anio)
+
+    pagos = q.all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "ID", "Cliente", "Año", "Mes", "Estado",
+        "Monto esperado (ARS)", "Monto recibido (ARS)",
+        "Fecha pago", "Notas",
+    ])
+    for p in pagos:
+        writer.writerow([
+            p.id,
+            p.cliente.nombre,
+            p.anio,
+            p.mes,
+            p.estado,
+            p.monto_esperado,
+            p.monto_recibido if p.monto_recibido is not None else "",
+            p.fecha_pago.isoformat() if p.fecha_pago else "",
+            p.notas or "",
+        ])
+
+    nombre = f"pagos_{anio or 'todos'}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={nombre}"},
+    )
+
+
+### CAMBIO AQUÍ ###
+@cobros_bp.route("/exportar/facturas")
+@login_required
+def exportar_facturas():
+    """Descarga CSV de todas las facturas filtrado por año (opcional)."""
+    anio = request.args.get("anio", type=int)
+
+    q = Factura.query.join(Cliente).order_by(Factura.fecha.desc())
+    if anio:
+        q = q.filter(db.extract("year", Factura.fecha) == anio)
+
+    facturas = q.all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "ID", "Número", "Cliente", "Fecha",
+        "Monto (ARS)", "Concepto", "Notas",
+    ])
+    for f in facturas:
+        writer.writerow([
+            f.id,
+            f.numero,
+            f.cliente.nombre,
+            f.fecha.isoformat(),
+            f.monto_ars,
+            f.concepto or "",
+            f.notas or "",
+        ])
+
+    nombre = f"facturas_{anio or 'todas'}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={nombre}"},
+    )
+
+
+### CAMBIO AQUÍ ###
+@cobros_bp.route("/exportar/resumen-mensual")
+@login_required
+def exportar_resumen_mensual():
+    """Descarga CSV con resumen de cobros por mes (todos los años)."""
+    from sqlalchemy import func
+
+    rows = (
+        db.session.query(
+            Pago.anio,
+            Pago.mes,
+            func.count(Pago.id).label("cantidad"),
+            func.coalesce(func.sum(Pago.monto_esperado), 0).label("esperado"),
+            func.coalesce(func.sum(
+                db.case((Pago.estado == "pagado", Pago.monto_recibido), else_=0)
+            ), 0).label("recibido"),
+            func.sum(db.case((Pago.estado == "pendiente", 1), else_=0)).label("pendientes"),
+            func.sum(db.case((Pago.estado == "atrasado", 1), else_=0)).label("atrasados"),
+            func.sum(db.case((Pago.estado == "pagado", 1), else_=0)).label("pagados"),
+        )
+        .group_by(Pago.anio, Pago.mes)
+        .order_by(Pago.anio.desc(), Pago.mes.desc())
+        .all()
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Año", "Mes", "Total cobros", "Esperado (ARS)",
+        "Recibido (ARS)", "Pendientes", "Atrasados", "Pagados",
+    ])
+    for r in rows:
+        writer.writerow([
+            r.anio, r.mes, r.cantidad,
+            r.esperado, r.recibido,
+            r.pendientes, r.atrasados, r.pagados,
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=resumen_mensual.csv"},
+    )
