@@ -33,7 +33,7 @@ class InstalacionForm(FlaskForm):
     render_service_id = StringField("Render Service ID", validators=[Optional(), Length(max=100)])
     neon_project_id = StringField("Neon Project ID", validators=[Optional(), Length(max=100)])
     sentry_project = StringField("Sentry Project Slug", validators=[Optional(), Length(max=100)])
-    agente_token = StringField("Token del agente (Zynnos)", validators=[Optional(), Length(max=64)])  ### CAMBIO AQUÍ ###
+    agente_token = StringField("Token del agente (Zynnos)", validators=[Optional(), Length(max=64)])
 
 
 # ─── Clientes ─────────────────────────────────────────────────────────────────
@@ -88,6 +88,19 @@ def editar(cliente_id):
     return render_template("clientes/form.html", form=form, titulo="Editar cliente", cliente=cliente)
 
 
+### CAMBIO AQUÍ ### — ruta eliminar cliente
+@clientes_bp.route("/<int:cliente_id>/eliminar", methods=["POST"])
+@login_required
+def eliminar(cliente_id):
+    cliente = Cliente.query.get_or_404(cliente_id)
+    nombre = cliente.nombre
+    # El cascade en el modelo borra instalaciones, pagos, facturas, planes y auditoría asociados
+    db.session.delete(cliente)
+    db.session.commit()
+    flash(f"Cliente «{nombre}» eliminado.", "info")
+    return redirect(url_for("clientes.lista"))
+
+
 # ─── Instalaciones ─────────────────────────────────────────────────────────────
 
 @clientes_bp.route("/<int:cliente_id>/instalaciones/nueva", methods=["GET", "POST"])
@@ -108,7 +121,7 @@ def nueva_instalacion(cliente_id):
             render_service_id=form.render_service_id.data or None,
             neon_project_id=form.neon_project_id.data or None,
             sentry_project=form.sentry_project.data or None,
-            agente_token=form.agente_token.data.strip() or None,  ### CAMBIO AQUÍ ###
+            agente_token=form.agente_token.data.strip() or None,
         )
         db.session.add(inst)
         db.session.flush()
@@ -135,9 +148,22 @@ def toggle_instalacion(inst_id):
     return redirect(url_for("clientes.detalle", cliente_id=inst.cliente_id))
 
 
+### CAMBIO AQUÍ ### — ruta eliminar instalación
+@clientes_bp.route("/instalaciones/<int:inst_id>/eliminar", methods=["POST"])
+@login_required
+def eliminar_instalacion(inst_id):
+    inst = Instalacion.query.get_or_404(inst_id)
+    cliente_id = inst.cliente_id
+    nombre = inst.nombre
+    db.session.delete(inst)
+    db.session.commit()
+    flash(f"Instalación «{nombre}» eliminada.", "info")
+    return redirect(url_for("clientes.detalle", cliente_id=cliente_id))
+
+
 # ─── Notas rápidas ────────────────────────────────────────────────────────────
 
-@clientes_bp.route("/<int:cliente_id>/notas", methods=["POST"])  ### CAMBIO AQUÍ ###
+@clientes_bp.route("/<int:cliente_id>/notas", methods=["POST"])
 @login_required
 def guardar_notas(cliente_id):
     cliente = Cliente.query.get_or_404(cliente_id)

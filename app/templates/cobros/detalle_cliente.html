@@ -74,6 +74,12 @@
               </form>
               {% endif %}
               <a href="{{ url_for('cobros.editar_pago', pago_id=p.id) }}" class="btn btn-sm btn-ghost">Editar</a>
+              ### CAMBIO AQUÍ ###
+              <form method="POST" action="{{ url_for('cobros.eliminar_pago', pago_id=p.id) }}" style="display:inline"
+                    onsubmit="return confirm('¿Eliminar el pago de {{ p.anio }}/{{ '%02d'|format(p.mes) }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+              </form>
             </td>
           </tr>
           {% endfor %}

@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from flask import (
     Blueprint, render_template, redirect, url_for,
-    flash, request, current_app, abort, jsonify, Response,  ### CAMBIO AQUÍ ###
+    flash, request, current_app, abort, jsonify, Response,
 )
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -196,6 +196,20 @@ def editar_pago(pago_id):
     return render_template("cobros/form_pago.html", form=form, cliente=pago.cliente, editar=True)
 
 
+### CAMBIO AQUÍ ### — ruta eliminar pago
+@cobros_bp.route("/pagos/<int:pago_id>/eliminar", methods=["POST"])
+@login_required
+def eliminar_pago(pago_id):
+    pago = db.get_or_404(Pago, pago_id)
+    cliente_id = pago.cliente_id
+    resumen = f"{_nombre_mes(pago.mes)} {pago.anio}"
+    _auditar("cobros.pago_eliminar", cliente_id, {"pago_id": pago_id, "periodo": resumen})
+    db.session.delete(pago)
+    db.session.commit()
+    flash(f"Pago de {resumen} eliminado.", "info")
+    return redirect(url_for("cobros.detalle_cliente", cliente_id=cliente_id))
+
+
 @cobros_bp.route("/pagos/<int:pago_id>/marcar-pagado", methods=["POST"])
 @login_required
 def marcar_pagado(pago_id):
@@ -381,7 +395,7 @@ def monotributo():
 # ─── Cron: generación automática de pagos mensuales ──────────────────────────
 
 @cobros_bp.route("/cron/generar-pagos", methods=["POST"])
-def cron_generar_pagos():  ### CAMBIO AQUÍ ###
+def cron_generar_pagos():
     """Crea pagos del mes para todos los clientes activos con plan activo.
     Llamar el día 1 de cada mes via cron externo (cron-job.org).
     Requiere header X-Cron-Token con el valor de la env var CRON_TOKEN.
@@ -497,7 +511,6 @@ def _auditar(accion, cliente_id, detalle_dict):
 
 # ─── Exportación CSV ──────────────────────────────────────────────────────────
 
-### CAMBIO AQUÍ ###
 @cobros_bp.route("/exportar/pagos")
 @login_required
 def exportar_pagos():
@@ -538,7 +551,6 @@ def exportar_pagos():
     )
 
 
-### CAMBIO AQUÍ ###
 @cobros_bp.route("/exportar/facturas")
 @login_required
 def exportar_facturas():
@@ -576,7 +588,6 @@ def exportar_facturas():
     )
 
 
-### CAMBIO AQUÍ ###
 @cobros_bp.route("/exportar/resumen-mensual")
 @login_required
 def exportar_resumen_mensual():
