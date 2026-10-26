@@ -1,0 +1,80 @@
+import json
+from flask import Flask
+from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
+from flask_mail import Mail
+
+from app.config import Config
+from app.models import db, Usuario
+
+# ─── Extensiones globales ─────────────────────────────────────────────────────
+login_manager = LoginManager()
+csrf = CSRFProtect()
+mail = Mail()
+
+
+def create_app(config_class=Config):
+    """App factory — crea y configura la aplicación Flask."""
+    app = Flask(__name__, template_folder="templates")
+    app.config.from_object(config_class)
+
+    # ─── Inicializar extensiones ───────────────────────────────────────────────
+    db.init_app(app)
+    login_manager.init_app(app)
+    csrf.init_app(app)
+    mail.init_app(app)
+
+    # ─── Configurar Flask-Login ────────────────────────────────────────────────
+    login_manager.login_view = "auth.login"           # redirige a /login si no autenticado
+    login_manager.login_message = "Iniciá sesión para continuar."
+    login_manager.login_message_category = "warning"
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return db.session.get(Usuario, int(user_id))
+
+    # ─── Registrar blueprints ──────────────────────────────────────────────────
+    from app.auth.routes import auth_bp
+    from app.clientes.routes import clientes_bp
+    from app.tablero.routes import tablero_bp
+    from app.avisos.routes import avisos_bp
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(clientes_bp, url_prefix="/clientes")
+    app.register_blueprint(tablero_bp, url_prefix="/tablero")
+    app.register_blueprint(avisos_bp, url_prefix="/avisos")
+
+    # ─── Crear tablas y usuario admin inicial ──────────────────────────────────
+    with app.app_context():
+        db.create_all()
+        _crear_admin_si_no_existe(app)
+
+    return app
+
+
+def _crear_admin_si_no_existe(app):
+    """Crea el usuario admin en el primer arranque si no existe ninguno."""
+    admin_email = app.config.get("ADMIN_EMAIL")
+    admin_password = app.config.get("ADMIN_PASSWORD")
+
+    if not admin_email or not admin_password:
+        return  # No hay credenciales en env, saltear
+
+    existe = Usuario.query.filter_by(email=admin_email).first()
+    if existe:
+        return  # Ya existe, no tocar
+
+    admin = Usuario(email=admin_email, es_admin=True)
+    admin.set_password(admin_password)
+    db.session.add(admin)
+    db.session.commit()
+
+    # Registrar en auditoría
+    from app.models import Auditoria
+    log = Auditoria(
+        usuario_id=admin.id,
+        accion="sistema.admin_inicial",
+        detalle=json.dumps({"email": admin_email}),
+    )
+    db.session.add(log)
+    db.session.commit()

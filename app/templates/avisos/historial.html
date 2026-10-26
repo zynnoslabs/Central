@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Historial de avisos — Zynnos Central{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Historial de chequeos</h1>
+
+{% if eventos %}
+<div class="card" style="padding:0;">
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Sistema</th>
+          <th>Cliente</th>
+          <th>Estado</th>
+          <th>Tiempo</th>
+          <th>HTTP</th>
+          <th>Detalle</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in eventos %}
+        <tr>
+          <td style="font-weight:500;">{{ e.instalacion.nombre }}</td>
+          <td class="text-muted">{{ e.instalacion.cliente.nombre }}</td>
+          <td>
+            {% if e.ok %}
+              <span class="badge badge-ok">✓ OK</span>
+            {% else %}
+              <span class="badge badge-error">✗ Error</span>
+            {% endif %}
+          </td>
+          <td>{{ e.tiempo_ms ~ 'ms' if e.tiempo_ms else '—' }}</td>
+          <td class="text-muted">{{ e.codigo_http or '—' }}</td>
+          <td class="text-muted text-small">{{ e.detalle or '—' }}</td>
+          <td class="text-muted text-small">{{ e.chequeado_en.strftime('%d/%m %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:3rem;">
+  <p class="text-muted text-small">Todavía no hay eventos registrados.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Tablero — Zynnos Central{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Tablero</h1>
+
+<!-- Tiles resumen -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
+  <div class="card" style="text-align:center;">
+    <p style="font-size:2.2rem; font-weight:700; color:var(--fg);">{{ total }}</p>
+    <p class="text-muted text-small">Instalaciones activas</p>
+  </div>
+  <div class="card" style="text-align:center;">
+    <p style="font-size:2.2rem; font-weight:700; color:#2dc653;">{{ ok_count }}</p>
+    <p class="text-muted text-small">Sistemas OK</p>
+  </div>
+  <div class="card" style="text-align:center;">
+    <p style="font-size:2.2rem; font-weight:700; color:{% if error_count > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ error_count }}</p>
+    <p class="text-muted text-small">Con errores</p>
+  </div>
+</div>
+
+{% if resumen %}
+<!-- Semáforo de instalaciones -->
+<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1rem;">
+  {% for r in resumen %}
+  <div class="card" style="border-left: 4px solid {% if r.semaforo == 'ok' %}#2dc653{% elif r.semaforo == 'error' %}var(--danger){% else %}var(--fg-muted){% endif %};">
+    <div class="flex gap-1" style="justify-content:space-between; margin-bottom:.5rem;">
+      <span style="font-weight:600; font-size:.95rem;">{{ r.inst.nombre }}</span>
+      {% if r.semaforo == 'ok' %}
+        <span class="badge badge-ok">✓ OK</span>
+      {% elif r.semaforo == 'error' %}
+        <span class="badge badge-error">✗ Error</span>
+      {% else %}
+        <span class="badge badge-inactivo">Sin datos</span>
+      {% endif %}
+    </div>
+
+    <p class="text-muted text-small mb-1">
+      {{ r.inst.cliente.nombre }} · {{ r.inst.producto.nombre }}
+    </p>
+
+    {% if r.ultimo %}
+      <p class="text-small">
+        {% if r.ultimo.ok %}
+          Respondió en <strong>{{ r.ultimo.tiempo_ms }}ms</strong>
+        {% else %}
+          <span style="color:var(--danger);">{{ r.ultimo.detalle or 'Sin detalle' }}</span>
+        {% endif %}
+      </p>
+      <p class="text-muted text-small" style="margin-top:.25rem;">
+        Chequeado {{ r.ultimo.chequeado_en.strftime('%d/%m/%Y %H:%M') }}
+      </p>
+    {% else %}
+      <p class="text-muted text-small">Todavía no se realizó ningún chequeo.</p>
+    {% endif %}
+
+    <div style="margin-top:.75rem;">
+      <a href="{{ r.inst.url_sistema }}" target="_blank"
+         style="color:var(--fg-muted); font-size:.8rem; text-decoration:none; word-break:break-all;">
+        {{ r.inst.url_sistema[:55] }}{% if r.inst.url_sistema|length > 55 %}…{% endif %} ↗
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card" style="text-align:center; padding:3rem;">
+  <p style="font-size:2rem; margin-bottom:.75rem;">📡</p>
+  <p class="font-bold mb-1">No hay instalaciones activas</p>
+  <p class="text-muted text-small mb-2">Agregá un cliente con instalaciones para empezar a monitorear.</p>
+  <a href="{{ url_for('clientes.nuevo') }}" class="btn btn-primary">+ Nuevo cliente</a>
+</div>
+{% endif %}
+{% endblock %}

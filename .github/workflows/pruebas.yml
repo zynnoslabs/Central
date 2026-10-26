@@ -1,0 +1,35 @@
+name: Pruebas automáticas
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Instalar dependencias
+        run: pip install --break-system-packages -r requirements.txt
+
+      - name: Ejecutar pruebas
+        run: pytest tests/ -v --tb=short
+        env:
+          # Variables de entorno para los tests (no son secretos reales)
+          FLASK_SECRET_KEY: "clave-de-ci-no-es-productiva"
+          DATABASE_URL: "sqlite:///:memory:"
+          ADMIN_EMAIL: "admin@test.com"
+          ADMIN_PASSWORD: "Test1234Seguro!!"
+          CRON_TOKEN: "token-de-ci"
+          BASE_URL: "http://localhost:5000"

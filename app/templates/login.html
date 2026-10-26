@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Login — Zynnos Central{% endblock %}
+
+{% block content %}
+<div style="max-width:420px; margin: 4rem auto;">
+  <div style="text-align:center; margin-bottom:2rem;">
+    <div style="font-size:2.5rem; margin-bottom:.5rem;">⚡</div>
+    <h1 style="font-size:1.5rem; font-weight:700;">Zynnos Central</h1>
+    <p class="text-muted text-small">Panel de administración interno</p>
+  </div>
+
+  <div class="card">
+    <form method="POST" action="{{ url_for('auth.login_post') }}" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.email.label(class="form-label") }}
+        {{ form.email(class="form-control", placeholder="tu@email.com", autocomplete="email") }}
+        {% if form.email.errors %}
+          {% for error in form.email.errors %}
+            <p class="form-error">{{ error }}</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.password.label(class="form-label") }}
+        {{ form.password(class="form-control", placeholder="••••••••", autocomplete="current-password") }}
+        {% if form.password.errors %}
+          {% for error in form.password.errors %}
+            <p class="form-error">{{ error }}</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="form-group" style="display:flex; align-items:center; gap:.5rem;">
+        {{ form.recordarme() }}
+        {{ form.recordarme.label(class="text-small") }}
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:.7rem;">
+        Iniciar sesión
+      </button>
+    </form>
+  </div>
+
+  <p class="text-muted text-small" style="text-align:center; margin-top:1.25rem;">
+    Acceso exclusivo para el equipo Zynnos
+  </p>
+</div>
+{% endblock %}

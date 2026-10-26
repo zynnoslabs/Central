@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Zynnos Central{% endblock %}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f9fa;
+      --bg-card: #ffffff;
+      --fg: #1a1a2e;
+      --fg-muted: #6c757d;
+      --accent: #4361ee;
+      --accent-hover: #3a52d4;
+      --danger: #d62839;
+      --success: #2dc653;
+      --warning: #f4a261;
+      --border: #dee2e6;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,.08);
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f1117;
+        --bg-card: #1a1d2e;
+        --fg: #e8eaf0;
+        --fg-muted: #8b92a5;
+        --border: #2a2d3e;
+        --shadow: 0 2px 12px rgba(0,0,0,.3);
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0f1117; --bg-card: #1a1d2e; --fg: #e8eaf0;
+      --fg-muted: #8b92a5; --border: #2a2d3e;
+      --shadow: 0 2px 12px rgba(0,0,0,.3); color-scheme: dark;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ── Navbar ── */
+    nav {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .nav-brand {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: .5rem; margin-left: auto; }
+    .nav-links a {
+      color: var(--fg-muted);
+      text-decoration: none;
+      padding: .35rem .7rem;
+      border-radius: 6px;
+      font-size: .9rem;
+      transition: background .15s, color .15s;
+    }
+    .nav-links a:hover, .nav-links a.activo {
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    /* ── Contenido ── */
+    main { padding: 2rem 1.5rem; max-width: 1100px; margin: 0 auto; }
+
+    /* ── Alertas flash ── */
+    .alertas { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: .5rem; }
+    .alerta {
+      padding: .75rem 1rem;
+      border-radius: var(--radius);
+      font-size: .9rem;
+      border-left: 4px solid transparent;
+    }
+    .alerta-danger  { background: #fff1f2; border-color: var(--danger);  color: var(--danger); }
+    .alerta-success { background: #f0fdf4; border-color: var(--success); color: #166534; }
+    .alerta-warning { background: #fffbeb; border-color: var(--warning); color: #92400e; }
+    .alerta-info    { background: #eff6ff; border-color: var(--accent);  color: var(--accent); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .alerta-danger  { background: #2d1418; color: #f87171; }
+      :root:not([data-theme="light"]) .alerta-success { background: #14291e; color: #4ade80; }
+      :root:not([data-theme="light"]) .alerta-warning { background: #2d2010; color: #fbbf24; }
+      :root:not([data-theme="light"]) .alerta-info    { background: #131c3d; color: #818cf8; }
+    }
+
+    /* ── Tarjetas ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+    }
+
+    /* ── Botones ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .55rem 1.1rem;
+      border-radius: 7px;
+      border: none; cursor: pointer;
+      font-size: .9rem; font-weight: 500;
+      text-decoration: none;
+      transition: background .15s, opacity .15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-sm { padding: .3rem .7rem; font-size: .82rem; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-size: .88rem; font-weight: 500; margin-bottom: .35rem; }
+    .form-control {
+      width: 100%;
+      padding: .55rem .85rem;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--bg);
+      color: var(--fg);
+      font-size: .95rem;
+      transition: border-color .15s;
+    }
+    .form-control:focus { outline: none; border-color: var(--accent); }
+    .form-error { font-size: .82rem; color: var(--danger); margin-top: .25rem; }
+
+    /* ── Tabla ── */
+    .tabla-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { padding: .65rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-weight: 600; color: var(--fg-muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+    tr:hover td { background: var(--bg); }
+
+    /* ── Badge de estado ── */
+    .badge {
+      display: inline-block;
+      padding: .18rem .55rem;
+      border-radius: 20px;
+      font-size: .78rem;
+      font-weight: 600;
+    }
+    .badge-ok      { background: #dcfce7; color: #166534; }
+    .badge-error   { background: #fee2e2; color: #991b1b; }
+    .badge-warn    { background: #fef9c3; color: #854d0e; }
+    .badge-inactivo{ background: var(--bg); color: var(--fg-muted); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .badge-ok    { background: #14291e; color: #4ade80; }
+      :root:not([data-theme="light"]) .badge-error { background: #2d1418; color: #f87171; }
+      :root:not([data-theme="light"]) .badge-warn  { background: #2d2010; color: #fbbf24; }
+    }
+
+    /* ── Utilidades ── */
+    .text-muted  { color: var(--fg-muted); }
+    .text-small  { font-size: .85rem; }
+    .flex        { display: flex; align-items: center; }
+    .gap-1       { gap: .5rem; }
+    .mb-1        { margin-bottom: .5rem; }
+    .mb-2        { margin-bottom: 1rem; }
+    .mb-3        { margin-bottom: 1.5rem; }
+    .mt-2        { margin-top: 1rem; }
+    .font-bold   { font-weight: 700; }
+    .page-title  { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.25rem; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <nav>
+    <a class="nav-brand" href="{{ url_for('tablero.inicio') }}">⚡ Zynnos Central</a>
+    <div class="nav-links">
+      <a href="{{ url_for('tablero.inicio') }}"
+         class="{{ 'activo' if request.endpoint and request.endpoint.startswith('tablero') }}">Tablero</a>
+      <a href="{{ url_for('clientes.lista') }}"
+         class="{{ 'activo' if request.endpoint and request.endpoint.startswith('clientes') }}">Clientes</a>
+      <a href="{{ url_for('auth.logout') }}">Salir</a>
+    </div>
+  </nav>
+  {% endif %}
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="alertas">
+          {% for category, message in messages %}
+            <div class="alerta alerta-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
