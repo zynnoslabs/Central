@@ -53,6 +53,17 @@
         {{ form.sentry_project(class="form-control") }}
       </div>
 
+      <!-- ### CAMBIO AQUÍ ### -->
+      <div class="form-group" style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+        <p class="text-muted text-small mb-1">Token del agente Zynnos</p>
+        {{ form.agente_token.label(class="form-label") }}
+        {{ form.agente_token(class="form-control", placeholder="Token secreto para firmar eventos (mín. 32 chars)") }}
+        <p class="text-muted text-small" style="margin-top:.25rem;">
+          Generalo con: <code>python -c "import secrets; print(secrets.token_hex(32))"</code>
+          y guardalo también en <code>ZYNNOS_AGENTE_TOKEN</code> del sistema cliente.
+        </p>
+      </div>
+
       <div class="flex gap-1" style="flex-wrap:wrap;">
         <button type="submit" class="btn btn-primary">Guardar instalación</button>
         <a href="{{ url_for('clientes.detalle', cliente_id=cliente.id) }}" class="btn" style="background:var(--bg); border:1px solid var(--border);">Cancelar</a>

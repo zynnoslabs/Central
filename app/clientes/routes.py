@@ -33,6 +33,7 @@ class InstalacionForm(FlaskForm):
     render_service_id = StringField("Render Service ID", validators=[Optional(), Length(max=100)])
     neon_project_id = StringField("Neon Project ID", validators=[Optional(), Length(max=100)])
     sentry_project = StringField("Sentry Project Slug", validators=[Optional(), Length(max=100)])
+    agente_token = StringField("Token del agente (Zynnos)", validators=[Optional(), Length(max=64)])  ### CAMBIO AQUÍ ###
 
 
 # ─── Clientes ─────────────────────────────────────────────────────────────────
@@ -107,6 +108,7 @@ def nueva_instalacion(cliente_id):
             render_service_id=form.render_service_id.data or None,
             neon_project_id=form.neon_project_id.data or None,
             sentry_project=form.sentry_project.data or None,
+            agente_token=form.agente_token.data.strip() or None,  ### CAMBIO AQUÍ ###
         )
         db.session.add(inst)
         db.session.flush()
