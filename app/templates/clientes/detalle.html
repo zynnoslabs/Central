@@ -7,15 +7,7 @@
     <p class="text-muted text-small mb-1"><a href="{{ url_for('clientes.lista') }}" style="color:var(--fg-muted); text-decoration:none;">← Clientes</a></p>
     <h1 class="page-title" style="margin-bottom:0;">{{ cliente.nombre }}</h1>
   </div>
-  <div class="flex gap-1" style="flex-wrap:wrap;">
-    <a href="{{ url_for('clientes.editar', cliente_id=cliente.id) }}" class="btn" style="background:var(--bg); border:1px solid var(--border);">Editar</a>
-    ### CAMBIO AQUÍ ###
-    <form method="POST" action="{{ url_for('clientes.eliminar', cliente_id=cliente.id) }}" style="display:inline;"
-          onsubmit="return confirm('¿Eliminar al cliente {{ cliente.nombre }} y todos sus datos? Esta acción no se puede deshacer.')">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-danger">Eliminar cliente</button>
-    </form>
-  </div>
+  <a href="{{ url_for('clientes.editar', cliente_id=cliente.id) }}" class="btn" style="background:var(--bg); border:1px solid var(--border);">Editar</a>
 </div>
 
 <!-- Datos del cliente -->
