@@ -53,6 +53,19 @@
       </div>
     </form>
   </div>
+
+  <!-- CAMBIO AQUÍ: zona de peligro al fondo de la card -->
+  <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+    <p class="text-muted text-small mb-1" style="color:var(--danger); opacity:.7;">Zona de peligro</p>
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem;">
+      <p class="text-muted text-small" style="margin:0;">Elimina este cliente y todos sus datos (instalaciones, pagos, facturas). Irreversible.</p>
+      <form method="POST" action="{{ url_for('clientes.eliminar', cliente_id=cliente.id) }}"
+            onsubmit="return confirm('¿Eliminar al cliente {{ cliente.nombre }} y todos sus datos? Esta acción no se puede deshacer.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger" style="white-space:nowrap;">Eliminar cliente</button>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- Instalaciones -->
@@ -101,8 +114,8 @@
               <span class="badge badge-inactivo">Inactiva</span>
             {% endif %}
           </td>
+          <!-- CAMBIO AQUÍ: botones Activar/Desactivar + Eliminar instalación -->
           <td>
-            ### CAMBIO AQUÍ ###
             <div class="flex gap-1" style="flex-wrap:nowrap; align-items:center;">
               <a href="{{ url_for('clientes.toggle_instalacion', inst_id=inst.id) }}"
                  class="btn btn-sm" style="background:var(--bg); border:1px solid var(--border);">
