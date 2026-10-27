@@ -58,6 +58,21 @@ def create_app(config_class=Config):
         db.create_all()
         _crear_admin_si_no_existe(app)
 
+    # ─── Context processor: datos globales para todos los templates ─────────────
+    from flask_login import current_user
+    from app.models import Aviso
+
+    @app.context_processor
+    def inject_globals():
+        """Inyecta variables disponibles en todos los templates."""
+        avisos_nav = 0
+        if current_user.is_authenticated:
+            try:
+                avisos_nav = Aviso.query.filter_by(estado="pendiente").count()
+            except Exception:
+                pass
+        return {"avisos_nav": avisos_nav}
+
     return app
 
 

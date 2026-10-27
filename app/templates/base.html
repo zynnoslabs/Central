@@ -222,7 +222,13 @@
       <a href="{{ url_for('cobros.inicio') }}"
          class="{{ 'activo' if request.endpoint and request.endpoint.startswith('cobros') }}">Cobros</a>
       <a href="{{ url_for('avisos.lista') }}"
-         class="{{ 'activo' if request.endpoint and request.endpoint.startswith('avisos') }}">Avisos</a>
+         class="{{ 'activo' if request.endpoint and request.endpoint.startswith('avisos') }}"
+         style="position:relative;">
+        Avisos
+        {% if avisos_nav > 0 %}
+        <span style="position:absolute; top:2px; right:2px; min-width:16px; height:16px; background:var(--danger); color:#fff; border-radius:20px; font-size:.65rem; font-weight:700; line-height:16px; text-align:center; padding:0 4px;">{{ avisos_nav }}</span>
+        {% endif %}
+      </a>
       <a href="{{ url_for('actividad.feed') }}"
          class="{{ 'activo' if request.endpoint and request.endpoint.startswith('actividad') }}">Actividad</a>
       <a href="{{ url_for('ajustes.inicio') }}"
