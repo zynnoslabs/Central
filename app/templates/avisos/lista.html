@@ -1,72 +1,152 @@
 {% extends "base.html" %}
 {% block title %}Avisos — Zynnos Central{% endblock %}
 
+{% block extra_head %}
+<style>
+  .avisos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .avisos-titulo {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+  .filtros {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .aviso-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition), opacity var(--transition);
+    animation: fadeUp .2s ease-out both;
+  }
+  .aviso-card:hover { box-shadow: var(--shadow); }
+  .aviso-card.resuelto { opacity: .55; }
+  .aviso-card.resuelto:hover { opacity: .85; }
+
+  .aviso-prioridad-alta    { border-left: 3px solid var(--danger); }
+  .aviso-prioridad-media   { border-left: 3px solid var(--warning); }
+  .aviso-prioridad-baja    { border-left: 3px solid var(--success); }
+
+  .aviso-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .aviso-meta { flex: 1; min-width: 0; }
+  .aviso-tags { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .4rem; }
+  .aviso-titulo-texto {
+    font-weight: 600;
+    margin-bottom: .2rem;
+    word-break: break-word;
+  }
+  .aviso-titulo-texto.tachado { text-decoration: line-through; color: var(--fg-muted); }
+  .aviso-cuerpo {
+    color: var(--fg-muted);
+    font-size: .88rem;
+    white-space: pre-wrap;
+    margin-bottom: .3rem;
+    word-break: break-word;
+  }
+  .aviso-fecha { font-size: .78rem; color: var(--fg-subtle); }
+  .aviso-acciones {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .lista-avisos { display: flex; flex-direction: column; gap: .65rem; }
+
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+    color: var(--fg-muted);
+  }
+  .empty-state-icon { font-size: 2rem; margin-bottom: .6rem; }
+  .empty-state p { max-width: 320px; margin: 0 auto; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="flex" style="justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
-  <h1 class="page-title" style="margin-bottom:0;">
+<div class="avisos-header">
+  <div class="avisos-titulo">
     Avisos
     {% if pendientes > 0 %}
-    <span class="badge badge-error" style="font-size:.7rem; vertical-align:middle; margin-left:.4rem;">{{ pendientes }}</span>
+    <span class="badge badge-error">{{ pendientes }}</span>
     {% endif %}
-  </h1>
+  </div>
   <a href="{{ url_for('avisos.nuevo') }}" class="btn btn-primary">+ Nuevo aviso</a>
 </div>
 
-<!-- Filtros -->
-<div class="flex gap-1" style="margin-bottom:1.25rem; flex-wrap:wrap;">
+{# ── Filtros ── #}
+<div class="filtros">
   <a href="{{ url_for('avisos.lista', estado='pendiente') }}"
-     class="btn btn-sm {% if filtro == 'pendiente' %}btn-primary{% else %}btn-secondary{% endif %}">Pendientes</a>
+     class="btn btn-sm {% if filtro == 'pendiente' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Pendientes{% if filtro != 'pendiente' and pendientes %} <span class="badge badge-error" style="font-size:.65rem; padding:.1rem .35rem;">{{ pendientes }}</span>{% endif %}
+  </a>
   <a href="{{ url_for('avisos.lista', estado='resuelto') }}"
      class="btn btn-sm {% if filtro == 'resuelto' %}btn-primary{% else %}btn-secondary{% endif %}">Resueltos</a>
   <a href="{{ url_for('avisos.lista', estado='todos') }}"
      class="btn btn-sm {% if filtro == 'todos' %}btn-primary{% else %}btn-secondary{% endif %}">Todos</a>
 </div>
 
+{# ── Lista de avisos ── #}
 {% if not avisos %}
-<div class="card" style="text-align:center; padding:3rem 1.5rem; color:var(--fg-muted);">
+<div class="card empty-state">
   {% if filtro == 'pendiente' %}
-  <p style="font-size:1.5rem; margin-bottom:.5rem;">✅</p>
-  <p>No hay avisos pendientes.</p>
+  <div class="empty-state-icon">✅</div>
+  <p class="font-medium mb-1">Sin avisos pendientes</p>
+  <p class="text-small">Todo está en orden por ahora.</p>
   {% elif filtro == 'resuelto' %}
-  <p>No hay avisos resueltos todavía.</p>
+  <div class="empty-state-icon">📋</div>
+  <p class="font-medium mb-1">Sin avisos resueltos todavía</p>
+  <p class="text-small">Los avisos que resuelvas aparecerán acá.</p>
   {% else %}
-  <p>No hay avisos. <a href="{{ url_for('avisos.nuevo') }}">Crear el primero</a>.</p>
+  <div class="empty-state-icon">🔔</div>
+  <p class="font-medium mb-1">No hay avisos</p>
+  <p class="text-small mt-1"><a href="{{ url_for('avisos.nuevo') }}" style="color:var(--accent);">Crear el primero →</a></p>
   {% endif %}
 </div>
-{% else %}
-<div style="display:flex; flex-direction:column; gap:.75rem;">
-  {% for aviso in avisos %}
-  <div class="card" style="padding:1rem 1.25rem; border-left:4px solid
-    {% if aviso.prioridad == 'alta' %}var(--danger)
-    {% elif aviso.prioridad == 'media' %}var(--warning)
-    {% else %}var(--success){% endif %};
-    {% if aviso.estado == 'resuelto' %}opacity:.6;{% endif %}">
 
-    <div class="flex" style="justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">
-      <div style="flex:1; min-width:0;">
-        <div class="flex gap-1" style="flex-wrap:wrap; margin-bottom:.3rem;">
-          <!-- Badge prioridad -->
+{% else %}
+<div class="lista-avisos">
+  {% for aviso in avisos %}
+  <div class="aviso-card aviso-prioridad-{{ aviso.prioridad }} {% if aviso.estado == 'resuelto' %}resuelto{% endif %}">
+    <div class="aviso-inner">
+      <div class="aviso-meta">
+        <div class="aviso-tags">
           <span class="badge {% if aviso.prioridad == 'alta' %}badge-error{% elif aviso.prioridad == 'media' %}badge-warn{% else %}badge-ok{% endif %}">
             {% if aviso.prioridad == 'alta' %}🔴 Alta{% elif aviso.prioridad == 'media' %}🟡 Media{% else %}🟢 Baja{% endif %}
           </span>
-          <!-- Badge estado -->
           {% if aviso.estado == 'resuelto' %}
           <span class="badge badge-ok">✓ Resuelto</span>
           {% endif %}
-          <!-- Badge cliente -->
           {% if aviso.cliente %}
           <span class="badge badge-inactivo">{{ aviso.cliente.nombre }}</span>
           {% endif %}
         </div>
-
-        <p style="font-weight:600; margin-bottom:.25rem;
-          {% if aviso.estado == 'resuelto' %}text-decoration:line-through;{% endif %}">
-          {{ aviso.titulo }}
-        </p>
+        <p class="aviso-titulo-texto {% if aviso.estado == 'resuelto' %}tachado{% endif %}">{{ aviso.titulo }}</p>
         {% if aviso.cuerpo %}
-        <p class="text-muted text-small" style="white-space:pre-wrap;">{{ aviso.cuerpo }}</p>
+        <p class="aviso-cuerpo">{{ aviso.cuerpo }}</p>
         {% endif %}
-        <p class="text-muted text-small" style="margin-top:.35rem;">
+        <p class="aviso-fecha">
           Creado {{ aviso.creado_en.strftime('%d/%m/%Y %H:%M') }} UTC
           {% if aviso.resuelto_en %}
           · Resuelto {{ aviso.resuelto_en.strftime('%d/%m/%Y %H:%M') }} UTC
@@ -74,12 +154,11 @@
         </p>
       </div>
 
-      <!-- Acciones -->
-      <div class="flex gap-1" style="flex-wrap:wrap; align-items:center;">
+      <div class="aviso-acciones">
         {% if aviso.estado == 'pendiente' %}
         <form method="POST" action="{{ url_for('avisos.resolver', aviso_id=aviso.id) }}" style="display:inline;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn btn-sm" style="background:var(--success); color:#fff;">✓ Resolver</button>
+          <button type="submit" class="btn btn-sm btn-success">✓ Resolver</button>
         </form>
         {% else %}
         <form method="POST" action="{{ url_for('avisos.reabrir', aviso_id=aviso.id) }}" style="display:inline;">
