@@ -4,42 +4,134 @@
 {% block content %}
 <h1 class="page-title">Tablero</h1>
 
-<!-- Tiles resumen -->
-<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
-  <div class="card" style="text-align:center;">
-    <p style="font-size:2.2rem; font-weight:700; color:var(--fg);">{{ total }}</p>
-    <p class="text-muted text-small">Instalaciones activas</p>
-  </div>
-  <div class="card" style="text-align:center;">
-    <p style="font-size:2.2rem; font-weight:700; color:var(--success);">{{ ok_count }}</p>
-    <p class="text-muted text-small">Sistemas OK</p>
-  </div>
-  <div class="card" style="text-align:center;">
-    <p style="font-size:2.2rem; font-weight:700; color:{% if error_count > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ error_count }}</p>
-    <p class="text-muted text-small">Con errores</p>
-  </div>
-  <div class="card" style="text-align:center;">
-    <a href="{{ url_for('clientes.lista') }}" style="text-decoration:none; color:inherit;">
-      <p style="font-size:2.2rem; font-weight:700; color:var(--accent);">{{ clientes_activos }}</p>
-      <p class="text-muted text-small">Clientes activos</p>
-    </a>
-  </div>
-  <div class="card" style="text-align:center;">
-    <a href="{{ url_for('cobros.inicio') }}" style="text-decoration:none; color:inherit;">
-      <p style="font-size:2.2rem; font-weight:700; color:{% if cobros_pendientes > 0 %}var(--warning){% else %}var(--fg-muted){% endif %};">{{ cobros_pendientes }}</p>
-      <p class="text-muted text-small">Cobros pendientes</p>
-    </a>
-  </div>
-  <div class="card" style="text-align:center;">
-    <a href="{{ url_for('avisos.lista') }}" style="text-decoration:none; color:inherit;">
-      <p style="font-size:2.2rem; font-weight:700; color:{% if avisos_pendientes > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ avisos_pendientes }}</p>
-      <p class="text-muted text-small">Avisos pendientes</p>
-    </a>
-  </div>
-</div>
+{# ── SECCIÓN NEGOCIO ───────────────────────────────────────────────────────── #}
+### CAMBIO AQUÍ ### — nueva sección "Negocio" con métricas de clientes y cobros
+<section style="margin-bottom:2rem;">
+  <p class="section-label">Negocio · {{ hoy.strftime('%B %Y') }}</p>
 
+  <div class="tiles-grid">
+    <!-- Clientes activos -->
+    <div class="card tile">
+      <a href="{{ url_for('clientes.lista') }}" style="text-decoration:none; color:inherit; display:block;">
+        <p class="tile-value" style="color:var(--accent);">{{ clientes_activos }}</p>
+        <p class="tile-label">Clientes activos</p>
+        {% if clientes_en_prueba > 0 %}
+        <p class="tile-sub">+ {{ clientes_en_prueba }} en prueba</p>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- Total clientes -->
+    <div class="card tile">
+      <a href="{{ url_for('clientes.lista') }}" style="text-decoration:none; color:inherit; display:block;">
+        <p class="tile-value">{{ clientes_total }}</p>
+        <p class="tile-label">Clientes totales</p>
+        {% if clientes_suspendidos > 0 %}
+        <p class="tile-sub" style="color:var(--warning);">{{ clientes_suspendidos }} suspendido{{ 's' if clientes_suspendidos != 1 }}</p>
+        {% else %}
+        <p class="tile-sub" style="color:var(--fg-muted);">Sin suspendidos</p>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- Cobrado este mes -->
+    <div class="card tile">
+      <a href="{{ url_for('cobros.inicio') }}" style="text-decoration:none; color:inherit; display:block;">
+        <p class="tile-value" style="color:var(--success);">$ {{ "{:,.0f}".format(monto_cobrado_mes) }}</p>
+        <p class="tile-label">Cobrado este mes</p>
+        {% if monto_esperado_mes > 0 %}
+          {% set pct = (monto_cobrado_mes / monto_esperado_mes * 100)|round|int %}
+          <p class="tile-sub">{{ pct }}% de $ {{ "{:,.0f}".format(monto_esperado_mes) }} esperado</p>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- Cobros pendientes -->
+    <div class="card tile">
+      <a href="{{ url_for('cobros.inicio') }}" style="text-decoration:none; color:inherit; display:block;">
+        <p class="tile-value" style="color:{% if cobros_pendientes > 0 %}var(--warning){% else %}var(--fg-muted){% endif %};">{{ cobros_pendientes }}</p>
+        <p class="tile-label">Cobros pendientes</p>
+        {% if cobros_atrasados > 0 %}
+        <p class="tile-sub" style="color:var(--danger);">{{ cobros_atrasados }} atrasado{{ 's' if cobros_atrasados != 1 }}</p>
+        {% else %}
+        <p class="tile-sub" style="color:var(--fg-muted);">Sin atrasos</p>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- Avisos -->
+    <div class="card tile">
+      <a href="{{ url_for('avisos.lista') }}" style="text-decoration:none; color:inherit; display:block;">
+        <p class="tile-value" style="color:{% if avisos_pendientes > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ avisos_pendientes }}</p>
+        <p class="tile-label">Avisos pendientes</p>
+        {% if avisos_alta > 0 %}
+        <p class="tile-sub" style="color:var(--danger);">{{ avisos_alta }} de alta prioridad</p>
+        {% else %}
+        <p class="tile-sub" style="color:var(--fg-muted);">Sin prioridad alta</p>
+        {% endif %}
+      </a>
+    </div>
+  </div>
+</section>
+
+{# ── SECCIÓN INFRAESTRUCTURA ───────────────────────────────────────────────── #}
+### CAMBIO AQUÍ ### — nueva sección "Infraestructura" con uptime + alertas de lentitud
+<section style="margin-bottom:2rem;">
+  <p class="section-label">Infraestructura</p>
+
+  <div class="tiles-grid" style="margin-bottom:1.25rem;">
+    <!-- Total instalaciones -->
+    <div class="card tile">
+      <p class="tile-value">{{ total }}</p>
+      <p class="tile-label">Instalaciones activas</p>
+    </div>
+
+    <!-- Sistemas OK -->
+    <div class="card tile">
+      <p class="tile-value" style="color:var(--success);">{{ ok_count }}</p>
+      <p class="tile-label">Sistemas OK</p>
+    </div>
+
+    <!-- Con errores -->
+    <div class="card tile">
+      <p class="tile-value" style="color:{% if error_count > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ error_count }}</p>
+      <p class="tile-label">Con errores</p>
+    </div>
+
+    <!-- Uptime promedio -->
+    <div class="card tile">
+      {% if uptime_promedio is not none %}
+      <p class="tile-value" style="color:{% if uptime_promedio >= 99 %}var(--success){% elif uptime_promedio >= 95 %}var(--warning){% else %}var(--danger){% endif %};">
+        {{ uptime_promedio }}%
+      </p>
+      {% else %}
+      <p class="tile-value" style="color:var(--fg-muted);">—</p>
+      {% endif %}
+      <p class="tile-label">Uptime promedio</p>
+      <p class="tile-sub" style="color:var(--fg-muted);">últimos 20 chequeos</p>
+    </div>
+  </div>
+
+  <!-- Alerta: instalaciones lentas -->
+  {% if instalaciones_lentas %}
+  <div class="alert-lento" style="margin-bottom:1.25rem;">
+    <p style="font-weight:600; margin-bottom:.4rem; color:var(--warning);">⚠ Instalaciones lentas (promedio &gt;1000ms)</p>
+    <div style="display:flex; flex-wrap:wrap; gap:.5rem;">
+      {% for item in instalaciones_lentas %}
+      <a href="{{ url_for('tablero.detalle_instalacion', inst_id=item.inst.id) }}"
+         style="display:inline-flex; align-items:center; gap:.4rem; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:.3rem .7rem; text-decoration:none; color:var(--fg); font-size:.85rem;">
+        <span style="width:8px; height:8px; border-radius:50%; background:var(--warning); display:inline-block; flex-shrink:0;"></span>
+        {{ item.inst.nombre }}
+        <span style="font-family:monospace; color:var(--warning); font-weight:600;">{{ item.avg_ms }}ms</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+{# ── GRILLA DE INSTALACIONES ──────────────────────────────────────────────── #}
 {% if resumen %}
-<!-- Semáforo de instalaciones -->
 <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:1rem;">
   {% for r in resumen %}
   <div class="card" id="card-inst-{{ r.inst.id }}"
@@ -135,7 +227,51 @@
 </div>
 {% endif %}
 
-<!-- Script de re-chequeo manual con fetch + CSRF -->
+{# ── ESTILOS LOCALES ──────────────────────────────────────────────────────── #}
+### CAMBIO AQUÍ ### — estilos para las nuevas tiles y sección labels
+<style>
+.section-label {
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--fg-muted);
+  margin-bottom:.75rem;
+  font-weight:600;
+}
+.tiles-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap:1rem;
+}
+.tile {
+  padding:.9rem 1.1rem;
+}
+.tile-value {
+  font-size:2rem;
+  font-weight:700;
+  line-height:1;
+  margin-bottom:.3rem;
+  font-variant-numeric: tabular-nums;
+}
+.tile-label {
+  font-size:.78rem;
+  color:var(--fg-muted);
+  margin-bottom:.2rem;
+}
+.tile-sub {
+  font-size:.75rem;
+  margin-top:.15rem;
+  color:var(--fg-muted);
+}
+.alert-lento {
+  background:rgba(244,162,97,.08);
+  border:1px solid rgba(244,162,97,.3);
+  border-radius:var(--radius);
+  padding:.85rem 1rem;
+}
+</style>
+
+{# ── SCRIPT RE-CHEQUEO ────────────────────────────────────────────────────── #}
 <script>
 async function rechequear(instId, btn) {
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -155,9 +291,7 @@ async function rechequear(instId, btn) {
       },
     });
 
-    if (!resp.ok) {
-      throw new Error('Error ' + resp.status);
-    }
+    if (!resp.ok) throw new Error('Error ' + resp.status);
 
     const data = await resp.json();
 

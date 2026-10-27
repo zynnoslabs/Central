@@ -8,8 +8,10 @@ from flask_wtf.csrf import validate_csrf
 from wtforms import StringField, BooleanField, DecimalField
 from wtforms.validators import DataRequired, Length, Optional, URL
 from wtforms import ValidationError
+from datetime import date
+from decimal import Decimal
 
-from app.models import db, Instalacion, EventoSalud, Cliente, Pago, Aviso
+from app.models import db, Instalacion, EventoSalud, Cliente, Pago, Aviso, Factura
 
 from app.avisos.routes import enviar_alerta_caida, enviar_alerta_recuperacion
 
@@ -17,12 +19,11 @@ tablero_bp = Blueprint("tablero", __name__)
 
 TIMEOUT_SALUD = 10
 HISTORIAL_TARJETA = 10
-HISTORIAL_DETALLE = 200  ### CAMBIO AQUÍ ###
+HISTORIAL_DETALLE = 200
 
 
 # ─── Formulario de edición de instalación ─────────────────────────────────────
 
-### CAMBIO AQUÍ ###
 class InstalacionForm(FlaskForm):
     nombre          = StringField("Nombre", validators=[DataRequired(), Length(max=255)])
     url_sistema     = StringField("URL sistema", validators=[DataRequired(), URL(), Length(max=500)])
@@ -39,6 +40,9 @@ class InstalacionForm(FlaskForm):
 @tablero_bp.route("/tablero")
 @login_required
 def inicio():
+    hoy = date.today()
+
+    # ── Instalaciones activas y semáforo ──────────────────────────────────────
     instalaciones = (
         Instalacion.query
         .join(Cliente)
@@ -71,18 +75,67 @@ def inicio():
     ok_count = sum(1 for r in resumen if r["semaforo"] == "ok")
     error_count = sum(1 for r in resumen if r["semaforo"] == "error")
 
-    from datetime import date
-    hoy = date.today()
+    # ── Métricas de clientes ──────────────────────────────────────────────────
+    clientes_activos    = Cliente.query.filter_by(estado="activo").count()
+    clientes_en_prueba  = Cliente.query.filter_by(estado="en_prueba").count()
+    clientes_suspendidos = Cliente.query.filter_by(estado="suspendido").count()
+    clientes_total      = Cliente.query.count()
 
-    clientes_activos = Cliente.query.filter_by(estado="activo").count()
-
+    # ── Métricas de cobros (mes actual) ───────────────────────────────────────
     cobros_pendientes = Pago.query.filter(
         Pago.estado.in_(["pendiente", "atrasado"]),
         Pago.anio == hoy.year,
         Pago.mes == hoy.month,
     ).count()
 
+    cobros_atrasados = Pago.query.filter_by(estado="atrasado").count()
+
+    # Monto cobrado este mes (pagos con estado=pagado del mes actual)
+    pagos_mes = Pago.query.filter(
+        Pago.estado == "pagado",
+        Pago.anio == hoy.year,
+        Pago.mes == hoy.month,
+    ).all()
+    monto_cobrado_mes = sum(float(p.monto_recibido or p.monto_esperado) for p in pagos_mes)
+
+    # Monto esperado este mes (todos los pagos del mes)
+    pagos_esperados = Pago.query.filter(
+        Pago.anio == hoy.year,
+        Pago.mes == hoy.month,
+    ).all()
+    monto_esperado_mes = sum(float(p.monto_esperado) for p in pagos_esperados)
+
+    # ── Métricas de performance (últimos 20 eventos por instalación) ──────────
+    ### CAMBIO AQUÍ ### — uptime promedio y alertas de lentitud
+    uptimes = []
+    instalaciones_lentas = []
+    for r in resumen:
+        eventos_recientes = (
+            EventoSalud.query
+            .filter_by(instalacion_id=r["inst"].id)
+            .order_by(EventoSalud.chequeado_en.desc())
+            .limit(20)
+            .all()
+        )
+        if eventos_recientes:
+            ok_n = sum(1 for e in eventos_recientes if e.ok)
+            uptime = round(ok_n / len(eventos_recientes) * 100, 1)
+            uptimes.append(uptime)
+
+            tiempos_ok = [e.tiempo_ms for e in eventos_recientes if e.ok and e.tiempo_ms]
+            if tiempos_ok:
+                avg_ms = sum(tiempos_ok) // len(tiempos_ok)
+                if avg_ms > 1000:
+                    instalaciones_lentas.append({
+                        "inst": r["inst"],
+                        "avg_ms": avg_ms,
+                    })
+
+    uptime_promedio = round(sum(uptimes) / len(uptimes), 1) if uptimes else None
+
+    # ── Avisos ────────────────────────────────────────────────────────────────
     avisos_pendientes = Aviso.query.filter_by(estado="pendiente").count()
+    avisos_alta = Aviso.query.filter_by(estado="pendiente", prioridad="alta").count()
 
     return render_template(
         "tablero/inicio.html",
@@ -90,15 +143,29 @@ def inicio():
         total=total,
         ok_count=ok_count,
         error_count=error_count,
+        # clientes
         clientes_activos=clientes_activos,
+        clientes_en_prueba=clientes_en_prueba,
+        clientes_suspendidos=clientes_suspendidos,
+        clientes_total=clientes_total,
+        # cobros
         cobros_pendientes=cobros_pendientes,
+        cobros_atrasados=cobros_atrasados,
+        monto_cobrado_mes=monto_cobrado_mes,
+        monto_esperado_mes=monto_esperado_mes,
+        # performance
+        uptime_promedio=uptime_promedio,
+        instalaciones_lentas=instalaciones_lentas,
+        # avisos
         avisos_pendientes=avisos_pendientes,
+        avisos_alta=avisos_alta,
+        # fecha
+        hoy=hoy,
     )
 
 
 # ─── Detalle de instalación ───────────────────────────────────────────────────
 
-### CAMBIO AQUÍ ###
 @tablero_bp.route("/instalacion/<int:inst_id>")
 @login_required
 def detalle_instalacion(inst_id):
@@ -132,7 +199,6 @@ def detalle_instalacion(inst_id):
 
 # ─── Editar instalación ───────────────────────────────────────────────────────
 
-### CAMBIO AQUÍ ###
 @tablero_bp.route("/instalacion/<int:inst_id>/editar", methods=["GET", "POST"])
 @login_required
 def editar_instalacion(inst_id):
@@ -160,7 +226,6 @@ def editar_instalacion(inst_id):
 
 # ─── Regenerar token del agente ───────────────────────────────────────────────
 
-### CAMBIO AQUÍ ###
 @tablero_bp.route("/instalacion/<int:inst_id>/regenerar-token", methods=["POST"])
 @login_required
 def regenerar_token(inst_id):
