@@ -1,331 +1,571 @@
 {% extends "base.html" %}
-{% block title %}Tablero — Zynnos Central{% endblock %}
+{% block title %}Tablero — La Central de Zynnos{% endblock %}
 
 {% block content %}
-<h1 class="page-title">Tablero</h1>
+<style>
+/* ── Variables extra ───────────────────────────────────────────────── */
+:root {
+  --radius-card: 12px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+  --border-subtle: 1px solid rgba(128,128,128,.12);
+  --tile-h: 108px;
+  --leads-cols: repeat(auto-fill, minmax(300px, 1fr));
+}
 
-{# ── SECCIÓN NEGOCIO ───────────────────────────────────────────────────────── #}
-{# CAMBIO AQUÍ: nueva sección "Negocio" con métricas de clientes y cobros #}
-<section style="margin-bottom:2rem;">
-  <p class="section-label">Negocio · {{ hoy.strftime('%B %Y') }}</p>
+/* ── Header ────────────────────────────────────────────────────────── */
+.dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem 1.5rem;
+  margin-bottom: 2rem;
+}
+.dash-greeting { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+.dash-greeting small {
+  display: block;
+  font-size: .8rem;
+  font-weight: 400;
+  opacity: .55;
+  margin-top: .15rem;
+}
+.dash-badges { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
 
-  <div class="tiles-grid">
-    <!-- Clientes activos -->
-    <div class="card tile">
-      <a href="{{ url_for('clientes.lista') }}" style="text-decoration:none; color:inherit; display:block;">
-        <p class="tile-value" style="color:var(--accent);">{{ clientes_activos }}</p>
-        <p class="tile-label">Clientes activos</p>
-        {% if clientes_en_prueba > 0 %}
-        <p class="tile-sub">+ {{ clientes_en_prueba }} en prueba</p>
-        {% endif %}
-      </a>
-    </div>
+/* ── Separadores de sección ────────────────────────────────────────── */
+.sec-label {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .45;
+  margin: 0 0 .9rem;
+}
+.sec-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: .25;
+}
 
-    <!-- Total clientes -->
-    <div class="card tile">
-      <a href="{{ url_for('clientes.lista') }}" style="text-decoration:none; color:inherit; display:block;">
-        <p class="tile-value">{{ clientes_total }}</p>
-        <p class="tile-label">Clientes totales</p>
-        {% if clientes_suspendidos > 0 %}
-        <p class="tile-sub" style="color:var(--warning);">{{ clientes_suspendidos }} suspendido{{ 's' if clientes_suspendidos != 1 }}</p>
-        {% else %}
-        <p class="tile-sub" style="color:var(--fg-muted);">Sin suspendidos</p>
-        {% endif %}
-      </a>
-    </div>
+/* ── Layout dos columnas ───────────────────────────────────────────── */
+.metrics-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+@media (max-width: 860px) {
+  .metrics-layout { grid-template-columns: 1fr; }
+}
 
-    <!-- Cobrado este mes -->
-    <div class="card tile">
-      <a href="{{ url_for('cobros.inicio') }}" style="text-decoration:none; color:inherit; display:block;">
-        <p class="tile-value" style="color:var(--success);">$ {{ "{:,.0f}".format(monto_cobrado_mes) }}</p>
-        <p class="tile-label">Cobrado este mes</p>
-        {% if monto_esperado_mes > 0 %}
-          {% set pct = (monto_cobrado_mes / monto_esperado_mes * 100)|round|int %}
-          <p class="tile-sub">{{ pct }}% de $ {{ "{:,.0f}".format(monto_esperado_mes) }} esperado</p>
-        {% endif %}
-      </a>
-    </div>
+/* ── Tiles de negocio ──────────────────────────────────────────────── */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .75rem;
+}
+.tile {
+  background: var(--bg-card);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 1.1rem 1.25rem;
+  min-height: var(--tile-h);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.tile-val {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.tile-val.warn { color: var(--warning); }
+.tile-val.ok   { color: var(--success); }
+.tile-val.err  { color: var(--danger); }
+.tile-lbl {
+  font-size: .78rem;
+  font-weight: 600;
+  opacity: .6;
+  margin-top: .3rem;
+}
+.tile-sub {
+  font-size: .72rem;
+  opacity: .4;
+  margin-top: .2rem;
+}
+.tile-row { display: flex; align-items: flex-end; justify-content: space-between; gap: .5rem; }
 
-    <!-- Cobros pendientes -->
-    <div class="card tile">
-      <a href="{{ url_for('cobros.inicio') }}" style="text-decoration:none; color:inherit; display:block;">
-        <p class="tile-value" style="color:{% if cobros_pendientes > 0 %}var(--warning){% else %}var(--fg-muted){% endif %};">{{ cobros_pendientes }}</p>
-        <p class="tile-label">Cobros pendientes</p>
-        {% if cobros_atrasados > 0 %}
-        <p class="tile-sub" style="color:var(--danger);">{{ cobros_atrasados }} atrasado{{ 's' if cobros_atrasados != 1 }}</p>
-        {% else %}
-        <p class="tile-sub" style="color:var(--fg-muted);">Sin atrasos</p>
-        {% endif %}
-      </a>
-    </div>
+/* ── Columna infra ─────────────────────────────────────────────────── */
+.infra-col { display: flex; flex-direction: column; gap: .6rem; }
 
-    <!-- Avisos -->
-    <div class="card tile">
-      <a href="{{ url_for('avisos.lista') }}" style="text-decoration:none; color:inherit; display:block;">
-        <p class="tile-value" style="color:{% if avisos_pendientes > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ avisos_pendientes }}</p>
-        <p class="tile-label">Avisos pendientes</p>
-        {% if avisos_alta > 0 %}
-        <p class="tile-sub" style="color:var(--danger);">{{ avisos_alta }} de alta prioridad</p>
-        {% else %}
-        <p class="tile-sub" style="color:var(--fg-muted);">Sin prioridad alta</p>
-        {% endif %}
-      </a>
+.inst-card {
+  background: var(--bg-card);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: .85rem 1rem;
+  transition: box-shadow .15s;
+}
+.inst-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+
+.inst-card-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.inst-name { font-size: .88rem; font-weight: 600; }
+.inst-meta { font-size: .7rem; opacity: .45; margin-top: .15rem; }
+
+.inst-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-top: .6rem;
+}
+
+.inst-pulsos { display: flex; gap: 2px; }
+.inst-pulso {
+  width: 6px;
+  height: 16px;
+  border-radius: 2px;
+  background: rgba(128,128,128,.2);
+}
+.inst-pulso.ok  { background: var(--success); }
+.inst-pulso.err { background: var(--danger); }
+
+.inst-actions { display: flex; gap: .4rem; }
+
+/* ── Alerta lentitud ───────────────────────────────────────────────── */
+.lentitud-alert {
+  background: rgba(217,119,6,.08);
+  border: 1px solid rgba(217,119,6,.25);
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  font-size: .78rem;
+  color: var(--warning);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem .6rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.lentitud-chip {
+  background: rgba(217,119,6,.15);
+  border-radius: 4px;
+  padding: .15rem .4rem;
+  font-size: .72rem;
+  font-weight: 600;
+}
+
+/* ── Leads grid ────────────────────────────────────────────────────── */
+.leads-grid { display: grid; grid-template-columns: var(--leads-cols); gap: 1rem; }
+
+.lead-card {
+  background: var(--bg-card);
+  border: var(--border-subtle);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  transition: opacity .4s, transform .4s;
+}
+.lead-card.fading { opacity: 0; transform: scale(.96); }
+
+.lead-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.lead-nombre { font-size: .95rem; font-weight: 700; }
+.lead-fecha  { font-size: .68rem; opacity: .4; white-space: nowrap; }
+
+.lead-row { display: flex; flex-direction: column; gap: .2rem; }
+.lead-row label { font-size: .65rem; font-weight: 700; opacity: .4; text-transform: uppercase; letter-spacing: .06em; }
+.lead-row span  { font-size: .8rem; }
+
+.lead-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  background: rgba(67,97,238,.1);
+  color: var(--accent);
+  border-radius: 4px;
+  padding: .2rem .5rem;
+  font-size: .73rem;
+  font-weight: 600;
+}
+.lead-chip.solucion {
+  background: rgba(22,163,74,.1);
+  color: var(--success);
+}
+
+.lead-contacto {
+  font-size: .75rem;
+  opacity: .5;
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Groq skeleton ─────────────────────────────────────────────────── */
+.groq-skeleton { display: none; padding: .6rem 0; }
+.groq-skeleton.visible { display: block; }
+.sk-line {
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(128,128,128,.1) 25%, rgba(128,128,128,.2) 50%, rgba(128,128,128,.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  margin-bottom: .4rem;
+}
+.sk-line:last-child { width: 55%; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── Panel Groq ────────────────────────────────────────────────────── */
+.groq-panel {
+  display: none;
+  background: rgba(67,97,238,.05);
+  border: 1px solid rgba(67,97,238,.2);
+  border-radius: 8px;
+  padding: .75rem .9rem;
+  font-size: .8rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.groq-panel.visible { display: block; }
+.groq-panel-header {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: .7;
+  margin-bottom: .4rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* ── Acciones del lead ─────────────────────────────────────────────── */
+.lead-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* ── Empty states ──────────────────────────────────────────────────── */
+.empty-state, .infra-empty {
+  text-align: center;
+  opacity: .4;
+  font-size: .85rem;
+  padding: 2rem 1rem;
+}
+</style>
+
+{# ─── Header ─────────────────────────────────────────────────────────────── #}
+<div class="dash-header">
+  <div>
+    <div class="dash-greeting">
+      Hola, Pedro 👋
+      <small>{{ hoy.strftime("%-d de %B de %Y") }}</small>
     </div>
   </div>
-</section>
-
-{# ── SECCIÓN INFRAESTRUCTURA ───────────────────────────────────────────────── #}
-{# CAMBIO AQUÍ: nueva sección "Infraestructura" con uptime + alertas de lentitud #}
-<section style="margin-bottom:2rem;">
-  <p class="section-label">Infraestructura</p>
-
-  <div class="tiles-grid" style="margin-bottom:1.25rem;">
-    <!-- Total instalaciones -->
-    <div class="card tile">
-      <p class="tile-value">{{ total }}</p>
-      <p class="tile-label">Instalaciones activas</p>
-    </div>
-
-    <!-- Sistemas OK -->
-    <div class="card tile">
-      <p class="tile-value" style="color:var(--success);">{{ ok_count }}</p>
-      <p class="tile-label">Sistemas OK</p>
-    </div>
-
-    <!-- Con errores -->
-    <div class="card tile">
-      <p class="tile-value" style="color:{% if error_count > 0 %}var(--danger){% else %}var(--fg-muted){% endif %};">{{ error_count }}</p>
-      <p class="tile-label">Con errores</p>
-    </div>
-
-    <!-- Uptime promedio -->
-    <div class="card tile">
-      {% if uptime_promedio is not none %}
-      <p class="tile-value" style="color:{% if uptime_promedio >= 99 %}var(--success){% elif uptime_promedio >= 95 %}var(--warning){% else %}var(--danger){% endif %};">
-        {{ uptime_promedio }}%
-      </p>
-      {% else %}
-      <p class="tile-value" style="color:var(--fg-muted);">—</p>
-      {% endif %}
-      <p class="tile-label">Uptime promedio</p>
-      <p class="tile-sub" style="color:var(--fg-muted);">últimos 20 chequeos</p>
-    </div>
+  <div class="dash-badges">
+    {% if leads_parsed %}
+    <span class="badge badge-warning">
+      {{ leads_parsed|length }} lead{% if leads_parsed|length != 1 %}s{% endif %} esperando
+    </span>
+    {% endif %}
+    {% if avisos_alta %}
+    <span class="badge badge-danger">{{ avisos_alta }} aviso{% if avisos_alta != 1 %}s{% endif %} urgentes</span>
+    {% endif %}
+    {% if error_count %}
+    <span class="badge badge-danger">{{ error_count }} sistema{% if error_count != 1 %}s{% endif %} caídos</span>
+    {% endif %}
   </div>
+</div>
 
-  <!-- Alerta: instalaciones lentas -->
-  {% if instalaciones_lentas %}
-  <div class="alert-lento" style="margin-bottom:1.25rem;">
-    <p style="font-weight:600; margin-bottom:.4rem; color:var(--warning);">⚠ Instalaciones lentas (promedio &gt;1000ms)</p>
-    <div style="display:flex; flex-wrap:wrap; gap:.5rem;">
-      {% for item in instalaciones_lentas %}
-      <a href="{{ url_for('tablero.detalle_instalacion', inst_id=item.inst.id) }}"
-         style="display:inline-flex; align-items:center; gap:.4rem; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:.3rem .7rem; text-decoration:none; color:var(--fg); font-size:.85rem;">
-        <span style="width:8px; height:8px; border-radius:50%; background:var(--warning); display:inline-block; flex-shrink:0;"></span>
-        {{ item.inst.nombre }}
-        <span style="font-family:monospace; color:var(--warning); font-weight:600;">{{ item.avg_ms }}ms</span>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-</section>
+{# ─── Métricas + Infra ────────────────────────────────────────────────────── #}
+<div class="metrics-layout">
 
-{# ── GRILLA DE INSTALACIONES ──────────────────────────────────────────────── #}
-{% if resumen %}
-<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:1rem;">
-  {% for r in resumen %}
-  <div class="card" id="card-inst-{{ r.inst.id }}"
-       style="border-left: 4px solid {% if r.semaforo == 'ok' %}var(--success){% elif r.semaforo == 'error' %}var(--danger){% else %}var(--fg-muted){% endif %};">
+  {# Negocio #}
+  <div>
+    <div class="sec-label">Negocio</div>
+    <div class="tiles">
 
-    <!-- Encabezado: nombre + badge -->
-    <div class="flex gap-1" style="justify-content:space-between; align-items:flex-start; margin-bottom:.5rem;">
-      <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}"
-         style="font-weight:600; font-size:.95rem; color:var(--fg); text-decoration:none;">
-        {{ r.inst.nombre }}
-      </a>
-      {% if r.semaforo == 'ok' %}
-        <span class="badge badge-ok" id="badge-{{ r.inst.id }}">✓ OK</span>
-      {% elif r.semaforo == 'error' %}
-        <span class="badge badge-error" id="badge-{{ r.inst.id }}">✗ Error</span>
-      {% else %}
-        <span class="badge badge-inactivo" id="badge-{{ r.inst.id }}">Sin datos</span>
-      {% endif %}
-    </div>
-
-    <!-- Cliente y producto -->
-    <p class="text-muted text-small mb-1">
-      {{ r.inst.cliente.nombre }} · {{ r.inst.producto.nombre }}
-    </p>
-
-    <!-- Resultado del último chequeo -->
-    <div id="detalle-{{ r.inst.id }}">
-      {% if r.ultimo %}
-        <p class="text-small">
-          {% if r.ultimo.ok %}
-            Respondió en <strong>{{ r.ultimo.tiempo_ms }}ms</strong>
-          {% else %}
-            <span style="color:var(--danger);">{{ r.ultimo.detalle or 'Sin detalle' }}</span>
-          {% endif %}
-        </p>
-        <p class="text-muted text-small" style="margin-top:.2rem;">
-          Chequeado {{ r.ultimo.chequeado_en.strftime('%d/%m/%Y %H:%M') }}
-        </p>
-      {% else %}
-        <p class="text-muted text-small">Todavía no se realizó ningún chequeo.</p>
-      {% endif %}
-    </div>
-
-    <!-- Mini-historial visual (barra de pulsos) -->
-    {% if r.historial %}
-    <div style="margin-top:.6rem; margin-bottom:.4rem;">
-      <p class="text-muted text-small" style="margin-bottom:.3rem;">Últimos {{ r.historial|length }} chequeos</p>
-      <div style="display:flex; gap:3px; align-items:flex-end; height:24px;" role="img" aria-label="Historial de chequeos">
-        {% for ev in r.historial %}
-          <div title="{% if ev.ok %}OK — {{ ev.tiempo_ms }}ms{% else %}Error: {{ ev.detalle or 'sin detalle' }}{% endif %} · {{ ev.chequeado_en.strftime('%d/%m %H:%M') }}"
-               style="flex:1; border-radius:2px; min-height:6px;
-                      height:{% if ev.tiempo_ms and ev.tiempo_ms > 0 %}{{ [6, [24, (ev.tiempo_ms // 50)|int]|min]|max }}{% else %}8{% endif %}px;
-                      background:{% if ev.ok %}var(--success){% else %}var(--danger){% endif %};
-                      opacity:0.85;">
+      <div class="tile">
+        <div class="tile-row">
+          <div class="tile-val {% if monto_cobrado_mes > 0 %}ok{% endif %}">
+            ${{ "{:,.0f}".format(monto_cobrado_mes) }}
           </div>
-        {% endfor %}
+        </div>
+        <div class="tile-lbl">Cobrado este mes</div>
+        <div class="tile-sub">de ${{ "{:,.0f}".format(monto_esperado_mes) }} esperado</div>
       </div>
+
+      <div class="tile">
+        <div class="tile-val">{{ clientes_activos }}</div>
+        <div class="tile-lbl">Clientes activos</div>
+        <div class="tile-sub">
+          {{ clientes_en_prueba }} en prueba · {{ clientes_suspendidos }} suspendidos
+        </div>
+      </div>
+
+      <div class="tile">
+        <div class="tile-val {% if cobros_atrasados > 0 %}warn{% elif cobros_pendientes == 0 %}ok{% endif %}">
+          {{ cobros_pendientes }}
+        </div>
+        <div class="tile-lbl">Cobros pendientes</div>
+        <div class="tile-sub">
+          {% if cobros_atrasados %}{{ cobros_atrasados }} atrasado{% if cobros_atrasados != 1 %}s{% endif %}{% else %}Al día{% endif %}
+        </div>
+      </div>
+
+      <div class="tile">
+        <div class="tile-val {% if uptime_promedio and uptime_promedio >= 95 %}ok{% elif uptime_promedio and uptime_promedio >= 80 %}warn{% elif uptime_promedio %}err{% endif %}">
+          {% if uptime_promedio is not none %}{{ uptime_promedio }}%{% else %}—{% endif %}
+        </div>
+        <div class="tile-lbl">Uptime promedio</div>
+        <div class="tile-sub">{{ ok_count }}/{{ total }} sistema{% if total != 1 %}s{% endif %} OK</div>
+      </div>
+
+    </div>
+  </div>
+
+  {# Infraestructura #}
+  <div>
+    <div class="sec-label">Infraestructura</div>
+    <div class="infra-col">
+      {% if resumen %}
+        {% for r in resumen %}
+        <div class="inst-card" id="inst-{{ r.inst.id }}">
+          <div class="inst-card-top">
+            <div>
+              <div class="inst-name">{{ r.inst.nombre }}</div>
+              <div class="inst-meta">{{ r.inst.cliente.nombre }}</div>
+            </div>
+            <span class="badge {% if r.semaforo == 'ok' %}badge-success{% elif r.semaforo == 'error' %}badge-danger{% else %}badge-secondary{% endif %}" id="badge-{{ r.inst.id }}">
+              {% if r.semaforo == 'ok' %}OK{% elif r.semaforo == 'error' %}Caído{% else %}Sin datos{% endif %}
+            </span>
+          </div>
+
+          <div class="inst-row">
+            <div class="inst-pulsos">
+              {% for e in r.historial %}
+              <div class="inst-pulso {% if e.ok %}ok{% else %}err{% endif %}" title="{{ e.chequeado_en.strftime('%d/%m %H:%M') }}"></div>
+              {% endfor %}
+            </div>
+            <div class="inst-actions">
+              {% if r.ultimo %}
+              <span class="text-muted" style="font-size:.7rem;font-variant-numeric:tabular-nums">
+                {{ r.ultimo.tiempo_ms or '—' }}ms
+              </span>
+              {% endif %}
+              <button class="btn btn-sm btn-outline" onclick="rechequear({{ r.inst.id }}, this)" title="Rechequear">↻</button>
+              <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}" class="btn btn-sm btn-outline" title="Ver detalle">↗</a>
+            </div>
+          </div>
+
+          {% if r.ultimo and not r.ultimo.ok and r.ultimo.detalle %}
+          <div id="detalle-{{ r.inst.id }}" style="font-size:.72rem;color:var(--danger);margin-top:.3rem;opacity:.8">
+            {{ r.ultimo.detalle }}
+          </div>
+          {% else %}
+          <div id="detalle-{{ r.inst.id }}" style="font-size:.72rem;color:var(--danger);margin-top:.3rem;opacity:.8;display:none"></div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="infra-empty">Sin instalaciones activas.<br><a href="{{ url_for('clientes.listar') }}">Agregar cliente →</a></div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>{# /metrics-layout #}
+
+{# ─── Alerta lentitud ─────────────────────────────────────────────────────── #}
+{% if instalaciones_lentas %}
+<div class="lentitud-alert">
+  ⚠ Respuesta lenta en:
+  {% for item in instalaciones_lentas %}
+  <span class="lentitud-chip">{{ item.inst.nombre }} — {{ item.avg_ms }}ms</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ─── Leads web ───────────────────────────────────────────────────────────── #}
+<div class="sec-label">Leads web</div>
+
+{% if leads_parsed %}
+<div class="leads-grid">
+  {% for item in leads_parsed %}
+  {% set lead = item.cliente %}
+  {% set info = item.info %}
+  <div class="lead-card" id="lead-{{ lead.id }}">
+
+    <div class="lead-card-top">
+      <div class="lead-nombre">{{ lead.nombre }}</div>
+      <div class="lead-fecha">{{ lead.creado_en.strftime("%-d %b") if lead.creado_en else "" }}</div>
+    </div>
+
+    {% if info.rubro %}
+    <div>
+      <span class="lead-chip">{{ info.rubro }}</span>
     </div>
     {% endif %}
 
-    <!-- Enlace al sistema + botones -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:.6rem; gap:.5rem; flex-wrap:wrap;">
-      <a href="{{ r.inst.url_sistema }}" target="_blank" rel="noopener"
-         style="color:var(--fg-muted); font-size:.8rem; text-decoration:none; word-break:break-all; flex:1; min-width:0;">
-        {{ r.inst.url_sistema[:40] }}{% if r.inst.url_sistema|length > 40 %}…{% endif %} ↗
-      </a>
-      <div class="flex gap-1">
-        <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}"
-           class="btn btn-secondary"
-           style="font-size:.75rem; padding:.25rem .6rem; white-space:nowrap;">
-          Ver detalle
-        </a>
-        <button
-          class="btn btn-secondary"
-          style="font-size:.75rem; padding:.25rem .6rem; white-space:nowrap;"
-          onclick="rechequear({{ r.inst.id }}, this)"
-          title="Disparar chequeo ahora"
-          aria-label="Rechequear {{ r.inst.nombre }}">
-          ↺ Chequear
-        </button>
-      </div>
+    {% if info.problema %}
+    <div class="lead-row">
+      <label>Problema</label>
+      <span>{{ info.problema }}</span>
     </div>
+    {% endif %}
+
+    {% if info.solucion %}
+    <div class="lead-row">
+      <label>Solución sugerida</label>
+      <span class="lead-chip solucion">{{ info.solucion }}</span>
+    </div>
+    {% endif %}
+
+    {% if lead.email or lead.telefono %}
+    <div class="lead-contacto">
+      {% if lead.email %}<span>✉ {{ lead.email }}</span>{% endif %}
+      {% if lead.telefono %}<span>📱 {{ lead.telefono }}</span>{% endif %}
+    </div>
+    {% endif %}
+
+    {# Groq skeleton #}
+    <div class="groq-skeleton" id="sk-{{ lead.id }}">
+      <div class="sk-line" style="width:90%"></div>
+      <div class="sk-line" style="width:75%"></div>
+      <div class="sk-line"></div>
+    </div>
+
+    {# Panel Groq #}
+    <div class="groq-panel" id="groq-{{ lead.id }}">
+      <div class="groq-panel-header">Consejo de Groq</div>
+      <div id="groq-txt-{{ lead.id }}"></div>
+    </div>
+
+    {# Acciones #}
+    <div class="lead-actions">
+      <button class="btn btn-sm btn-primary" onclick="consultarGroq({{ lead.id }}, this)">
+        🤖 ¿Qué hago?
+      </button>
+      <button class="btn btn-sm btn-success" onclick="activarLead({{ lead.id }}, this)">
+        ✓ Activar
+      </button>
+      <a href="{{ url_for('clientes.ver_cliente', cliente_id=lead.id) }}" class="btn btn-sm btn-outline">
+        Ver ficha
+      </a>
+    </div>
+
   </div>
   {% endfor %}
 </div>
 
 {% else %}
-<div class="card" style="text-align:center; padding:3rem;">
-  <p style="font-size:2rem; margin-bottom:.75rem;">📡</p>
-  <p class="font-bold mb-1">No hay instalaciones activas</p>
-  <p class="text-muted text-small mb-2">Agregá un cliente con instalaciones para empezar a monitorear.</p>
-  <a href="{{ url_for('clientes.nuevo') }}" class="btn btn-primary">+ Nuevo cliente</a>
+<div class="empty-state">
+  Sin leads nuevos de la web.<br>
+  <small>Los leads llegan desde la calculadora de zynnos.com</small>
 </div>
 {% endif %}
 
-{# ── ESTILOS LOCALES ──────────────────────────────────────────────────────── #}
-{# CAMBIO AQUÍ: estilos para las nuevas tiles y sección labels #}
-<style>
-.section-label {
-  font-size:.72rem;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  color:var(--fg-muted);
-  margin-bottom:.75rem;
-  font-weight:600;
-}
-.tiles-grid {
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap:1rem;
-}
-.tile {
-  padding:.9rem 1.1rem;
-}
-.tile-value {
-  font-size:2rem;
-  font-weight:700;
-  line-height:1;
-  margin-bottom:.3rem;
-  font-variant-numeric: tabular-nums;
-}
-.tile-label {
-  font-size:.78rem;
-  color:var(--fg-muted);
-  margin-bottom:.2rem;
-}
-.tile-sub {
-  font-size:.75rem;
-  margin-top:.15rem;
-  color:var(--fg-muted);
-}
-.alert-lento {
-  background:rgba(244,162,97,.08);
-  border:1px solid rgba(244,162,97,.3);
-  border-radius:var(--radius);
-  padding:.85rem 1rem;
-}
-</style>
-
-{# ── SCRIPT RE-CHEQUEO ────────────────────────────────────────────────────── #}
+{# ─── JavaScript ──────────────────────────────────────────────────────────── #}
 <script>
-async function rechequear(instId, btn) {
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-  const card = document.getElementById('card-inst-' + instId);
-  const badge = document.getElementById('badge-' + instId);
-  const detalle = document.getElementById('detalle-' + instId);
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
+async function consultarGroq(id, btn) {
+  const sk = document.getElementById("sk-" + id);
+  const panel = document.getElementById("groq-" + id);
+  const txt = document.getElementById("groq-txt-" + id);
   btn.disabled = true;
-  btn.textContent = '…';
+  btn.textContent = "Consultando…";
+  sk.classList.add("visible");
+  panel.classList.remove("visible");
 
   try {
-    const resp = await fetch(`/tablero/rechequear/${instId}`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': csrfToken,
-        'Content-Type': 'application/json',
-      },
+    const r = await fetch("/tablero/groq-lead/" + id, {
+      method: "POST",
+      headers: { "X-CSRFToken": CSRF, "Content-Type": "application/json" }
     });
-
-    if (!resp.ok) throw new Error('Error ' + resp.status);
-
-    const data = await resp.json();
-
-    const colorBorde = data.ok ? 'var(--success)' : 'var(--danger)';
-    card.style.borderLeftColor = colorBorde;
-
+    const data = await r.json();
+    sk.classList.remove("visible");
     if (data.ok) {
-      badge.className = 'badge badge-ok';
-      badge.textContent = '✓ OK';
+      txt.textContent = data.respuesta;
+      panel.classList.add("visible");
+      btn.textContent = "🤖 Regenerar";
     } else {
-      badge.className = 'badge badge-error';
-      badge.textContent = '✗ Error';
+      txt.textContent = "Error: " + (data.error || "No se pudo obtener respuesta");
+      panel.classList.add("visible");
+      btn.textContent = "🤖 Reintentar";
     }
-
-    if (data.ok) {
-      detalle.innerHTML = `
-        <p class="text-small">Respondió en <strong>${data.tiempo_ms}ms</strong></p>
-        <p class="text-muted text-small" style="margin-top:.2rem;">Chequeado ${data.chequeado_en}</p>
-      `;
-    } else {
-      detalle.innerHTML = `
-        <p class="text-small"><span style="color:var(--danger);">${data.detalle || 'Sin detalle'}</span></p>
-        <p class="text-muted text-small" style="margin-top:.2rem;">Chequeado ${data.chequeado_en}</p>
-      `;
-    }
-
-  } catch (err) {
-    badge.className = 'badge badge-error';
-    badge.textContent = '✗ Error';
-    detalle.innerHTML = `<p class="text-small" style="color:var(--danger);">No se pudo chequear: ${err.message}</p>`;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '↺ Chequear';
+  } catch (e) {
+    sk.classList.remove("visible");
+    txt.textContent = "Error de red: " + e.message;
+    panel.classList.add("visible");
+    btn.textContent = "🤖 Reintentar";
   }
+  btn.disabled = false;
+}
+
+async function activarLead(id, btn) {
+  if (!confirm("¿Marcar este lead como cliente activo?")) return;
+  btn.disabled = true;
+  btn.textContent = "Activando…";
+
+  try {
+    const r = await fetch("/tablero/activar-lead/" + id, {
+      method: "POST",
+      headers: { "X-CSRFToken": CSRF, "Content-Type": "application/json" }
+    });
+    const data = await r.json();
+    if (data.ok) {
+      const card = document.getElementById("lead-" + id);
+      card.classList.add("fading");
+      setTimeout(() => { card.style.display = "none"; }, 450);
+    } else {
+      btn.disabled = false;
+      btn.textContent = "✓ Activar";
+      alert("Error: " + (data.error || "No se pudo activar"));
+    }
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = "✓ Activar";
+    alert("Error de red: " + e.message);
+  }
+}
+
+async function rechequear(instId, btn) {
+  btn.disabled = true;
+  btn.textContent = "…";
+
+  try {
+    const r = await fetch("/rechequear/" + instId, {
+      method: "POST",
+      headers: { "X-CSRFToken": CSRF }
+    });
+    const data = await r.json();
+
+    const badge = document.getElementById("badge-" + instId);
+    const detalle = document.getElementById("detalle-" + instId);
+
+    if (badge) {
+      badge.className = "badge " + (data.ok ? "badge-success" : "badge-danger");
+      badge.textContent = data.ok ? "OK" : "Caído";
+    }
+    if (detalle) {
+      if (!data.ok && data.detalle) {
+        detalle.textContent = data.detalle;
+        detalle.style.display = "block";
+      } else {
+        detalle.style.display = "none";
+        detalle.textContent = "";
+      }
+    }
+  } catch (e) {
+    console.error("rechequear error:", e);
+  }
+
+  btn.disabled = false;
+  btn.textContent = "↻";
 }
 </script>
 {% endblock %}

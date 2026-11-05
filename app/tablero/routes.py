@@ -1,3 +1,5 @@
+import json as _json
+import os
 import secrets
 import time
 import requests as http
@@ -21,6 +23,48 @@ TIMEOUT_SALUD = 10
 HISTORIAL_TARJETA = 10
 HISTORIAL_DETALLE = 200
 
+# ─── Contexto Zynnos para Groq ────────────────────────────────────────────────
+_ZYNNOS_CONTEXT = """
+Sos el asistente estratégico interno de Pedro Santos, fundador de Zynnos Labs (Buenos Aires, Argentina).
+Pedro tiene 23 años, es desarrollador independiente y lleva su agencia de automatización con IA.
+
+CATÁLOGO DE SERVICIOS DE ZYNNOS:
+1. Chatbot WhatsApp con IA — responde consultas, califica leads, opera 24/7
+2. Agente de ventas IA — sigue prospectos, recuerda, persuade con contexto
+3. Automatización de seguimiento — secuencias post-contacto sin intervención humana
+4. Integración de sistemas — conecta CRM, facturación, e-commerce, reservas
+5. Gestión de agenda con IA — toma turnos, confirma, cancela, reagenda
+6. Reportes automáticos — dashboards y resúmenes enviados por WhatsApp o email
+
+PRECIOS TÍPICOS (ARS):
+- Chatbot básico: desde $80.000/mes
+- Agente ventas: desde $150.000/mes
+- Automatización: desde $60.000/mes proyecto
+- Integración: desde $120.000 por proyecto
+- Agenda IA: desde $70.000/mes
+- Reportes: desde $40.000/mes
+
+PERFIL DE CLIENTES IDEALES:
+- Negocios con +20 consultas/día que no pueden responder todos
+- Inmobiliarias, clínicas, talleres, tiendas online, distribuidores, restaurantes con delivery
+- Dueños que trabajan solos o con 1-2 empleados, sin tiempo para seguimiento
+
+CÓMO TRABAJA PEDRO:
+- Arranca con diagnóstico gratuito, propuesta en 48hs, implementación en 1-2 semanas
+- Contacto inicial por WhatsApp, luego videollamada de 20 min
+- Garantía: si en 30 días no hay mejora visible, devuelve el primer mes
+- Cobro mensual en ARS, transferencia bancaria
+
+TU ROL: Cuando un lead llega desde la web con sus datos, analizás su situación y le decís a Pedro:
+1. Qué tan calificado está el lead (frío / tibio / caliente)
+2. Cuál servicio encaja mejor con su problema
+3. Qué decirle en el primer mensaje de WhatsApp (tono informal, directo, argentino)
+4. Próximo paso concreto para Pedro (no genérico)
+
+Respondé siempre en español argentino, directo, sin paja. Formato: párrafos cortos.
+Máximo 220 palabras.
+"""
+
 
 # ─── Formulario de edición de instalación ─────────────────────────────────────
 
@@ -42,7 +86,6 @@ class InstalacionForm(FlaskForm):
 def inicio():
     hoy = date.today()
 
-    # ── Instalaciones activas y semáforo ──────────────────────────────────────
     instalaciones = (
         Instalacion.query
         .join(Cliente)
@@ -75,13 +118,11 @@ def inicio():
     ok_count = sum(1 for r in resumen if r["semaforo"] == "ok")
     error_count = sum(1 for r in resumen if r["semaforo"] == "error")
 
-    # ── Métricas de clientes ──────────────────────────────────────────────────
     clientes_activos    = Cliente.query.filter_by(estado="activo").count()
     clientes_en_prueba  = Cliente.query.filter_by(estado="en_prueba").count()
     clientes_suspendidos = Cliente.query.filter_by(estado="suspendido").count()
     clientes_total      = Cliente.query.count()
 
-    # ── Métricas de cobros (mes actual) ───────────────────────────────────────
     cobros_pendientes = Pago.query.filter(
         Pago.estado.in_(["pendiente", "atrasado"]),
         Pago.anio == hoy.year,
@@ -90,7 +131,6 @@ def inicio():
 
     cobros_atrasados = Pago.query.filter_by(estado="atrasado").count()
 
-    # Monto cobrado este mes (pagos con estado=pagado del mes actual)
     pagos_mes = Pago.query.filter(
         Pago.estado == "pagado",
         Pago.anio == hoy.year,
@@ -98,15 +138,12 @@ def inicio():
     ).all()
     monto_cobrado_mes = sum(float(p.monto_recibido or p.monto_esperado) for p in pagos_mes)
 
-    # Monto esperado este mes (todos los pagos del mes)
     pagos_esperados = Pago.query.filter(
         Pago.anio == hoy.year,
         Pago.mes == hoy.month,
     ).all()
     monto_esperado_mes = sum(float(p.monto_esperado) for p in pagos_esperados)
 
-    # ── Métricas de performance (últimos 20 eventos por instalación) ──────────
-    ### CAMBIO AQUÍ ### — uptime promedio y alertas de lentitud
     uptimes = []
     instalaciones_lentas = []
     for r in resumen:
@@ -126,16 +163,34 @@ def inicio():
             if tiempos_ok:
                 avg_ms = sum(tiempos_ok) // len(tiempos_ok)
                 if avg_ms > 1000:
-                    instalaciones_lentas.append({
-                        "inst": r["inst"],
-                        "avg_ms": avg_ms,
-                    })
+                    instalaciones_lentas.append({"inst": r["inst"], "avg_ms": avg_ms})
 
     uptime_promedio = round(sum(uptimes) / len(uptimes), 1) if uptimes else None
 
-    # ── Avisos ────────────────────────────────────────────────────────────────
     avisos_pendientes = Aviso.query.filter_by(estado="pendiente").count()
     avisos_alta = Aviso.query.filter_by(estado="pendiente", prioridad="alta").count()
+
+    # ── Leads web ─────────────────────────────────────────────────────────────
+    leads_web = (
+        Cliente.query
+        .filter_by(estado="en_prueba")
+        .order_by(Cliente.creado_en.desc())
+        .limit(20)
+        .all()
+    )
+
+    leads_parsed = []
+    for lead in leads_web:
+        info = {"rubro": "", "problema": "", "solucion": ""}
+        if lead.notas:
+            for linea in lead.notas.splitlines():
+                if linea.startswith("Rubro:"):
+                    info["rubro"] = linea.replace("Rubro:", "").strip()
+                elif linea.startswith("Problema:"):
+                    info["problema"] = linea.replace("Problema:", "").strip()
+                elif linea.startswith("Solución recomendada:"):
+                    info["solucion"] = linea.replace("Solución recomendada:", "").strip()
+        leads_parsed.append({"cliente": lead, "info": info})
 
     return render_template(
         "tablero/inicio.html",
@@ -143,25 +198,115 @@ def inicio():
         total=total,
         ok_count=ok_count,
         error_count=error_count,
-        # clientes
         clientes_activos=clientes_activos,
         clientes_en_prueba=clientes_en_prueba,
         clientes_suspendidos=clientes_suspendidos,
         clientes_total=clientes_total,
-        # cobros
         cobros_pendientes=cobros_pendientes,
         cobros_atrasados=cobros_atrasados,
         monto_cobrado_mes=monto_cobrado_mes,
         monto_esperado_mes=monto_esperado_mes,
-        # performance
         uptime_promedio=uptime_promedio,
         instalaciones_lentas=instalaciones_lentas,
-        # avisos
         avisos_pendientes=avisos_pendientes,
         avisos_alta=avisos_alta,
-        # fecha
+        leads_parsed=leads_parsed,
         hoy=hoy,
     )
+
+
+# ─── Endpoint Groq: asesoría sobre un lead ────────────────────────────────────
+
+@tablero_bp.route("/tablero/groq-lead/<int:cliente_id>", methods=["POST"])
+@login_required
+def groq_lead(cliente_id):
+    token = (
+        request.headers.get("X-CSRFToken")
+        or request.form.get("_csrf_token")
+        or ""
+    )
+    try:
+        validate_csrf(token)
+    except ValidationError:
+        return jsonify({"ok": False, "error": "CSRF inválido"}), 400
+
+    cliente = db.session.get(Cliente, cliente_id)
+    if not cliente or cliente.estado != "en_prueba":
+        return jsonify({"ok": False, "error": "Lead no encontrado"}), 404
+
+    info = {"rubro": "No especificado", "problema": "No especificado",
+            "solucion": "No especificado", "diagnostico": ""}
+    if cliente.notas:
+        for linea in cliente.notas.splitlines():
+            if linea.startswith("Rubro:"):
+                info["rubro"] = linea.replace("Rubro:", "").strip()
+            elif linea.startswith("Problema:"):
+                info["problema"] = linea.replace("Problema:", "").strip()
+            elif linea.startswith("Solución recomendada:"):
+                info["solucion"] = linea.replace("Solución recomendada:", "").strip()
+            elif linea.startswith("Diagnóstico:"):
+                info["diagnostico"] = linea.replace("Diagnóstico:", "").strip()
+
+    groq_key = os.environ.get("GROQ_API_KEY", "")
+    if not groq_key:
+        return jsonify({"ok": False, "error": "GROQ_API_KEY no configurada en Render"}), 500
+
+    user_msg = (
+        f"Nombre: {cliente.nombre}\n"
+        f"Email: {cliente.email}\n"
+        f"Tel: {cliente.telefono or 'No dejó'}\n"
+        f"Rubro: {info['rubro']}\n"
+        f"Problema: {info['problema']}\n"
+        f"Solución que Groq sugirió: {info['solucion']}\n"
+        f"Diagnóstico previo: {info['diagnostico'][:300] if info['diagnostico'] else 'No disponible'}"
+    )
+
+    try:
+        resp = http.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
+            json={
+                "model": "llama3-8b-8192",
+                "messages": [
+                    {"role": "system", "content": _ZYNNOS_CONTEXT},
+                    {"role": "user", "content": user_msg},
+                ],
+                "temperature": 0.6,
+                "max_tokens": 350,
+            },
+            timeout=15,
+        )
+        if not resp.ok:
+            return jsonify({"ok": False, "error": f"Groq respondió {resp.status_code}"}), 502
+        data = resp.json()
+        texto = data["choices"][0]["message"]["content"].strip()
+        return jsonify({"ok": True, "respuesta": texto})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# ─── Endpoint: activar lead ───────────────────────────────────────────────────
+
+@tablero_bp.route("/tablero/activar-lead/<int:cliente_id>", methods=["POST"])
+@login_required
+def activar_lead(cliente_id):
+    token = (
+        request.headers.get("X-CSRFToken")
+        or request.form.get("_csrf_token")
+        or ""
+    )
+    try:
+        validate_csrf(token)
+    except ValidationError:
+        return jsonify({"ok": False, "error": "CSRF inválido"}), 400
+
+    cliente = db.session.get(Cliente, cliente_id)
+    if not cliente:
+        return jsonify({"ok": False, "error": "Cliente no encontrado"}), 404
+
+    cliente.estado = "activo"
+    db.session.commit()
+    return jsonify({"ok": True, "nombre": cliente.nombre})
 
 
 # ─── Detalle de instalación ───────────────────────────────────────────────────
@@ -238,7 +383,7 @@ def regenerar_token(inst_id):
     return redirect(url_for("tablero.detalle_instalacion", inst_id=inst.id))
 
 
-# ─── Re-chequeo manual de una instalación ─────────────────────────────────────
+# ─── Re-chequeo manual ────────────────────────────────────────────────────────
 
 @tablero_bp.route("/rechequear/<int:inst_id>", methods=["POST"])
 @login_required
@@ -277,7 +422,7 @@ def rechequear(inst_id):
     })
 
 
-# ─── Endpoint cron: chequear todas las instalaciones ──────────────────────────
+# ─── Cron: chequear todas las instalaciones ───────────────────────────────────
 
 @tablero_bp.route("/cron/chequear-salud")
 def chequear_salud_cron():
@@ -312,7 +457,7 @@ def chequear_salud_cron():
     return jsonify({"chequeadas": len(resultados), "resultados": resultados})
 
 
-# ─── Endpoint de salud de este propio panel ───────────────────────────────────
+# ─── Salud del panel ──────────────────────────────────────────────────────────
 
 @tablero_bp.route("/salud")
 def salud_panel():
