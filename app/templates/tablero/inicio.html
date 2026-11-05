@@ -2,281 +2,344 @@
 {% block title %}Tablero — La Central de Zynnos{% endblock %}
 
 {% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
 <style>
-/* ── Variables extra ───────────────────────────────────────────────── */
+/* ── Tokens del tablero (oscuro, en línea con zynnos.com) ───── */
 :root {
-  --radius-card: 12px;
-  --shadow-card: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
-  --border-subtle: 1px solid rgba(128,128,128,.12);
-  --tile-h: 108px;
-  --leads-cols: repeat(auto-fill, minmax(300px, 1fr));
+  --z-bg:       #0b1510;
+  --z-surface:  #111f17;
+  --z-card:     #152019;
+  --z-border:   rgba(52,201,148,.12);
+  --z-border2:  rgba(200,241,53,.1);
+  --z-lime:     #c8f135;
+  --z-lime-d:   #a8cc1a;
+  --z-teal:     #34c994;
+  --z-teal-d:   #25a877;
+  --z-fg:       #f0ede6;
+  --z-fg2:      #8a9e8f;
+  --z-fg3:      #4a5e4f;
+  --z-danger:   #ff6b6b;
+  --z-warn:     #f59e0b;
+  --z-ff-d:     'Space Grotesk', system-ui, sans-serif;
+  --z-shadow:   0 4px 24px rgba(0,0,0,.35);
+  --z-radius:   14px;
+  --z-t:        .18s cubic-bezier(.4,0,.2,1);
 }
 
-/* ── Header ────────────────────────────────────────────────────────── */
+/* override base para que el tablero use la paleta oscura */
+body { background: var(--z-bg) !important; color: var(--z-fg) !important; }
+nav  { background: rgba(11,21,16,.96) !important; border-color: var(--z-border) !important; }
+
+/* ── Gradiente ambiental de fondo ──────────────────────────── */
+.dash-ambient {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 55% at 75% 15%, rgba(52,201,148,.06) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 40% at 10% 85%, rgba(200,241,53,.04) 0%, transparent 60%);
+}
+main, .container { position: relative; z-index: 1; }
+
+/* ── Header ──────────────────────────────────────────────────── */
 .dash-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: .5rem 1.5rem;
-  margin-bottom: 2rem;
+  gap: .75rem 1.5rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--z-border);
 }
-.dash-greeting { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
-.dash-greeting small {
-  display: block;
-  font-size: .8rem;
-  font-weight: 400;
-  opacity: .55;
-  margin-top: .15rem;
+.dash-greeting {
+  font-family: var(--z-ff-d);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.1;
+  color: var(--z-fg);
 }
-.dash-badges { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
-
-/* ── Separadores de sección ────────────────────────────────────────── */
-.sec-label {
+.dash-greeting .accent { color: var(--z-lime); }
+.dash-date {
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--z-teal);
+  margin-top: .35rem;
   display: flex;
   align-items: center;
-  gap: .6rem;
-  font-size: .7rem;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  opacity: .45;
-  margin: 0 0 .9rem;
+  gap: .5rem;
 }
-.sec-label::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: currentColor;
-  opacity: .25;
+.dash-date::before {
+  content: '';
+  display: inline-block;
+  width: 18px; height: 1px;
+  background: var(--z-teal);
 }
+.dash-badges { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; padding-top: .25rem; }
+.zbadge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .68rem; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: .25rem .65rem;
+  border-radius: 100px;
+  border: 1px solid;
+}
+.zbadge-lime   { color: var(--z-lime);   border-color: rgba(200,241,53,.3);  background: rgba(200,241,53,.07); }
+.zbadge-teal   { color: var(--z-teal);   border-color: rgba(52,201,148,.3);  background: rgba(52,201,148,.07); }
+.zbadge-danger { color: var(--z-danger); border-color: rgba(255,107,107,.3); background: rgba(255,107,107,.07); }
+.zbadge-warn   { color: var(--z-warn);   border-color: rgba(245,158,11,.3);  background: rgba(245,158,11,.07); }
 
-/* ── Layout dos columnas ───────────────────────────────────────────── */
+/* ── Separador de sección ────────────────────────────────────── */
+.sec-label {
+  display: flex; align-items: center; gap: .6rem;
+  font-size: .62rem; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
+  color: var(--z-teal);
+  margin: 0 0 1rem;
+}
+.sec-label::before { content: ''; width: 18px; height: 1px; background: var(--z-teal); flex-shrink: 0; }
+.sec-label::after  { content: ''; flex: 1; height: 1px; background: var(--z-border); }
+
+/* ── Layout métricas + infra ─────────────────────────────────── */
 .metrics-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 300px;
   gap: 1.5rem;
   margin-bottom: 2.5rem;
+  align-items: start;
 }
-@media (max-width: 860px) {
-  .metrics-layout { grid-template-columns: 1fr; }
-}
+@media (max-width: 860px) { .metrics-layout { grid-template-columns: 1fr; } }
 
-/* ── Tiles de negocio ──────────────────────────────────────────────── */
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: .75rem;
-}
+/* ── Tiles ───────────────────────────────────────────────────── */
+.tiles { display: grid; grid-template-columns: repeat(2,1fr); gap: .75rem; }
+
 .tile {
-  background: var(--bg-card);
-  border: var(--border-subtle);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  padding: 1.1rem 1.25rem;
-  min-height: var(--tile-h);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  background: var(--z-card);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius);
+  padding: 1.25rem 1.4rem;
+  min-height: 110px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  transition: border-color var(--z-t), box-shadow var(--z-t);
+  position: relative; overflow: hidden;
 }
+.tile::before {
+  content: '';
+  position: absolute; inset: 0;
+  opacity: 0;
+  transition: opacity var(--z-t);
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(52,201,148,.06), transparent);
+}
+.tile:hover { border-color: var(--z-border2); box-shadow: var(--z-shadow); }
+.tile:hover::before { opacity: 1; }
+
+.tile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
 .tile-val {
-  font-size: 2.2rem;
-  font-weight: 800;
-  line-height: 1;
-  color: var(--accent);
+  font-family: var(--z-ff-d);
+  font-size: 2.4rem; font-weight: 700;
+  line-height: 1; letter-spacing: -.03em;
+  color: var(--z-fg);
   font-variant-numeric: tabular-nums;
 }
-.tile-val.warn { color: var(--warning); }
-.tile-val.ok   { color: var(--success); }
-.tile-val.err  { color: var(--danger); }
-.tile-lbl {
-  font-size: .78rem;
-  font-weight: 600;
-  opacity: .6;
-  margin-top: .3rem;
-}
-.tile-sub {
-  font-size: .72rem;
-  opacity: .4;
-  margin-top: .2rem;
-}
-.tile-row { display: flex; align-items: flex-end; justify-content: space-between; gap: .5rem; }
+.tile-val.c-lime   { color: var(--z-lime); }
+.tile-val.c-teal   { color: var(--z-teal); }
+.tile-val.c-warn   { color: var(--z-warn); }
+.tile-val.c-danger { color: var(--z-danger); }
 
-/* ── Columna infra ─────────────────────────────────────────────────── */
+.tile-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .95rem; flex-shrink: 0;
+  background: var(--z-surface);
+}
+.tile-lbl { font-size: .78rem; font-weight: 600; color: var(--z-fg2); margin-top: .4rem; }
+.tile-sub { font-size: .7rem; color: var(--z-fg3); margin-top: .15rem; }
+
+/* ── Columna infra ───────────────────────────────────────────── */
 .infra-col { display: flex; flex-direction: column; gap: .6rem; }
 
 .inst-card {
-  background: var(--bg-card);
-  border: var(--border-subtle);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  padding: .85rem 1rem;
-  transition: box-shadow .15s;
+  background: var(--z-card);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius);
+  padding: .9rem 1rem;
+  transition: border-color var(--z-t);
 }
-.inst-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+.inst-card:hover { border-color: rgba(52,201,148,.25); }
+.inst-card.state-ok    { border-left: 3px solid var(--z-teal); }
+.inst-card.state-error { border-left: 3px solid var(--z-danger); }
+.inst-card.state-none  { border-left: 3px solid var(--z-fg3); }
 
-.inst-card-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.inst-name { font-size: .88rem; font-weight: 600; }
-.inst-meta { font-size: .7rem; opacity: .45; margin-top: .15rem; }
+.inst-top  { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.inst-name { font-size: .85rem; font-weight: 600; color: var(--z-fg); }
+.inst-meta { font-size: .68rem; color: var(--z-fg3); margin-top: .1rem; }
 
-.inst-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem;
-  margin-top: .6rem;
-}
-
+.inst-row  { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .6rem; }
 .inst-pulsos { display: flex; gap: 2px; }
-.inst-pulso {
-  width: 6px;
-  height: 16px;
-  border-radius: 2px;
-  background: rgba(128,128,128,.2);
+.inst-pulso  { width: 5px; height: 14px; border-radius: 2px; background: rgba(74,94,79,.4); }
+.inst-pulso.ok  { background: var(--z-teal); }
+.inst-pulso.err { background: var(--z-danger); }
+
+.inst-actions { display: flex; gap: .3rem; align-items: center; }
+.inst-ms { font-size: .68rem; color: var(--z-fg3); font-variant-numeric: tabular-nums; }
+
+.zbtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
+  font-size: .72rem; font-weight: 600; cursor: pointer;
+  border-radius: 8px; border: 1px solid; padding: .28rem .6rem;
+  transition: background var(--z-t), color var(--z-t), border-color var(--z-t);
+  background: transparent; text-decoration: none;
 }
-.inst-pulso.ok  { background: var(--success); }
-.inst-pulso.err { background: var(--danger); }
+.zbtn-ghost {
+  color: var(--z-fg2); border-color: var(--z-border);
+}
+.zbtn-ghost:hover { color: var(--z-teal); border-color: rgba(52,201,148,.4); background: rgba(52,201,148,.06); }
+.zbtn-lime {
+  color: #0a1409; background: var(--z-lime); border-color: var(--z-lime);
+}
+.zbtn-lime:hover { background: var(--z-lime-d); border-color: var(--z-lime-d); }
+.zbtn-teal {
+  color: #0a1409; background: var(--z-teal); border-color: var(--z-teal);
+}
+.zbtn-teal:hover { background: var(--z-teal-d); border-color: var(--z-teal-d); }
+.zbtn-outline-teal {
+  color: var(--z-teal); border-color: rgba(52,201,148,.35);
+}
+.zbtn-outline-teal:hover { background: rgba(52,201,148,.08); }
+.zbtn:disabled { opacity: .5; cursor: not-allowed; }
 
-.inst-actions { display: flex; gap: .4rem; }
-
-/* ── Alerta lentitud ───────────────────────────────────────────────── */
+/* ── Alerta lentitud ─────────────────────────────────────────── */
 .lentitud-alert {
-  background: rgba(217,119,6,.08);
-  border: 1px solid rgba(217,119,6,.25);
-  border-radius: 8px;
-  padding: .6rem .9rem;
-  font-size: .78rem;
-  color: var(--warning);
-  display: flex;
-  flex-wrap: wrap;
-  gap: .3rem .6rem;
-  align-items: center;
-  margin-bottom: 2rem;
+  background: rgba(245,158,11,.06);
+  border: 1px solid rgba(245,158,11,.2);
+  border-radius: 10px; padding: .65rem 1rem;
+  font-size: .75rem; color: var(--z-warn);
+  display: flex; flex-wrap: wrap; gap: .3rem .6rem;
+  align-items: center; margin-bottom: 2rem;
 }
 .lentitud-chip {
-  background: rgba(217,119,6,.15);
-  border-radius: 4px;
-  padding: .15rem .4rem;
-  font-size: .72rem;
-  font-weight: 600;
+  background: rgba(245,158,11,.12); border-radius: 4px;
+  padding: .15rem .4rem; font-size: .68rem; font-weight: 700;
 }
 
-/* ── Leads grid ────────────────────────────────────────────────────── */
-.leads-grid { display: grid; grid-template-columns: var(--leads-cols); gap: 1rem; }
+/* ── Leads grid ──────────────────────────────────────────────── */
+.leads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 1rem; }
 
 .lead-card {
-  background: var(--bg-card);
-  border: var(--border-subtle);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  padding: 1rem 1.1rem 1.1rem;
-  display: flex;
-  flex-direction: column;
-  gap: .6rem;
-  transition: opacity .4s, transform .4s;
+  background: var(--z-card);
+  border: 1px solid var(--z-border);
+  border-top: 2px solid var(--z-lime);
+  border-radius: var(--z-radius);
+  padding: 1.1rem 1.2rem 1.2rem;
+  display: flex; flex-direction: column; gap: .65rem;
+  transition: border-color var(--z-t), box-shadow var(--z-t), opacity .4s, transform .4s;
+  position: relative; overflow: hidden;
 }
+.lead-card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 60px;
+  background: linear-gradient(to bottom, rgba(200,241,53,.04), transparent);
+  pointer-events: none;
+}
+.lead-card:hover { border-color: rgba(200,241,53,.35); box-shadow: var(--z-shadow); }
 .lead-card.fading { opacity: 0; transform: scale(.96); }
 
 .lead-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
-.lead-nombre { font-size: .95rem; font-weight: 700; }
-.lead-fecha  { font-size: .68rem; opacity: .4; white-space: nowrap; }
+.lead-nombre { font-family: var(--z-ff-d); font-size: .95rem; font-weight: 600; color: var(--z-fg); }
+.lead-fecha  { font-size: .65rem; color: var(--z-fg3); white-space: nowrap; padding-top: .1rem; }
 
 .lead-row { display: flex; flex-direction: column; gap: .2rem; }
-.lead-row label { font-size: .65rem; font-weight: 700; opacity: .4; text-transform: uppercase; letter-spacing: .06em; }
-.lead-row span  { font-size: .8rem; }
+.lead-row label {
+  font-size: .6rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--z-fg3);
+}
+.lead-row span { font-size: .78rem; color: var(--z-fg2); }
 
 .lead-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: .3rem;
-  background: rgba(67,97,238,.1);
-  color: var(--accent);
-  border-radius: 4px;
-  padding: .2rem .5rem;
-  font-size: .73rem;
-  font-weight: 600;
+  display: inline-flex; align-items: center; gap: .3rem;
+  border-radius: 100px; padding: .2rem .65rem;
+  font-size: .7rem; font-weight: 600; border: 1px solid;
 }
-.lead-chip.solucion {
-  background: rgba(22,163,74,.1);
-  color: var(--success);
-}
+.lead-chip.rubro    { color: var(--z-teal);  border-color: rgba(52,201,148,.3);  background: rgba(52,201,148,.07); }
+.lead-chip.solucion { color: var(--z-lime);  border-color: rgba(200,241,53,.3);  background: rgba(200,241,53,.07); }
 
-.lead-contacto {
-  font-size: .75rem;
-  opacity: .5;
-  display: flex;
-  gap: .5rem;
-  flex-wrap: wrap;
-}
+.lead-contacto { font-size: .72rem; color: var(--z-fg3); display: flex; gap: .6rem; flex-wrap: wrap; }
 
-/* ── Groq skeleton ─────────────────────────────────────────────────── */
-.groq-skeleton { display: none; padding: .6rem 0; }
+/* ── Groq skeleton ───────────────────────────────────────────── */
+.groq-skeleton { display: none; padding: .5rem 0; }
 .groq-skeleton.visible { display: block; }
 .sk-line {
-  height: 10px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, rgba(128,128,128,.1) 25%, rgba(128,128,128,.2) 50%, rgba(128,128,128,.1) 75%);
+  height: 9px; border-radius: 3px; margin-bottom: .4rem;
+  background: linear-gradient(90deg, rgba(52,201,148,.06) 25%, rgba(52,201,148,.14) 50%, rgba(52,201,148,.06) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
-  margin-bottom: .4rem;
 }
-.sk-line:last-child { width: 55%; }
+.sk-line:last-child { width: 50%; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-/* ── Panel Groq ────────────────────────────────────────────────────── */
+/* ── Panel Groq ──────────────────────────────────────────────── */
 .groq-panel {
   display: none;
-  background: rgba(67,97,238,.05);
-  border: 1px solid rgba(67,97,238,.2);
-  border-radius: 8px;
-  padding: .75rem .9rem;
-  font-size: .8rem;
-  line-height: 1.55;
-  white-space: pre-wrap;
+  background: rgba(52,201,148,.05);
+  border: 1px solid rgba(52,201,148,.18);
+  border-radius: 10px; padding: .8rem .95rem;
+  font-size: .78rem; line-height: 1.6; white-space: pre-wrap;
+  color: var(--z-fg2);
 }
 .groq-panel.visible { display: block; }
 .groq-panel-header {
-  font-size: .68rem;
-  font-weight: 700;
-  color: var(--accent);
-  opacity: .7;
-  margin-bottom: .4rem;
-  text-transform: uppercase;
-  letter-spacing: .06em;
+  font-size: .6rem; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--z-teal); margin-bottom: .5rem;
+  display: flex; align-items: center; gap: .4rem;
 }
+.groq-panel-header::before { content: ''; width: 12px; height: 1px; background: var(--z-teal); }
 
-/* ── Acciones del lead ─────────────────────────────────────────────── */
-.lead-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+/* ── Lead actions ────────────────────────────────────────────── */
+.lead-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .1rem; }
 
-/* ── Empty states ──────────────────────────────────────────────────── */
+/* ── Empty states ────────────────────────────────────────────── */
 .empty-state, .infra-empty {
-  text-align: center;
-  opacity: .4;
-  font-size: .85rem;
-  padding: 2rem 1rem;
+  text-align: center; color: var(--z-fg3);
+  font-size: .82rem; padding: 2rem 1rem;
 }
+.empty-state a, .infra-empty a { color: var(--z-teal); }
+
+/* ── Dot de estado ───────────────────────────────────────────── */
+.state-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  display: inline-block;
+}
+.state-dot.ok     { background: var(--z-teal);  box-shadow: 0 0 6px var(--z-teal); }
+.state-dot.error  { background: var(--z-danger); box-shadow: 0 0 6px var(--z-danger); }
+.state-dot.none   { background: var(--z-fg3); }
 </style>
 
-{# ─── Header ─────────────────────────────────────────────────────────────── #}
+{# Gradiente ambiental #}
+<div class="dash-ambient" aria-hidden="true"></div>
+
+{# ─── Header ──────────────────────────────────────────────────────────────── #}
 <div class="dash-header">
   <div>
-    <div class="dash-greeting">
-      Hola, Pedro 👋
-      <small>{{ hoy.strftime("%-d de %B de %Y") }}</small>
-    </div>
+    <div class="dash-greeting">Hola, <span class="accent">Pedro</span> 👋</div>
+    <div class="dash-date">{{ hoy.strftime("%-d de %B de %Y") }}</div>
   </div>
   <div class="dash-badges">
     {% if leads_parsed %}
-    <span class="badge badge-warning">
-      {{ leads_parsed|length }} lead{% if leads_parsed|length != 1 %}s{% endif %} esperando
+    <span class="zbadge zbadge-lime">
+      ● {{ leads_parsed|length }} lead{% if leads_parsed|length != 1 %}s{% endif %} nuevos
     </span>
     {% endif %}
     {% if avisos_alta %}
-    <span class="badge badge-danger">{{ avisos_alta }} aviso{% if avisos_alta != 1 %}s{% endif %} urgentes</span>
+    <span class="zbadge zbadge-danger">⚠ {{ avisos_alta }} aviso{% if avisos_alta != 1 %}s{% endif %} urgentes</span>
     {% endif %}
     {% if error_count %}
-    <span class="badge badge-danger">{{ error_count }} sistema{% if error_count != 1 %}s{% endif %} caídos</span>
+    <span class="zbadge zbadge-danger">↓ {{ error_count }} caído{% if error_count != 1 %}s{% endif %}</span>
+    {% endif %}
+    {% if ok_count == total and total > 0 %}
+    <span class="zbadge zbadge-teal">✓ Todos online</span>
     {% endif %}
   </div>
 </div>
@@ -284,65 +347,84 @@
 {# ─── Métricas + Infra ────────────────────────────────────────────────────── #}
 <div class="metrics-layout">
 
-  {# Negocio #}
+  {# — Negocio — #}
   <div>
     <div class="sec-label">Negocio</div>
     <div class="tiles">
 
       <div class="tile">
-        <div class="tile-row">
-          <div class="tile-val {% if monto_cobrado_mes > 0 %}ok{% endif %}">
-            ${{ "{:,.0f}".format(monto_cobrado_mes) }}
+        <div class="tile-top">
+          <div>
+            <div class="tile-val {% if monto_cobrado_mes > 0 %}c-lime{% endif %}">
+              ${{ "{:,.0f}".format(monto_cobrado_mes) }}
+            </div>
+            <div class="tile-lbl">Cobrado este mes</div>
+            <div class="tile-sub">de ${{ "{:,.0f}".format(monto_esperado_mes) }} esperado</div>
           </div>
-        </div>
-        <div class="tile-lbl">Cobrado este mes</div>
-        <div class="tile-sub">de ${{ "{:,.0f}".format(monto_esperado_mes) }} esperado</div>
-      </div>
-
-      <div class="tile">
-        <div class="tile-val">{{ clientes_activos }}</div>
-        <div class="tile-lbl">Clientes activos</div>
-        <div class="tile-sub">
-          {{ clientes_en_prueba }} en prueba · {{ clientes_suspendidos }} suspendidos
+          <div class="tile-icon">💰</div>
         </div>
       </div>
 
       <div class="tile">
-        <div class="tile-val {% if cobros_atrasados > 0 %}warn{% elif cobros_pendientes == 0 %}ok{% endif %}">
-          {{ cobros_pendientes }}
-        </div>
-        <div class="tile-lbl">Cobros pendientes</div>
-        <div class="tile-sub">
-          {% if cobros_atrasados %}{{ cobros_atrasados }} atrasado{% if cobros_atrasados != 1 %}s{% endif %}{% else %}Al día{% endif %}
+        <div class="tile-top">
+          <div>
+            <div class="tile-val c-teal">{{ clientes_activos }}</div>
+            <div class="tile-lbl">Clientes activos</div>
+            <div class="tile-sub">{{ clientes_en_prueba }} en prueba · {{ clientes_suspendidos }} susp.</div>
+          </div>
+          <div class="tile-icon">👥</div>
         </div>
       </div>
 
       <div class="tile">
-        <div class="tile-val {% if uptime_promedio and uptime_promedio >= 95 %}ok{% elif uptime_promedio and uptime_promedio >= 80 %}warn{% elif uptime_promedio %}err{% endif %}">
-          {% if uptime_promedio is not none %}{{ uptime_promedio }}%{% else %}—{% endif %}
+        <div class="tile-top">
+          <div>
+            <div class="tile-val {% if cobros_atrasados > 0 %}c-danger{% elif cobros_pendientes > 0 %}c-warn{% else %}c-teal{% endif %}">
+              {{ cobros_pendientes }}
+            </div>
+            <div class="tile-lbl">Cobros pendientes</div>
+            <div class="tile-sub">
+              {% if cobros_atrasados %}{{ cobros_atrasados }} atrasado{% if cobros_atrasados != 1 %}s{% endif %}{% else %}Al día este mes{% endif %}
+            </div>
+          </div>
+          <div class="tile-icon">📋</div>
         </div>
-        <div class="tile-lbl">Uptime promedio</div>
-        <div class="tile-sub">{{ ok_count }}/{{ total }} sistema{% if total != 1 %}s{% endif %} OK</div>
+      </div>
+
+      <div class="tile">
+        <div class="tile-top">
+          <div>
+            <div class="tile-val {% if uptime_promedio is not none %}{% if uptime_promedio >= 95 %}c-teal{% elif uptime_promedio >= 80 %}c-warn{% else %}c-danger{% endif %}{% endif %}">
+              {% if uptime_promedio is not none %}{{ uptime_promedio }}%{% else %}—{% endif %}
+            </div>
+            <div class="tile-lbl">Uptime promedio</div>
+            <div class="tile-sub">{{ ok_count }}/{{ total }} sistema{% if total != 1 %}s{% endif %} OK</div>
+          </div>
+          <div class="tile-icon">📡</div>
+        </div>
       </div>
 
     </div>
   </div>
 
-  {# Infraestructura #}
+  {# — Infraestructura — #}
   <div>
     <div class="sec-label">Infraestructura</div>
     <div class="infra-col">
       {% if resumen %}
         {% for r in resumen %}
-        <div class="inst-card" id="inst-{{ r.inst.id }}">
-          <div class="inst-card-top">
+        <div class="inst-card state-{{ r.semaforo }}" id="inst-{{ r.inst.id }}">
+          <div class="inst-top">
             <div>
               <div class="inst-name">{{ r.inst.nombre }}</div>
               <div class="inst-meta">{{ r.inst.cliente.nombre }}</div>
             </div>
-            <span class="badge {% if r.semaforo == 'ok' %}badge-success{% elif r.semaforo == 'error' %}badge-danger{% else %}badge-secondary{% endif %}" id="badge-{{ r.inst.id }}">
-              {% if r.semaforo == 'ok' %}OK{% elif r.semaforo == 'error' %}Caído{% else %}Sin datos{% endif %}
-            </span>
+            <div style="display:flex;align-items:center;gap:.4rem">
+              <span class="state-dot {% if r.semaforo == 'ok' %}ok{% elif r.semaforo == 'error' %}error{% else %}none{% endif %}" id="dot-{{ r.inst.id }}"></span>
+              <span style="font-size:.68rem;color:var(--z-fg3)" id="badge-{{ r.inst.id }}">
+                {% if r.semaforo == 'ok' %}OK{% elif r.semaforo == 'error' %}Caído{% else %}Sin datos{% endif %}
+              </span>
+            </div>
           </div>
 
           <div class="inst-row">
@@ -353,22 +435,16 @@
             </div>
             <div class="inst-actions">
               {% if r.ultimo %}
-              <span class="text-muted" style="font-size:.7rem;font-variant-numeric:tabular-nums">
-                {{ r.ultimo.tiempo_ms or '—' }}ms
-              </span>
+              <span class="inst-ms" id="ms-{{ r.inst.id }}">{{ r.ultimo.tiempo_ms or '—' }}ms</span>
               {% endif %}
-              <button class="btn btn-sm btn-outline" onclick="rechequear({{ r.inst.id }}, this)" title="Rechequear">↻</button>
-              <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}" class="btn btn-sm btn-outline" title="Ver detalle">↗</a>
+              <button class="zbtn zbtn-ghost" onclick="rechequear({{ r.inst.id }}, this)" title="Rechequear">↻</button>
+              <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}" class="zbtn zbtn-ghost" title="Ver detalle">↗</a>
             </div>
           </div>
 
-          {% if r.ultimo and not r.ultimo.ok and r.ultimo.detalle %}
-          <div id="detalle-{{ r.inst.id }}" style="font-size:.72rem;color:var(--danger);margin-top:.3rem;opacity:.8">
-            {{ r.ultimo.detalle }}
+          <div id="detalle-{{ r.inst.id }}" style="font-size:.68rem;color:var(--z-danger);margin-top:.2rem;{% if not (r.ultimo and not r.ultimo.ok and r.ultimo.detalle) %}display:none{% endif %}">
+            {% if r.ultimo and not r.ultimo.ok and r.ultimo.detalle %}{{ r.ultimo.detalle }}{% endif %}
           </div>
-          {% else %}
-          <div id="detalle-{{ r.inst.id }}" style="font-size:.72rem;color:var(--danger);margin-top:.3rem;opacity:.8;display:none"></div>
-          {% endif %}
         </div>
         {% endfor %}
       {% else %}
@@ -405,9 +481,7 @@
     </div>
 
     {% if info.rubro %}
-    <div>
-      <span class="lead-chip">{{ info.rubro }}</span>
-    </div>
+    <div><span class="lead-chip rubro">{{ info.rubro }}</span></div>
     {% endif %}
 
     {% if info.problema %}
@@ -431,30 +505,21 @@
     </div>
     {% endif %}
 
-    {# Groq skeleton #}
     <div class="groq-skeleton" id="sk-{{ lead.id }}">
-      <div class="sk-line" style="width:90%"></div>
-      <div class="sk-line" style="width:75%"></div>
+      <div class="sk-line" style="width:88%"></div>
+      <div class="sk-line" style="width:72%"></div>
       <div class="sk-line"></div>
     </div>
 
-    {# Panel Groq #}
     <div class="groq-panel" id="groq-{{ lead.id }}">
       <div class="groq-panel-header">Consejo de Groq</div>
       <div id="groq-txt-{{ lead.id }}"></div>
     </div>
 
-    {# Acciones #}
     <div class="lead-actions">
-      <button class="btn btn-sm btn-primary" onclick="consultarGroq({{ lead.id }}, this)">
-        🤖 ¿Qué hago?
-      </button>
-      <button class="btn btn-sm btn-success" onclick="activarLead({{ lead.id }}, this)">
-        ✓ Activar
-      </button>
-      <a href="{{ url_for('clientes.ver_cliente', cliente_id=lead.id) }}" class="btn btn-sm btn-outline">
-        Ver ficha
-      </a>
+      <button class="zbtn zbtn-outline-teal" onclick="consultarGroq({{ lead.id }}, this)">🤖 ¿Qué hago?</button>
+      <button class="zbtn zbtn-lime" onclick="activarLead({{ lead.id }}, this)">✓ Activar</button>
+      <a href="{{ url_for('clientes.ver_cliente', cliente_id=lead.id) }}" class="zbtn zbtn-ghost">Ver ficha</a>
     </div>
 
   </div>
@@ -464,11 +529,10 @@
 {% else %}
 <div class="empty-state">
   Sin leads nuevos de la web.<br>
-  <small>Los leads llegan desde la calculadora de zynnos.com</small>
+  <small style="display:block;margin-top:.35rem">Los leads llegan desde la calculadora en zynnos.com</small>
 </div>
 {% endif %}
 
-{# ─── JavaScript ──────────────────────────────────────────────────────────── #}
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
@@ -480,7 +544,6 @@ async function consultarGroq(id, btn) {
   btn.textContent = "Consultando…";
   sk.classList.add("visible");
   panel.classList.remove("visible");
-
   try {
     const r = await fetch("/tablero/groq-lead/" + id, {
       method: "POST",
@@ -493,7 +556,7 @@ async function consultarGroq(id, btn) {
       panel.classList.add("visible");
       btn.textContent = "🤖 Regenerar";
     } else {
-      txt.textContent = "Error: " + (data.error || "No se pudo obtener respuesta");
+      txt.textContent = "Error: " + (data.error || "Sin respuesta");
       panel.classList.add("visible");
       btn.textContent = "🤖 Reintentar";
     }
@@ -510,7 +573,6 @@ async function activarLead(id, btn) {
   if (!confirm("¿Marcar este lead como cliente activo?")) return;
   btn.disabled = true;
   btn.textContent = "Activando…";
-
   try {
     const r = await fetch("/tablero/activar-lead/" + id, {
       method: "POST",
@@ -520,7 +582,7 @@ async function activarLead(id, btn) {
     if (data.ok) {
       const card = document.getElementById("lead-" + id);
       card.classList.add("fading");
-      setTimeout(() => { card.style.display = "none"; }, 450);
+      setTimeout(() => card.style.display = "none", 450);
     } else {
       btn.disabled = false;
       btn.textContent = "✓ Activar";
@@ -534,38 +596,25 @@ async function activarLead(id, btn) {
 }
 
 async function rechequear(instId, btn) {
-  btn.disabled = true;
-  btn.textContent = "…";
-
+  btn.disabled = true; btn.textContent = "…";
   try {
     const r = await fetch("/rechequear/" + instId, {
-      method: "POST",
-      headers: { "X-CSRFToken": CSRF }
+      method: "POST", headers: { "X-CSRFToken": CSRF }
     });
     const data = await r.json();
-
-    const badge = document.getElementById("badge-" + instId);
+    const badge   = document.getElementById("badge-" + instId);
+    const dot     = document.getElementById("dot-" + instId);
     const detalle = document.getElementById("detalle-" + instId);
-
-    if (badge) {
-      badge.className = "badge " + (data.ok ? "badge-success" : "badge-danger");
-      badge.textContent = data.ok ? "OK" : "Caído";
-    }
+    const ms      = document.getElementById("ms-" + instId);
+    if (badge) badge.textContent = data.ok ? "OK" : "Caído";
+    if (dot)   dot.className = "state-dot " + (data.ok ? "ok" : "error");
+    if (ms && data.tiempo_ms) ms.textContent = data.tiempo_ms + "ms";
     if (detalle) {
-      if (!data.ok && data.detalle) {
-        detalle.textContent = data.detalle;
-        detalle.style.display = "block";
-      } else {
-        detalle.style.display = "none";
-        detalle.textContent = "";
-      }
+      detalle.textContent = (!data.ok && data.detalle) ? data.detalle : "";
+      detalle.style.display = (!data.ok && data.detalle) ? "block" : "none";
     }
-  } catch (e) {
-    console.error("rechequear error:", e);
-  }
-
-  btn.disabled = false;
-  btn.textContent = "↻";
+  } catch(e) { console.error(e); }
+  btn.disabled = false; btn.textContent = "↻";
 }
 </script>
 {% endblock %}
