@@ -1,596 +1,579 @@
 {% extends "base.html" %}
-{% block title %}Tablero — La Central de Zynnos{% endblock %}
+{% block title %}Tablero — Zynnos Central{% endblock %}
 
 {% block content %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
-/* ── Tokens del tablero (oscuro, en línea con zynnos.com) ───── */
+/* ══════════════════════════════════════════════════
+   DESIGN SYSTEM — igual a zynnos.com
+   ══════════════════════════════════════════════════ */
 :root {
-  --z-bg:       #0b1510;
-  --z-surface:  #111f17;
-  --z-card:     #152019;
-  --z-border:   rgba(52,201,148,.12);
-  --z-border2:  rgba(200,241,53,.1);
-  --z-lime:     #c8f135;
-  --z-lime-d:   #a8cc1a;
-  --z-teal:     #34c994;
-  --z-teal-d:   #25a877;
-  --z-fg:       #f0ede6;
-  --z-fg2:      #8a9e8f;
-  --z-fg3:      #4a5e4f;
-  --z-danger:   #ff6b6b;
-  --z-warn:     #f59e0b;
-  --z-ff-d:     'Space Grotesk', system-ui, sans-serif;
-  --z-shadow:   0 4px 24px rgba(0,0,0,.35);
-  --z-radius:   14px;
-  --z-t:        .18s cubic-bezier(.4,0,.2,1);
+  --bg:       #0e1a13;
+  --bg2:      #111f17;
+  --bg3:      #0b1510;
+  --surface:  #1a2e1f;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.13);
+  --fg:       #f0ede6;
+  --fg2:      #8a9e8f;
+  --fg3:      #4a5e4f;
+  --lime:     #c8f135;
+  --lime-d:   #a8cc1a;
+  --teal:     #34c994;
+  --teal-lo:  rgba(52,201,148,.10);
+  --danger:   #ff6b6b;
+  --warn:     #f59e0b;
+  --r:        6px;
+  --r2:       12px;
+  --ff-d:     'Space Grotesk', system-ui, sans-serif;
+  --ff-b:     'Inter', system-ui, sans-serif;
 }
 
-/* override base para que el tablero use la paleta oscura */
-body { background: var(--z-bg) !important; color: var(--z-fg) !important; }
-nav  { background: rgba(11,21,16,.96) !important; border-color: var(--z-border) !important; }
+/* forzar base oscura sobre el base.html */
+body { background: var(--bg3) !important; color: var(--fg) !important; font-family: var(--ff-b) !important; }
+nav  { background: rgba(11,21,16,.96) !important; border-color: var(--border) !important; backdrop-filter: blur(20px) !important; }
 
-/* ── Gradiente ambiental de fondo ──────────────────────────── */
-.dash-ambient {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+/* ── Gradiente ambiental ─────────────────────────── */
+#dash-ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
   background:
-    radial-gradient(ellipse 50% 55% at 75% 15%, rgba(52,201,148,.06) 0%, transparent 65%),
-    radial-gradient(ellipse 35% 40% at 10% 85%, rgba(200,241,53,.04) 0%, transparent 60%);
+    radial-gradient(ellipse 55% 50% at 80% 10%, rgba(52,201,148,.07) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 5%  85%, rgba(200,241,53,.04) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 30% at 50% 50%, rgba(52,201,148,.03) 0%, transparent 70%);
 }
-main, .container { position: relative; z-index: 1; }
+.dash-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 2.5rem); }
 
-/* ── Header ──────────────────────────────────────────────────── */
-.dash-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: .75rem 1.5rem;
+/* ═══════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════ */
+.dash-head {
+  padding: 2.5rem 0 2rem;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
   margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--z-border);
 }
-.dash-greeting {
-  font-family: var(--z-ff-d);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -.025em;
-  line-height: 1.1;
-  color: var(--z-fg);
+.dash-eyebrow {
+  font-size: .58rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: .6rem;
+  display: flex; align-items: center; gap: .6rem;
 }
-.dash-greeting .accent { color: var(--z-lime); }
-.dash-date {
-  font-size: .72rem;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--z-teal);
-  margin-top: .35rem;
-  display: flex;
-  align-items: center;
+.dash-eyebrow::before { content: ''; width: 22px; height: 1px; background: var(--teal); display: inline-block; }
+
+.dash-h1 {
+  font-family: var(--ff-d); font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 700; letter-spacing: -.03em; line-height: 1.05;
+  color: var(--fg);
+}
+.dash-h1 .hl { color: var(--lime); }
+.dash-h1 .ht { color: var(--teal); }
+
+.dash-badges { display: flex; gap: .4rem; flex-wrap: wrap; padding-top: .2rem; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-family: var(--ff-b); font-size: .65rem; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: .3rem .75rem; border-radius: 100px; border: 1px solid;
+  transition: opacity .2s;
+}
+.chip-lime   { color: var(--lime);   border-color: rgba(200,241,53,.35);  background: rgba(200,241,53,.07); }
+.chip-teal   { color: var(--teal);   border-color: rgba(52,201,148,.35);  background: rgba(52,201,148,.07); }
+.chip-danger { color: var(--danger); border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.07); }
+.chip-warn   { color: var(--warn);   border-color: rgba(245,158,11,.35);  background: rgba(245,158,11,.07); }
+
+.chip-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.chip-dot.pulse { animation: pulse-dot 1.6s ease-in-out infinite; }
+.chip-lime   .chip-dot { background: var(--lime); }
+.chip-teal   .chip-dot { background: var(--teal); }
+.chip-danger .chip-dot { background: var(--danger); }
+.chip-warn   .chip-dot { background: var(--warn); }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.65)} }
+
+/* ═══════════════════════════════════════════════════
+   STATS STRIP — igual al #stats de la web
+   ═══════════════════════════════════════════════════ */
+.stats-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--border); gap: 1px;
+  border-radius: var(--r2); overflow: hidden;
+  margin-bottom: 2.5rem;
+}
+@media (max-width: 600px) { .stats-strip { grid-template-columns: 1fr 1fr; } }
+
+.stat-cell {
+  background: var(--bg2); padding: 1.6rem 1.5rem;
+  text-align: center; cursor: default;
+  transition: background .2s;
+  position: relative; overflow: hidden;
+}
+.stat-cell::after {
+  content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  opacity: 0; transition: opacity .3s;
+}
+.stat-cell:hover { background: var(--surface); }
+.stat-cell:hover::after { opacity: 1; }
+
+.stat-n {
+  font-family: var(--ff-d); font-weight: 700;
+  font-size: clamp(1.6rem, 2.8vw, 2.4rem);
+  letter-spacing: -.04em; line-height: 1;
+  color: var(--fg);
+}
+.stat-n sup { color: var(--teal); font-size: .5em; vertical-align: .3em; }
+.stat-n.c-lime   { color: var(--lime); }
+.stat-n.c-teal   { color: var(--teal); }
+.stat-n.c-warn   { color: var(--warn); }
+.stat-n.c-danger { color: var(--danger); }
+.stat-l { font-size: .62rem; color: var(--fg3); margin-top: .35rem; letter-spacing: .05em; text-transform: uppercase; }
+.stat-sub { font-size: .68rem; color: var(--fg2); margin-top: .2rem; }
+
+/* ═══════════════════════════════════════════════════
+   EYEBROW DE SECCIÓN
+   ═══════════════════════════════════════════════════ */
+.sec-eyebrow {
+  font-size: .58rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: .6rem;
+}
+.sec-eyebrow::before { content: ''; width: 18px; height: 1px; background: var(--teal); }
+.sec-eyebrow::after  { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT INFRA + LEADS
+   ═══════════════════════════════════════════════════ */
+.two-col {
+  display: grid; grid-template-columns: 320px 1fr;
+  gap: 1.5rem; margin-bottom: 2.5rem; align-items: start;
+}
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════════════════════════════
+   CARDS DE INFRAESTRUCTURA
+   (estilo hero-card de la web)
+   ═══════════════════════════════════════════════════ */
+.infra-box {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--r2); padding: 1.4rem 1.3rem; overflow: hidden;
+}
+.infra-header {
+  font-size: .58rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--fg3); padding-bottom: .85rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: .3rem;
+}
+
+.inst-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .8rem 0; border-bottom: 1px solid var(--border);
+  cursor: default; transition: background .15s;
   gap: .5rem;
 }
-.dash-date::before {
-  content: '';
-  display: inline-block;
-  width: 18px; height: 1px;
-  background: var(--z-teal);
+.inst-row:last-child { border-bottom: none; padding-bottom: 0; }
+.inst-row:hover .inst-name { color: var(--teal); }
+
+.inst-left  { display: flex; align-items: center; gap: .75rem; min-width: 0; }
+.inst-state {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
-.dash-badges { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; padding-top: .25rem; }
-.zbadge {
-  display: inline-flex; align-items: center; gap: .3rem;
-  font-size: .68rem; font-weight: 700;
-  letter-spacing: .06em; text-transform: uppercase;
-  padding: .25rem .65rem;
-  border-radius: 100px;
-  border: 1px solid;
-}
-.zbadge-lime   { color: var(--z-lime);   border-color: rgba(200,241,53,.3);  background: rgba(200,241,53,.07); }
-.zbadge-teal   { color: var(--z-teal);   border-color: rgba(52,201,148,.3);  background: rgba(52,201,148,.07); }
-.zbadge-danger { color: var(--z-danger); border-color: rgba(255,107,107,.3); background: rgba(255,107,107,.07); }
-.zbadge-warn   { color: var(--z-warn);   border-color: rgba(245,158,11,.3);  background: rgba(245,158,11,.07); }
+.inst-state.ok     { background: var(--teal);  box-shadow: 0 0 7px rgba(52,201,148,.7); animation: pulse-dot 2s ease-in-out infinite; }
+.inst-state.error  { background: var(--danger); box-shadow: 0 0 7px rgba(255,107,107,.7); }
+.inst-state.nodata { background: var(--fg3); }
 
-/* ── Separador de sección ────────────────────────────────────── */
-.sec-label {
-  display: flex; align-items: center; gap: .6rem;
-  font-size: .62rem; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
-  color: var(--z-teal);
-  margin: 0 0 1rem;
-}
-.sec-label::before { content: ''; width: 18px; height: 1px; background: var(--z-teal); flex-shrink: 0; }
-.sec-label::after  { content: ''; flex: 1; height: 1px; background: var(--z-border); }
+.inst-info  { min-width: 0; }
+.inst-name  { font-size: .85rem; font-weight: 500; transition: color .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inst-meta  { font-size: .65rem; color: var(--fg3); margin-top: .08rem; }
 
-/* ── Layout métricas + infra ─────────────────────────────────── */
-.metrics-layout {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
-  align-items: start;
-}
-@media (max-width: 860px) { .metrics-layout { grid-template-columns: 1fr; } }
+.inst-right { display: flex; align-items: center; gap: .4rem; flex-shrink: 0; }
+.inst-ms    { font-size: .65rem; color: var(--fg3); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-/* ── Tiles ───────────────────────────────────────────────────── */
-.tiles { display: grid; grid-template-columns: repeat(2,1fr); gap: .75rem; }
+.pulsos { display: flex; gap: 2px; }
+.pulso  { width: 4px; height: 12px; border-radius: 2px; background: rgba(74,94,79,.35); }
+.pulso.ok  { background: var(--teal); }
+.pulso.err { background: var(--danger); }
 
-.tile {
-  background: var(--z-card);
-  border: 1px solid var(--z-border);
-  border-radius: var(--z-radius);
-  padding: 1.25rem 1.4rem;
-  min-height: 110px;
-  display: flex; flex-direction: column; justify-content: space-between;
-  transition: border-color var(--z-t), box-shadow var(--z-t);
-  position: relative; overflow: hidden;
-}
-.tile::before {
-  content: '';
-  position: absolute; inset: 0;
-  opacity: 0;
-  transition: opacity var(--z-t);
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(52,201,148,.06), transparent);
-}
-.tile:hover { border-color: var(--z-border2); box-shadow: var(--z-shadow); }
-.tile:hover::before { opacity: 1; }
+.infra-empty { text-align: center; padding: 2rem; font-size: .8rem; color: var(--fg3); }
+.infra-empty a { color: var(--teal); }
 
-.tile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
-.tile-val {
-  font-family: var(--z-ff-d);
-  font-size: 2.4rem; font-weight: 700;
-  line-height: 1; letter-spacing: -.03em;
-  color: var(--z-fg);
-  font-variant-numeric: tabular-nums;
-}
-.tile-val.c-lime   { color: var(--z-lime); }
-.tile-val.c-teal   { color: var(--z-teal); }
-.tile-val.c-warn   { color: var(--z-warn); }
-.tile-val.c-danger { color: var(--z-danger); }
-
-.tile-icon {
-  width: 32px; height: 32px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .95rem; flex-shrink: 0;
-  background: var(--z-surface);
-}
-.tile-lbl { font-size: .78rem; font-weight: 600; color: var(--z-fg2); margin-top: .4rem; }
-.tile-sub { font-size: .7rem; color: var(--z-fg3); margin-top: .15rem; }
-
-/* ── Columna infra ───────────────────────────────────────────── */
-.infra-col { display: flex; flex-direction: column; gap: .6rem; }
-
-.inst-card {
-  background: var(--z-card);
-  border: 1px solid var(--z-border);
-  border-radius: var(--z-radius);
-  padding: .9rem 1rem;
-  transition: border-color var(--z-t);
-}
-.inst-card:hover { border-color: rgba(52,201,148,.25); }
-.inst-card.state-ok    { border-left: 3px solid var(--z-teal); }
-.inst-card.state-error { border-left: 3px solid var(--z-danger); }
-.inst-card.state-none  { border-left: 3px solid var(--z-fg3); }
-
-.inst-top  { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.inst-name { font-size: .85rem; font-weight: 600; color: var(--z-fg); }
-.inst-meta { font-size: .68rem; color: var(--z-fg3); margin-top: .1rem; }
-
-.inst-row  { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .6rem; }
-.inst-pulsos { display: flex; gap: 2px; }
-.inst-pulso  { width: 5px; height: 14px; border-radius: 2px; background: rgba(74,94,79,.4); }
-.inst-pulso.ok  { background: var(--z-teal); }
-.inst-pulso.err { background: var(--z-danger); }
-
-.inst-actions { display: flex; gap: .3rem; align-items: center; }
-.inst-ms { font-size: .68rem; color: var(--z-fg3); font-variant-numeric: tabular-nums; }
-
+/* ═══════════════════════════════════════════════════
+   BOTONES
+   ═══════════════════════════════════════════════════ */
 .zbtn {
   display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
-  font-size: .72rem; font-weight: 600; cursor: pointer;
-  border-radius: 8px; border: 1px solid; padding: .28rem .6rem;
-  transition: background var(--z-t), color var(--z-t), border-color var(--z-t);
-  background: transparent; text-decoration: none;
+  font-family: var(--ff-b); font-size: .7rem; font-weight: 600;
+  border-radius: 100px; padding: .32rem .8rem; cursor: pointer;
+  border: 1px solid; text-decoration: none; transition: all .18s;
+  line-height: 1.4; white-space: nowrap;
 }
-.zbtn-ghost {
-  color: var(--z-fg2); border-color: var(--z-border);
-}
-.zbtn-ghost:hover { color: var(--z-teal); border-color: rgba(52,201,148,.4); background: rgba(52,201,148,.06); }
+.zbtn:disabled { opacity: .45; cursor: not-allowed; }
+.zbtn-sm { font-size: .62rem; padding: .22rem .55rem; }
+
 .zbtn-lime {
-  color: #0a1409; background: var(--z-lime); border-color: var(--z-lime);
+  color: #0a1409; background: var(--lime); border-color: var(--lime);
+  animation: cta-breathe 3s ease-in-out infinite;
 }
-.zbtn-lime:hover { background: var(--z-lime-d); border-color: var(--z-lime-d); }
-.zbtn-teal {
-  color: #0a1409; background: var(--z-teal); border-color: var(--z-teal);
-}
-.zbtn-teal:hover { background: var(--z-teal-d); border-color: var(--z-teal-d); }
-.zbtn-outline-teal {
-  color: var(--z-teal); border-color: rgba(52,201,148,.35);
-}
-.zbtn-outline-teal:hover { background: rgba(52,201,148,.08); }
-.zbtn:disabled { opacity: .5; cursor: not-allowed; }
-
-/* ── Alerta lentitud ─────────────────────────────────────────── */
-.lentitud-alert {
-  background: rgba(245,158,11,.06);
-  border: 1px solid rgba(245,158,11,.2);
-  border-radius: 10px; padding: .65rem 1rem;
-  font-size: .75rem; color: var(--z-warn);
-  display: flex; flex-wrap: wrap; gap: .3rem .6rem;
-  align-items: center; margin-bottom: 2rem;
-}
-.lentitud-chip {
-  background: rgba(245,158,11,.12); border-radius: 4px;
-  padding: .15rem .4rem; font-size: .68rem; font-weight: 700;
+.zbtn-lime:hover { background: var(--lime-d); border-color: var(--lime-d); animation: none; }
+@keyframes cta-breathe {
+  0%,100%{ box-shadow: 0 0 0 0 rgba(200,241,53,0); }
+  50%    { box-shadow: 0 0 0 7px rgba(200,241,53,.18); }
 }
 
-/* ── Leads grid ──────────────────────────────────────────────── */
-.leads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 1rem; }
+.zbtn-teal   { color: #0a1409; background: var(--teal);  border-color: var(--teal);  }
+.zbtn-teal:hover { background: rgba(52,201,148,.8); }
+
+.zbtn-ghost  { color: var(--fg2); border-color: var(--border2); background: transparent; }
+.zbtn-ghost:hover { color: var(--teal); border-color: rgba(52,201,148,.4); background: var(--teal-lo); }
+
+.zbtn-outline { color: var(--teal); border-color: rgba(52,201,148,.4); background: transparent; }
+.zbtn-outline:hover { background: var(--teal-lo); }
+
+/* ═══════════════════════════════════════════════════
+   CARDS DE LEAD
+   ═══════════════════════════════════════════════════ */
+.leads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1px; background: var(--border); border-radius: var(--r2); overflow: hidden; }
 
 .lead-card {
-  background: var(--z-card);
-  border: 1px solid var(--z-border);
-  border-top: 2px solid var(--z-lime);
-  border-radius: var(--z-radius);
-  padding: 1.1rem 1.2rem 1.2rem;
-  display: flex; flex-direction: column; gap: .65rem;
-  transition: border-color var(--z-t), box-shadow var(--z-t), opacity .4s, transform .4s;
-  position: relative; overflow: hidden;
+  background: var(--bg2); padding: 1.4rem 1.3rem;
+  display: flex; flex-direction: column; gap: .7rem;
+  transition: background .2s, opacity .4s, transform .4s;
+  position: relative; cursor: default;
 }
-.lead-card::after {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 60px;
-  background: linear-gradient(to bottom, rgba(200,241,53,.04), transparent);
-  pointer-events: none;
+.lead-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--lime), var(--teal));
+  opacity: .6;
 }
-.lead-card:hover { border-color: rgba(200,241,53,.35); box-shadow: var(--z-shadow); }
-.lead-card.fading { opacity: 0; transform: scale(.96); }
+.lead-card:hover { background: var(--surface); }
+.lead-card.fading { opacity: 0; transform: scale(.97); }
 
-.lead-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
-.lead-nombre { font-family: var(--z-ff-d); font-size: .95rem; font-weight: 600; color: var(--z-fg); }
-.lead-fecha  { font-size: .65rem; color: var(--z-fg3); white-space: nowrap; padding-top: .1rem; }
-
-.lead-row { display: flex; flex-direction: column; gap: .2rem; }
-.lead-row label {
-  font-size: .6rem; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--z-fg3);
+.lead-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.lead-nombre {
+  font-family: var(--ff-d); font-size: .95rem; font-weight: 600;
+  color: var(--fg); letter-spacing: -.01em;
 }
-.lead-row span { font-size: .78rem; color: var(--z-fg2); }
+.lead-fecha { font-size: .62rem; color: var(--fg3); padding-top: .1rem; }
 
-.lead-chip {
-  display: inline-flex; align-items: center; gap: .3rem;
-  border-radius: 100px; padding: .2rem .65rem;
-  font-size: .7rem; font-weight: 600; border: 1px solid;
+.lead-label { font-size: .58rem; letter-spacing: .15em; text-transform: uppercase; color: var(--fg3); margin-bottom: .2rem; }
+.lead-val   { font-size: .78rem; color: var(--fg2); line-height: 1.4; }
+
+.tag {
+  display: inline-flex; align-items: center;
+  font-size: .68rem; font-weight: 600; border-radius: var(--r); padding: .18rem .55rem;
+  border: 1px solid;
 }
-.lead-chip.rubro    { color: var(--z-teal);  border-color: rgba(52,201,148,.3);  background: rgba(52,201,148,.07); }
-.lead-chip.solucion { color: var(--z-lime);  border-color: rgba(200,241,53,.3);  background: rgba(200,241,53,.07); }
+.tag-teal { color: var(--teal);  border-color: rgba(52,201,148,.3);  background: rgba(52,201,148,.07); }
+.tag-lime { color: var(--lime);  border-color: rgba(200,241,53,.3);  background: rgba(200,241,53,.07); }
 
-.lead-contacto { font-size: .72rem; color: var(--z-fg3); display: flex; gap: .6rem; flex-wrap: wrap; }
+.lead-contacto { font-size: .68rem; color: var(--fg3); display: flex; gap: .6rem; flex-wrap: wrap; }
 
-/* ── Groq skeleton ───────────────────────────────────────────── */
-.groq-skeleton { display: none; padding: .5rem 0; }
-.groq-skeleton.visible { display: block; }
+/* ── Groq skeleton ─── */
+.groq-skel { display: none; }
+.groq-skel.on { display: block; padding: .4rem 0; }
 .sk-line {
-  height: 9px; border-radius: 3px; margin-bottom: .4rem;
-  background: linear-gradient(90deg, rgba(52,201,148,.06) 25%, rgba(52,201,148,.14) 50%, rgba(52,201,148,.06) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
+  height: 8px; border-radius: 3px; margin-bottom: .4rem;
+  background: linear-gradient(90deg, var(--surface) 25%, rgba(52,201,148,.12) 50%, var(--surface) 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s infinite;
 }
-.sk-line:last-child { width: 50%; }
+.sk-line:last-child { width: 45%; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-/* ── Panel Groq ──────────────────────────────────────────────── */
+/* ── Panel Groq ─── */
 .groq-panel {
   display: none;
-  background: rgba(52,201,148,.05);
-  border: 1px solid rgba(52,201,148,.18);
-  border-radius: 10px; padding: .8rem .95rem;
-  font-size: .78rem; line-height: 1.6; white-space: pre-wrap;
-  color: var(--z-fg2);
+  background: rgba(52,201,148,.04); border: 1px solid rgba(52,201,148,.18);
+  border-radius: var(--r2); padding: .85rem .95rem;
+  font-size: .76rem; line-height: 1.65; white-space: pre-wrap; color: var(--fg2);
 }
-.groq-panel.visible { display: block; }
-.groq-panel-header {
-  font-size: .6rem; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: var(--z-teal); margin-bottom: .5rem;
+.groq-panel.on { display: block; }
+.groq-panel-head {
+  font-size: .56rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: .5rem;
   display: flex; align-items: center; gap: .4rem;
 }
-.groq-panel-header::before { content: ''; width: 12px; height: 1px; background: var(--z-teal); }
+.groq-panel-head::before { content: ''; width: 12px; height: 1px; background: var(--teal); }
 
-/* ── Lead actions ────────────────────────────────────────────── */
-.lead-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .1rem; }
+.lead-actions { display: flex; gap: .4rem; flex-wrap: wrap; padding-top: .1rem; }
 
-/* ── Empty states ────────────────────────────────────────────── */
-.empty-state, .infra-empty {
-  text-align: center; color: var(--z-fg3);
-  font-size: .82rem; padding: 2rem 1rem;
+/* ── Empty lead ─── */
+.leads-empty {
+  background: var(--bg2); border-radius: var(--r2);
+  padding: 3rem 2rem; text-align: center; color: var(--fg3);
 }
-.empty-state a, .infra-empty a { color: var(--z-teal); }
+.leads-empty strong { display: block; font-family: var(--ff-d); font-size: 1.1rem; color: var(--fg2); margin-bottom: .5rem; }
 
-/* ── Dot de estado ───────────────────────────────────────────── */
-.state-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  display: inline-block;
+/* ── Alerta lentitud ─── */
+.slow-alert {
+  background: rgba(245,158,11,.05); border: 1px solid rgba(245,158,11,.2);
+  border-radius: var(--r2); padding: .65rem 1.1rem;
+  font-size: .72rem; color: var(--warn);
+  display: flex; flex-wrap: wrap; gap: .3rem .6rem; align-items: center;
+  margin-bottom: 2rem;
 }
-.state-dot.ok     { background: var(--z-teal);  box-shadow: 0 0 6px var(--z-teal); }
-.state-dot.error  { background: var(--z-danger); box-shadow: 0 0 6px var(--z-danger); }
-.state-dot.none   { background: var(--z-fg3); }
+.slow-tag { background: rgba(245,158,11,.12); border-radius: var(--r); padding: .15rem .45rem; font-size: .65rem; font-weight: 700; }
+
+/* ── Rechequear micro-btn ─── */
+.recheck-btn {
+  font-size: .65rem; color: var(--fg3); background: none; border: none;
+  cursor: pointer; padding: .15rem .3rem; border-radius: 4px; transition: color .15s;
+}
+.recheck-btn:hover { color: var(--teal); }
+
+/* ── Fade in sections ─── */
+.dash-section { animation: fadeUp .3s cubic-bezier(.4,0,.2,1) both; }
+.dash-section:nth-child(2) { animation-delay: .05s; }
+.dash-section:nth-child(3) { animation-delay: .1s; }
+.dash-section:nth-child(4) { animation-delay: .15s; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 </style>
 
-{# Gradiente ambiental #}
-<div class="dash-ambient" aria-hidden="true"></div>
+<div id="dash-ambient" aria-hidden="true"></div>
 
-{# ─── Header ──────────────────────────────────────────────────────────────── #}
-<div class="dash-header">
-  <div>
-    <div class="dash-greeting">Hola, <span class="accent">Pedro</span> 👋</div>
-    <div class="dash-date">{{ hoy.strftime("%-d de %B de %Y") }}</div>
-  </div>
-  <div class="dash-badges">
-    {% if leads_parsed %}
-    <span class="zbadge zbadge-lime">
-      ● {{ leads_parsed|length }} lead{% if leads_parsed|length != 1 %}s{% endif %} nuevos
-    </span>
-    {% endif %}
-    {% if avisos_alta %}
-    <span class="zbadge zbadge-danger">⚠ {{ avisos_alta }} aviso{% if avisos_alta != 1 %}s{% endif %} urgentes</span>
-    {% endif %}
-    {% if error_count %}
-    <span class="zbadge zbadge-danger">↓ {{ error_count }} caído{% if error_count != 1 %}s{% endif %}</span>
-    {% endif %}
-    {% if ok_count == total and total > 0 %}
-    <span class="zbadge zbadge-teal">✓ Todos online</span>
-    {% endif %}
-  </div>
-</div>
+<div class="dash-wrap">
 
-{# ─── Métricas + Infra ────────────────────────────────────────────────────── #}
-<div class="metrics-layout">
-
-  {# — Negocio — #}
-  <div>
-    <div class="sec-label">Negocio</div>
-    <div class="tiles">
-
-      <div class="tile">
-        <div class="tile-top">
-          <div>
-            <div class="tile-val {% if monto_cobrado_mes > 0 %}c-lime{% endif %}">
-              ${{ "{:,.0f}".format(monto_cobrado_mes) }}
-            </div>
-            <div class="tile-lbl">Cobrado este mes</div>
-            <div class="tile-sub">de ${{ "{:,.0f}".format(monto_esperado_mes) }} esperado</div>
-          </div>
-          <div class="tile-icon">💰</div>
-        </div>
+  {# ══ HEADER ══════════════════════════════════════════════════════════════ #}
+  <div class="dash-head dash-section">
+    <div>
+      <div class="dash-eyebrow">Panel de control</div>
+      <div class="dash-h1">
+        Hola, <span class="hl">Pedro</span> 👋
       </div>
-
-      <div class="tile">
-        <div class="tile-top">
-          <div>
-            <div class="tile-val c-teal">{{ clientes_activos }}</div>
-            <div class="tile-lbl">Clientes activos</div>
-            <div class="tile-sub">{{ clientes_en_prueba }} en prueba · {{ clientes_suspendidos }} susp.</div>
-          </div>
-          <div class="tile-icon">👥</div>
-        </div>
+      <div style="font-size:.7rem;letter-spacing:.08em;color:var(--fg3);margin-top:.5rem;text-transform:uppercase">
+        {{ hoy.strftime("%-d de %B de %Y") }}
       </div>
-
-      <div class="tile">
-        <div class="tile-top">
-          <div>
-            <div class="tile-val {% if cobros_atrasados > 0 %}c-danger{% elif cobros_pendientes > 0 %}c-warn{% else %}c-teal{% endif %}">
-              {{ cobros_pendientes }}
-            </div>
-            <div class="tile-lbl">Cobros pendientes</div>
-            <div class="tile-sub">
-              {% if cobros_atrasados %}{{ cobros_atrasados }} atrasado{% if cobros_atrasados != 1 %}s{% endif %}{% else %}Al día este mes{% endif %}
-            </div>
-          </div>
-          <div class="tile-icon">📋</div>
-        </div>
-      </div>
-
-      <div class="tile">
-        <div class="tile-top">
-          <div>
-            <div class="tile-val {% if uptime_promedio is not none %}{% if uptime_promedio >= 95 %}c-teal{% elif uptime_promedio >= 80 %}c-warn{% else %}c-danger{% endif %}{% endif %}">
-              {% if uptime_promedio is not none %}{{ uptime_promedio }}%{% else %}—{% endif %}
-            </div>
-            <div class="tile-lbl">Uptime promedio</div>
-            <div class="tile-sub">{{ ok_count }}/{{ total }} sistema{% if total != 1 %}s{% endif %} OK</div>
-          </div>
-          <div class="tile-icon">📡</div>
-        </div>
-      </div>
-
     </div>
-  </div>
-
-  {# — Infraestructura — #}
-  <div>
-    <div class="sec-label">Infraestructura</div>
-    <div class="infra-col">
-      {% if resumen %}
-        {% for r in resumen %}
-        <div class="inst-card state-{{ r.semaforo }}" id="inst-{{ r.inst.id }}">
-          <div class="inst-top">
-            <div>
-              <div class="inst-name">{{ r.inst.nombre }}</div>
-              <div class="inst-meta">{{ r.inst.cliente.nombre }}</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:.4rem">
-              <span class="state-dot {% if r.semaforo == 'ok' %}ok{% elif r.semaforo == 'error' %}error{% else %}none{% endif %}" id="dot-{{ r.inst.id }}"></span>
-              <span style="font-size:.68rem;color:var(--z-fg3)" id="badge-{{ r.inst.id }}">
-                {% if r.semaforo == 'ok' %}OK{% elif r.semaforo == 'error' %}Caído{% else %}Sin datos{% endif %}
-              </span>
-            </div>
-          </div>
-
-          <div class="inst-row">
-            <div class="inst-pulsos">
-              {% for e in r.historial %}
-              <div class="inst-pulso {% if e.ok %}ok{% else %}err{% endif %}" title="{{ e.chequeado_en.strftime('%d/%m %H:%M') }}"></div>
-              {% endfor %}
-            </div>
-            <div class="inst-actions">
-              {% if r.ultimo %}
-              <span class="inst-ms" id="ms-{{ r.inst.id }}">{{ r.ultimo.tiempo_ms or '—' }}ms</span>
-              {% endif %}
-              <button class="zbtn zbtn-ghost" onclick="rechequear({{ r.inst.id }}, this)" title="Rechequear">↻</button>
-              <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}" class="zbtn zbtn-ghost" title="Ver detalle">↗</a>
-            </div>
-          </div>
-
-          <div id="detalle-{{ r.inst.id }}" style="font-size:.68rem;color:var(--z-danger);margin-top:.2rem;{% if not (r.ultimo and not r.ultimo.ok and r.ultimo.detalle) %}display:none{% endif %}">
-            {% if r.ultimo and not r.ultimo.ok and r.ultimo.detalle %}{{ r.ultimo.detalle }}{% endif %}
-          </div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="infra-empty">Sin instalaciones activas.<br><a href="{{ url_for('clientes.lista') }}">Agregar cliente →</a></div>
+    <div class="dash-badges">
+      {% if leads_parsed %}
+      <span class="chip chip-lime">
+        <span class="chip-dot pulse"></span>
+        {{ leads_parsed|length }} lead{% if leads_parsed|length != 1 %}s{% endif %} nuevos
+      </span>
+      {% endif %}
+      {% if avisos_alta %}
+      <span class="chip chip-danger"><span class="chip-dot"></span>{{ avisos_alta }} aviso{% if avisos_alta != 1 %}s{% endif %} urgente{% if avisos_alta != 1 %}s{% endif %}</span>
+      {% endif %}
+      {% if error_count %}
+      <span class="chip chip-danger"><span class="chip-dot"></span>{{ error_count }} sistema{% if error_count != 1 %}s{% endif %} caído{% if error_count != 1 %}s{% endif %}</span>
+      {% elif total > 0 %}
+      <span class="chip chip-teal"><span class="chip-dot pulse"></span>Todos online</span>
       {% endif %}
     </div>
   </div>
 
-</div>{# /metrics-layout #}
+  {# ══ STATS STRIP ══════════════════════════════════════════════════════════ #}
+  <div class="stats-strip dash-section">
 
-{# ─── Alerta lentitud ─────────────────────────────────────────────────────── #}
-{% if instalaciones_lentas %}
-<div class="lentitud-alert">
-  ⚠ Respuesta lenta en:
-  {% for item in instalaciones_lentas %}
-  <span class="lentitud-chip">{{ item.inst.nombre }} — {{ item.avg_ms }}ms</span>
-  {% endfor %}
-</div>
-{% endif %}
-
-{# ─── Leads web ───────────────────────────────────────────────────────────── #}
-<div class="sec-label">Leads web</div>
-
-{% if leads_parsed %}
-<div class="leads-grid">
-  {% for item in leads_parsed %}
-  {% set lead = item.cliente %}
-  {% set info = item.info %}
-  <div class="lead-card" id="lead-{{ lead.id }}">
-
-    <div class="lead-card-top">
-      <div class="lead-nombre">{{ lead.nombre }}</div>
-      <div class="lead-fecha">{{ lead.creado_en.strftime("%-d %b") if lead.creado_en else "" }}</div>
+    <div class="stat-cell">
+      <div class="stat-n {% if monto_cobrado_mes > 0 %}c-lime{% endif %}">
+        <sup>$</sup>{{ "{:,.0f}".format(monto_cobrado_mes) }}
+      </div>
+      <div class="stat-l">Cobrado este mes</div>
+      <div class="stat-sub">de ${{ "{:,.0f}".format(monto_esperado_mes) }}</div>
     </div>
 
-    {% if info.rubro %}
-    <div><span class="lead-chip rubro">{{ info.rubro }}</span></div>
-    {% endif %}
-
-    {% if info.problema %}
-    <div class="lead-row">
-      <label>Problema</label>
-      <span>{{ info.problema }}</span>
-    </div>
-    {% endif %}
-
-    {% if info.solucion %}
-    <div class="lead-row">
-      <label>Solución sugerida</label>
-      <span class="lead-chip solucion">{{ info.solucion }}</span>
-    </div>
-    {% endif %}
-
-    {% if lead.email or lead.telefono %}
-    <div class="lead-contacto">
-      {% if lead.email %}<span>✉ {{ lead.email }}</span>{% endif %}
-      {% if lead.telefono %}<span>📱 {{ lead.telefono }}</span>{% endif %}
-    </div>
-    {% endif %}
-
-    <div class="groq-skeleton" id="sk-{{ lead.id }}">
-      <div class="sk-line" style="width:88%"></div>
-      <div class="sk-line" style="width:72%"></div>
-      <div class="sk-line"></div>
+    <div class="stat-cell">
+      <div class="stat-n c-teal">{{ clientes_activos }}</div>
+      <div class="stat-l">Clientes activos</div>
+      <div class="stat-sub">{{ clientes_en_prueba }} en prueba</div>
     </div>
 
-    <div class="groq-panel" id="groq-{{ lead.id }}">
-      <div class="groq-panel-header">Consejo de Groq</div>
-      <div id="groq-txt-{{ lead.id }}"></div>
+    <div class="stat-cell">
+      <div class="stat-n {% if cobros_atrasados > 0 %}c-danger{% elif cobros_pendientes > 0 %}c-warn{% else %}c-teal{% endif %}">
+        {{ cobros_pendientes }}
+      </div>
+      <div class="stat-l">Cobros pendientes</div>
+      <div class="stat-sub">{% if cobros_atrasados %}{{ cobros_atrasados }} atrasado{% if cobros_atrasados != 1 %}s{% endif %}{% else %}Al día{% endif %}</div>
     </div>
 
-    <div class="lead-actions">
-      <button class="zbtn zbtn-outline-teal" onclick="consultarGroq({{ lead.id }}, this)">🤖 ¿Qué hago?</button>
-      <button class="zbtn zbtn-lime" onclick="activarLead({{ lead.id }}, this)">✓ Activar</button>
-      <a href="{{ url_for('clientes.ver_cliente', cliente_id=lead.id) }}" class="zbtn zbtn-ghost">Ver ficha</a>
+    <div class="stat-cell">
+      <div class="stat-n {% if uptime_promedio is not none %}{% if uptime_promedio >= 95 %}c-teal{% elif uptime_promedio >= 80 %}c-warn{% else %}c-danger{% endif %}{% endif %}">
+        {% if uptime_promedio is not none %}{{ uptime_promedio }}<sup>%</sup>{% else %}—{% endif %}
+      </div>
+      <div class="stat-l">Uptime promedio</div>
+      <div class="stat-sub">{{ ok_count }}/{{ total }} OK</div>
     </div>
 
   </div>
-  {% endfor %}
-</div>
 
-{% else %}
-<div class="empty-state">
-  Sin leads nuevos de la web.<br>
-  <small style="display:block;margin-top:.35rem">Los leads llegan desde la calculadora en zynnos.com</small>
-</div>
-{% endif %}
+  {# ══ ALERTA LENTITUD ═══════════════════════════════════════════════════════ #}
+  {% if instalaciones_lentas %}
+  <div class="slow-alert dash-section">
+    ⚠ Respuesta lenta detectada —
+    {% for item in instalaciones_lentas %}
+    <span class="slow-tag">{{ item.inst.nombre }} {{ item.avg_ms }}ms</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ══ INFRA + LEADS EN DOS COLUMNAS ════════════════════════════════════════ #}
+  <div class="two-col">
+
+    {# — Infraestructura — #}
+    <div class="dash-section">
+      <div class="sec-eyebrow">Infraestructura</div>
+      <div class="infra-box">
+        <div class="infra-header">Sistemas activos</div>
+        {% if resumen %}
+          {% for r in resumen %}
+          <div class="inst-row" id="irow-{{ r.inst.id }}">
+            <div class="inst-left">
+              <span class="inst-state {% if r.semaforo == 'ok' %}ok{% elif r.semaforo == 'error' %}error{% else %}nodata{% endif %}" id="dot-{{ r.inst.id }}"></span>
+              <div class="inst-info">
+                <div class="inst-name">{{ r.inst.nombre }}</div>
+                <div class="inst-meta">{{ r.inst.cliente.nombre }}</div>
+              </div>
+            </div>
+            <div class="inst-right">
+              <div class="pulsos">
+                {% for e in r.historial %}
+                <div class="pulso {% if e.ok %}ok{% else %}err{% endif %}" title="{{ e.chequeado_en.strftime('%H:%M') }}"></div>
+                {% endfor %}
+              </div>
+              {% if r.ultimo %}
+              <span class="inst-ms" id="ms-{{ r.inst.id }}">{{ r.ultimo.tiempo_ms or '—' }}ms</span>
+              {% endif %}
+              <button class="recheck-btn" onclick="rechequear({{ r.inst.id }}, this)" title="Rechequear">↻</button>
+              <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}" class="recheck-btn" title="Detalle">↗</a>
+            </div>
+          </div>
+          {% if r.ultimo and not r.ultimo.ok and r.ultimo.detalle %}
+          <div id="det-{{ r.inst.id }}" style="font-size:.65rem;color:var(--danger);padding:.2rem 0 .4rem 1.4rem">{{ r.ultimo.detalle }}</div>
+          {% else %}
+          <div id="det-{{ r.inst.id }}" style="font-size:.65rem;color:var(--danger);padding:.2rem 0 .4rem 1.4rem;display:none"></div>
+          {% endif %}
+          {% endfor %}
+        {% else %}
+          <div class="infra-empty">Sin instalaciones.<br><a href="{{ url_for('clientes.lista') }}">Agregar cliente →</a></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# — Leads web — #}
+    <div class="dash-section">
+      <div class="sec-eyebrow">Leads web</div>
+
+      {% if leads_parsed %}
+      <div class="leads-grid">
+        {% for item in leads_parsed %}
+        {% set lead = item.cliente %}
+        {% set info = item.info %}
+        <div class="lead-card" id="lead-{{ lead.id }}">
+
+          <div class="lead-top">
+            <div class="lead-nombre">{{ lead.nombre }}</div>
+            <div class="lead-fecha">{{ lead.creado_en.strftime("%-d %b") if lead.creado_en else "" }}</div>
+          </div>
+
+          {% if info.rubro %}
+          <div><span class="tag tag-teal">{{ info.rubro }}</span></div>
+          {% endif %}
+
+          {% if info.problema %}
+          <div>
+            <div class="lead-label">Problema</div>
+            <div class="lead-val">{{ info.problema }}</div>
+          </div>
+          {% endif %}
+
+          {% if info.solucion %}
+          <div>
+            <div class="lead-label">Solución sugerida</div>
+            <span class="tag tag-lime">{{ info.solucion }}</span>
+          </div>
+          {% endif %}
+
+          {% if lead.email or lead.telefono %}
+          <div class="lead-contacto">
+            {% if lead.email %}<span>✉ {{ lead.email }}</span>{% endif %}
+            {% if lead.telefono %}<span>📱 {{ lead.telefono }}</span>{% endif %}
+          </div>
+          {% endif %}
+
+          <div class="groq-skel" id="sk-{{ lead.id }}">
+            <div class="sk-line" style="width:85%"></div>
+            <div class="sk-line" style="width:70%"></div>
+            <div class="sk-line"></div>
+          </div>
+
+          <div class="groq-panel" id="groq-{{ lead.id }}">
+            <div class="groq-panel-head">Consejo estratégico</div>
+            <div id="groq-txt-{{ lead.id }}"></div>
+          </div>
+
+          <div class="lead-actions">
+            <button class="zbtn zbtn-outline" onclick="consultarGroq({{ lead.id }}, this)">🤖 ¿Qué hago?</button>
+            <button class="zbtn zbtn-lime" onclick="activarLead({{ lead.id }}, this)">✓ Activar</button>
+            <a href="{{ url_for('clientes.ver_cliente', cliente_id=lead.id) }}" class="zbtn zbtn-ghost zbtn-sm">Ver ficha</a>
+          </div>
+
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <div class="leads-empty">
+        <strong>Sin leads nuevos</strong>
+        Los leads llegan desde la calculadora en zynnos.com
+      </div>
+      {% endif %}
+    </div>
+
+  </div>{# /two-col #}
+
+</div>{# /dash-wrap #}
 
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
 async function consultarGroq(id, btn) {
-  const sk = document.getElementById("sk-" + id);
-  const panel = document.getElementById("groq-" + id);
-  const txt = document.getElementById("groq-txt-" + id);
-  btn.disabled = true;
-  btn.textContent = "Consultando…";
-  sk.classList.add("visible");
-  panel.classList.remove("visible");
+  const sk    = document.getElementById("sk-"       + id);
+  const panel = document.getElementById("groq-"     + id);
+  const txt   = document.getElementById("groq-txt-" + id);
+  btn.disabled = true; btn.textContent = "Consultando…";
+  sk.classList.add("on"); panel.classList.remove("on");
   try {
     const r = await fetch("/tablero/groq-lead/" + id, {
       method: "POST",
       headers: { "X-CSRFToken": CSRF, "Content-Type": "application/json" }
     });
-    const data = await r.json();
-    sk.classList.remove("visible");
-    if (data.ok) {
-      txt.textContent = data.respuesta;
-      panel.classList.add("visible");
-      btn.textContent = "🤖 Regenerar";
-    } else {
-      txt.textContent = "Error: " + (data.error || "Sin respuesta");
-      panel.classList.add("visible");
-      btn.textContent = "🤖 Reintentar";
-    }
-  } catch (e) {
-    sk.classList.remove("visible");
+    const d = await r.json();
+    sk.classList.remove("on");
+    txt.textContent = d.ok ? d.respuesta : ("Error: " + (d.error || "?"));
+    panel.classList.add("on");
+    btn.textContent = d.ok ? "🤖 Regenerar" : "🤖 Reintentar";
+  } catch(e) {
+    sk.classList.remove("on");
     txt.textContent = "Error de red: " + e.message;
-    panel.classList.add("visible");
+    panel.classList.add("on");
     btn.textContent = "🤖 Reintentar";
   }
   btn.disabled = false;
 }
 
 async function activarLead(id, btn) {
-  if (!confirm("¿Marcar este lead como cliente activo?")) return;
-  btn.disabled = true;
-  btn.textContent = "Activando…";
+  if (!confirm("¿Marcar a este lead como cliente activo?")) return;
+  btn.disabled = true; btn.textContent = "Activando…";
   try {
     const r = await fetch("/tablero/activar-lead/" + id, {
       method: "POST",
       headers: { "X-CSRFToken": CSRF, "Content-Type": "application/json" }
     });
-    const data = await r.json();
-    if (data.ok) {
+    const d = await r.json();
+    if (d.ok) {
       const card = document.getElementById("lead-" + id);
       card.classList.add("fading");
-      setTimeout(() => card.style.display = "none", 450);
+      setTimeout(() => card.style.display = "none", 420);
     } else {
-      btn.disabled = false;
-      btn.textContent = "✓ Activar";
-      alert("Error: " + (data.error || "No se pudo activar"));
+      btn.disabled = false; btn.textContent = "✓ Activar";
+      alert("Error: " + (d.error || "?"));
     }
-  } catch (e) {
-    btn.disabled = false;
-    btn.textContent = "✓ Activar";
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "✓ Activar";
     alert("Error de red: " + e.message);
   }
 }
@@ -601,17 +584,15 @@ async function rechequear(instId, btn) {
     const r = await fetch("/rechequear/" + instId, {
       method: "POST", headers: { "X-CSRFToken": CSRF }
     });
-    const data = await r.json();
-    const badge   = document.getElementById("badge-" + instId);
-    const dot     = document.getElementById("dot-" + instId);
-    const detalle = document.getElementById("detalle-" + instId);
-    const ms      = document.getElementById("ms-" + instId);
-    if (badge) badge.textContent = data.ok ? "OK" : "Caído";
-    if (dot)   dot.className = "state-dot " + (data.ok ? "ok" : "error");
-    if (ms && data.tiempo_ms) ms.textContent = data.tiempo_ms + "ms";
-    if (detalle) {
-      detalle.textContent = (!data.ok && data.detalle) ? data.detalle : "";
-      detalle.style.display = (!data.ok && data.detalle) ? "block" : "none";
+    const d = await r.json();
+    const dot = document.getElementById("dot-" + instId);
+    const ms  = document.getElementById("ms-"  + instId);
+    const det = document.getElementById("det-" + instId);
+    if (dot) dot.className = "inst-state " + (d.ok ? "ok" : "error");
+    if (ms && d.tiempo_ms != null) ms.textContent = d.tiempo_ms + "ms";
+    if (det) {
+      det.textContent = (!d.ok && d.detalle) ? d.detalle : "";
+      det.style.display = (!d.ok && d.detalle) ? "block" : "none";
     }
   } catch(e) { console.error(e); }
   btn.disabled = false; btn.textContent = "↻";
