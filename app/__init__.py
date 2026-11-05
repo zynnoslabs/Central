@@ -41,6 +41,7 @@ def create_app(config_class=Config):
     from app.cobros.routes import cobros_bp
     from app.actividad.routes import actividad_bp
     from app.ajustes.routes import ajustes_bp  ### CAMBIO AQUÍ ###
+    from app.api.routes import api_bp  ### CAMBIO AQUÍ ###
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(clientes_bp, url_prefix="/clientes")
@@ -49,9 +50,11 @@ def create_app(config_class=Config):
     app.register_blueprint(cobros_bp, url_prefix="/cobros")
     app.register_blueprint(actividad_bp, url_prefix="/actividad")
     app.register_blueprint(ajustes_bp, url_prefix="/ajustes")  ### CAMBIO AQUÍ ###
+    app.register_blueprint(api_bp, url_prefix="/api")  ### CAMBIO AQUÍ ###
 
     # ─── Eximir /actividad/ingresar/* de CSRF (llega del agente externo) ──────
     csrf.exempt(actividad_bp)
+    csrf.exempt(api_bp)  ### CAMBIO AQUÍ ###
 
     # ─── Crear tablas y usuario admin inicial ──────────────────────────────────
     with app.app_context():
