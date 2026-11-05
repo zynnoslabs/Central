@@ -59,7 +59,7 @@
   --t: .12s ease;
 }
 
-html { font-size: 14px; }   /* base 14px — estándar de herramientas pro */
+html { font-size: 16px; }
 
 body {
   font-family: var(--font);
@@ -113,7 +113,7 @@ nav {
   flex: 1;
 }
 .nav-links a {
-  font-size: .875rem;   /* 14px * .875 = 12.25px → visible */
+  font-size: .9375rem;  /* 15px */
   font-weight: 500;
   color: var(--fg2);
   padding: .3rem .65rem;
@@ -179,19 +179,19 @@ main {
 /* ═══════════════════════════════════════════════
    TIPOGRAFÍA
    ═══════════════════════════════════════════════ */
-h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -.02em; color: var(--fg); line-height: 1.2; }
-h2 { font-size: 1rem;    font-weight: 600; letter-spacing: -.01em; color: var(--fg); }
-h3 { font-size: .9rem;   font-weight: 600; color: var(--fg); }
-h4 { font-size: .825rem; font-weight: 600; color: var(--fg2); text-transform: uppercase; letter-spacing: .06em; }
-p  { font-size: .875rem; color: var(--fg2); line-height: 1.6; }
+h1 { font-size: 1.5rem;   font-weight: 600; letter-spacing: -.025em; color: var(--fg); line-height: 1.15; }
+h2 { font-size: 1.125rem; font-weight: 600; letter-spacing: -.015em; color: var(--fg); }
+h3 { font-size: 1rem;     font-weight: 600; color: var(--fg); }
+h4 { font-size: .875rem;  font-weight: 500; color: var(--fg2); }
+p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 
 /* Encabezado de página — patrón consistente */
 .page-header {
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;
 }
-.page-title { font-size: 1.1rem; font-weight: 600; letter-spacing: -.02em; }
-.page-sub   { font-size: .8rem; color: var(--fg2); margin-top: .2rem; }
+.page-title { font-size: 1.375rem; font-weight: 600; letter-spacing: -.025em; }
+.page-sub   { font-size: .9375rem; color: var(--fg2); margin-top: .25rem; }
 
 /* ═══════════════════════════════════════════════
    CARDS
@@ -209,18 +209,18 @@ p  { font-size: .875rem; color: var(--fg2); line-height: 1.6; }
   gap: .75rem; padding-bottom: .9rem; margin-bottom: 1rem;
   border-bottom: 1px solid var(--border);
 }
-.card-title { font-size: .875rem; font-weight: 600; }
-.card-muted { font-size: .75rem; color: var(--fg2); }
+.card-title { font-size: 1rem; font-weight: 600; }
+.card-muted { font-size: .875rem; color: var(--fg2); }
 
 /* ═══════════════════════════════════════════════
    BOTONES — una sola escala consistente
    ═══════════════════════════════════════════════ */
 .btn {
   display: inline-flex; align-items: center; gap: .35rem;
-  font-family: var(--font); font-size: .825rem; font-weight: 500;
-  border-radius: var(--r); padding: .38rem 1rem;
+  font-family: var(--font); font-size: .9375rem; font-weight: 500;
+  border-radius: var(--r); padding: .45rem 1.1rem;
   border: 1px solid; cursor: pointer; line-height: 1.4;
-  white-space: nowrap; transition: background var(--t), border-color var(--t), color var(--t);
+  white-space: nowrap;
   -webkit-appearance: none;
 }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
@@ -245,16 +245,16 @@ p  { font-size: .875rem; color: var(--fg2); line-height: 1.6; }
 .btn-outline  { color: var(--teal); background: transparent; border-color: rgba(52,201,148,.35); }
 .btn-outline:hover:not(:disabled) { background: rgba(52,201,148,.08); }
 
-.btn-sm { font-size: .775rem; padding: .28rem .75rem; }
-.btn-xs { font-size: .72rem;  padding: .2rem .55rem; }
-.btn-lg { font-size: .9rem;   padding: .5rem 1.4rem; }
+.btn-sm { font-size: .875rem; padding: .32rem .85rem; }
+.btn-xs { font-size: .8rem;   padding: .22rem .6rem; }
+.btn-lg { font-size: 1.0625rem; padding: .55rem 1.5rem; }
 
 /* ═══════════════════════════════════════════════
    BADGES
    ═══════════════════════════════════════════════ */
 .badge {
   display: inline-flex; align-items: center;
-  font-size: .68rem; font-weight: 600;
+  font-size: .75rem; font-weight: 600;
   padding: .15rem .5rem; border-radius: 4px;
   border: 1px solid; white-space: nowrap;
 }
@@ -276,14 +276,14 @@ p  { font-size: .875rem; color: var(--fg2); line-height: 1.6; }
    ═══════════════════════════════════════════════ */
 .table-wrap { overflow-x: auto; border-radius: var(--r2); border: 1px solid var(--border); }
 
-table { width: 100%; border-collapse: collapse; font-size: .825rem; }
+table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
 
 thead th {
   background: var(--bg2);
   padding: .55rem 1rem;
   text-align: left;
-  font-size: .7rem; font-weight: 600;
-  letter-spacing: .05em; text-transform: uppercase;
+  font-size: .75rem; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase;
   color: var(--fg3);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
@@ -292,7 +292,7 @@ tbody tr { border-bottom: 1px solid var(--border); transition: background var(--
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: rgba(255,255,255,.025); }
 tbody td {
-  padding: .65rem 1rem; color: var(--fg2); vertical-align: middle;
+  padding: .75rem 1.1rem; color: var(--fg2); vertical-align: middle;
   font-variant-numeric: tabular-nums;
 }
 tbody td a { color: var(--teal); }
@@ -308,8 +308,8 @@ tbody td strong { color: var(--fg); font-weight: 500; }
 .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
 
 label {
-  display: block; font-size: .75rem; font-weight: 500;
-  color: var(--fg2); margin-bottom: .35rem;
+  display: block; font-size: .875rem; font-weight: 500;
+  color: var(--fg2); margin-bottom: .4rem;
 }
 
 input[type="text"],
@@ -324,8 +324,8 @@ select, textarea {
   width: 100%; background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: var(--r); color: var(--fg);
-  font-family: var(--font); font-size: .875rem;
-  padding: .45rem .75rem; line-height: 1.4;
+  font-family: var(--font); font-size: 1rem;
+  padding: .5rem .85rem; line-height: 1.4;
   transition: border-color var(--t), box-shadow var(--t);
   -webkit-appearance: none;
 }
@@ -413,13 +413,93 @@ input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--lime); c
 
 /* KPI tile */
 .kpi { padding: 1rem 1.25rem; }
-.kpi-label { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--fg3); margin-bottom: .3rem; }
-.kpi-value { font-size: 1.75rem; font-weight: 600; letter-spacing: -.03em; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1; }
+.kpi-label { font-size: .8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--fg3); margin-bottom: .3rem; }
+.kpi-value { font-size: 2rem; font-weight: 600; letter-spacing: -.03em; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1; }
 .kpi-delta { font-size: .72rem; color: var(--fg2); margin-top: .2rem; }
 
 /* Grid para KPIs */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--border); border-radius: var(--r2); overflow: hidden; border: 1px solid var(--border); }
 .kpi-grid .kpi { background: var(--surface); }
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   TRANSICIONES DE NAVEGACIÓN
+   View Transition API — suave entre páginas
+   ═══════════════════════════════════════════════ */
+
+/* Fade suave al cargar/navegar */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+main {
+  animation: pageIn .22s cubic-bezier(.4,0,.2,1) both;
+}
+
+/* View Transitions API (Chrome 111+) — transición entre páginas */
+@view-transition { navigation: auto; }
+::view-transition-old(root) {
+  animation: .15s ease both fadeOut;
+}
+::view-transition-new(root) {
+  animation: .2s .05s ease both pageIn;
+}
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
+/* Links de nav — transición de color más suave */
+.nav-links a {
+  transition: color .15s ease, background .15s ease;
+}
+
+/* Botones — efecto press físico */
+.btn {
+  transition: background .12s ease, border-color .12s ease, color .12s ease, transform .08s ease, box-shadow .12s ease;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(200,241,53,.18);
+}
+.btn-teal:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(52,201,148,.18);
+}
+
+/* Links de texto — underline animado */
+a.link {
+  color: var(--teal);
+  text-decoration: none;
+  background-image: linear-gradient(var(--teal), var(--teal));
+  background-size: 0 1px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  transition: background-size .2s ease, color .15s ease;
+}
+a.link:hover {
+  background-size: 100% 1px;
+}
+
+/* Cards — hover sutil */
+.card {
+  transition: border-color .15s ease;
+}
+.card:hover {
+  border-color: rgba(255,255,255,.15);
+}
+
+/* Input focus — ring más visible */
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(200,241,53,.15);
+}
+
+/* Rows de tabla — transición más suave */
+tbody tr {
+  transition: background .1s ease;
+}
 
 /* ═══════════════════════════════════════════════
    SCROLLBAR
