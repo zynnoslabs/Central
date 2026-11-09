@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zynnos Central</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0f0d;--panel:#0d1510;--card:#111a14;--border:#1e2e21;
+    --lime:#b8ff57;--teal:#3dffd6;--fg:#e8f0e9;--muted:#6b8c72;
+    --red:#ff6b6b;--yellow:#ffd166
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;min-height:100vh}
+
+  /* Layout */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.5rem;border-bottom:1px solid var(--border);background:var(--panel)}
+  .topbar-logo{font-weight:700;font-size:1.1rem;color:var(--lime)}
+  .topbar-actions{display:flex;gap:.75rem;align-items:center}
+  .badge-live{display:inline-flex;align-items:center;gap:.35rem;background:#1a2e1c;color:var(--lime);font-size:.72rem;font-weight:600;padding:.25rem .6rem;border-radius:100px}
+  .badge-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--lime);animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .btn-sm{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:.35rem .75rem;font-size:.8rem;cursor:pointer;transition:all .2s}
+  .btn-sm:hover{border-color:var(--lime);color:var(--lime)}
+
+  .main{display:grid;grid-template-columns:320px 1fr;height:calc(100vh - 53px)}
+
+  /* Sidebar - lista de conversaciones */
+  .sidebar{border-right:1px solid var(--border);overflow-y:auto;background:var(--panel)}
+  .sidebar-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .conv-item{display:block;padding:.9rem 1.25rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-decoration:none;color:inherit}
+  .conv-item:hover,.conv-item.active{background:var(--card)}
+  .conv-item.new-flash{animation:flash .6s ease}
+  @keyframes flash{0%,100%{background:var(--panel)}50%{background:#1a3020}}
+  .conv-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem}
+  .conv-name{font-weight:600;font-size:.88rem}
+  .conv-time{font-size:.72rem;color:var(--muted)}
+  .conv-preview{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .conv-badges{display:flex;gap:.35rem;margin-top:.4rem}
+  .badge{font-size:.68rem;padding:.15rem .45rem;border-radius:4px;font-weight:600}
+  .badge-active{background:#1a3020;color:var(--lime)}
+  .badge-closed{background:#1a1a1a;color:var(--muted)}
+  .badge-hot{background:#3a1a1a;color:var(--red)}
+  .badge-rubro{background:#1a2535;color:var(--teal)}
+
+  /* Panel derecho - conversación activa */
+  .conv-panel{display:flex;flex-direction:column;overflow:hidden}
+  .conv-panel-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);gap:.5rem}
+  .conv-panel-empty svg{opacity:.3}
+
+  .conv-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--panel)}
+  .conv-header-info h2{font-size:1rem;font-weight:600}
+  .conv-header-info p{font-size:.78rem;color:var(--muted);margin-top:.1rem}
+  .conv-header-actions{display:flex;gap:.5rem}
+
+  .conv-body{display:grid;grid-template-columns:1fr 280px;flex:1;overflow:hidden}
+
+  /* Chat */
+  .chat-area{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)}
+  .messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:.75rem}
+  .msg{max-width:80%;padding:.65rem .9rem;border-radius:12px;font-size:.88rem;line-height:1.5}
+  .msg-user{background:#1a3020;align-self:flex-end;border-bottom-right-radius:4px}
+  .msg-assistant{background:var(--card);align-self:flex-start;border-bottom-left-radius:4px}
+  .msg-time{font-size:.68rem;color:var(--muted);margin-top:.2rem;text-align:right}
+
+  /* Hint box */
+  .hint-box{padding:1rem;border-top:1px solid var(--border);background:var(--panel)}
+  .hint-box label{display:block;font-size:.72rem;font-weight:600;color:var(--yellow);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.06em}
+  .hint-input-row{display:flex;gap:.5rem}
+  .hint-input{flex:1;background:#0d1710;border:1px solid var(--border);border-radius:8px;color:var(--fg);padding:.6rem .9rem;font-size:.85rem;outline:none;transition:border .2s;font-family:inherit}
+  .hint-input:focus{border-color:var(--yellow)}
+  .hint-send{background:var(--yellow);color:#1a0d00;font-weight:700;border:none;border-radius:8px;padding:.6rem 1rem;cursor:pointer;font-size:.82rem;white-space:nowrap}
+  .hint-send:hover{opacity:.88}
+
+  /* Panel análisis */
+  .analysis-panel{overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
+  .analysis-title{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border)}
+  .stat-label{font-size:.78rem;color:var(--muted)}
+  .stat-value{font-size:.82rem;font-weight:600}
+  .stat-value.alta{color:var(--lime)}
+  .stat-value.media{color:var(--yellow)}
+  .stat-value.baja{color:var(--red)}
+  .budget-block{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem}
+  .budget-range{font-size:1.3rem;font-weight:700;color:var(--lime);margin:.25rem 0}
+  .budget-label{font-size:.72rem;color:var(--muted)}
+  .prob-bar{height:6px;background:#1e2e21;border-radius:3px;overflow:hidden;margin-top:.4rem}
+  .prob-fill{height:100%;background:var(--lime);border-radius:3px;transition:width .6s ease}
+  .notas-box{background:#1a1f0d;border:1px solid #2e3a1a;border-radius:8px;padding:.75rem;font-size:.8rem;color:#c8e88a;line-height:1.5}
+  .hints-history{display:flex;flex-direction:column;gap:.4rem}
+  .hint-item{background:#1a1800;border:1px solid #2e2800;border-radius:6px;padding:.5rem .75rem;font-size:.78rem;color:var(--yellow)}
+  .hint-item.applied{opacity:.5}
+
+  /* Notificación */
+  .toast{position:fixed;top:1rem;right:1rem;background:var(--card);border:1px solid var(--lime);border-radius:10px;padding:.75rem 1.25rem;font-size:.85rem;z-index:1000;transform:translateY(-80px);opacity:0;transition:all .3s}
+  .toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">⚡ Zynnos Central</div>
+  <div class="topbar-actions">
+    <span class="badge-live">EN VIVO</span>
+    <span id="active-count" style="font-size:.8rem;color:var(--muted)">0 activas</span>
+    <a href="/logout" class="btn-sm">Salir</a>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">Conversaciones</div>
+    <div id="conv-list">
+      {% for c in conversations %}
+      <a class="conv-item" href="/conversation/{{ c.id }}" data-id="{{ c.id }}">
+        <div class="conv-top">
+          <span class="conv-name">{{ c.nombre or 'Visitante' }}</span>
+          <span class="conv-time">{{ c.started_at[:16].replace('T',' ') }}</span>
+        </div>
+        <div class="conv-preview">{{ c.rubro or 'Sin rubro aún' }}</div>
+        <div class="conv-badges">
+          <span class="badge badge-{{ c.status }}">{{ c.status }}</span>
+          {% if c.rubro %}<span class="badge badge-rubro">{{ c.rubro }}</span>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Panel vacío por defecto (seleccionar conversación navega a /conversation/id) -->
+  <div class="conv-panel">
+    <div class="conv-panel-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <p>Seleccioná una conversación</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const socket = io({ transports: ['websocket'] });
+
+socket.on('connect', () => {
+  socket.emit('join_operators');
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+function formatTime(iso) {
+  return iso ? iso.slice(11,16) : '';
+}
+
+socket.on('new_conversation', (data) => {
+  showToast('🔔 Nuevo chat iniciado');
+  // Agregar al tope de la lista
+  const list = document.getElementById('conv-list');
+  const item = document.createElement('a');
+  item.className = 'conv-item new-flash';
+  item.href = `/conversation/${data.id}`;
+  item.dataset.id = data.id;
+  item.innerHTML = `
+    <div class="conv-top">
+      <span class="conv-name">Visitante</span>
+      <span class="conv-time">${formatTime(data.started_at)}</span>
+    </div>
+    <div class="conv-preview">Sin rubro aún</div>
+    <div class="conv-badges"><span class="badge badge-active">active</span></div>
+  `;
+  list.prepend(item);
+  updateActiveCount();
+});
+
+socket.on('conversation_updated', (data) => {
+  const item = document.querySelector(`.conv-item[data-id="${data.conv_id}"]`);
+  if (!item) return;
+  if (data.nombre) item.querySelector('.conv-name').textContent = data.nombre;
+  if (data.rubro)  item.querySelector('.conv-preview').textContent = data.rubro;
+});
+
+function updateActiveCount() {
+  const active = document.querySelectorAll('.badge-active').length;
+  document.getElementById('active-count').textContent = `${active} activa${active !== 1 ? 's' : ''}`;
+}
+
+updateActiveCount();
+</script>
+</body>
+</html>
