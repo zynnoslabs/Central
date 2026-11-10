@@ -382,13 +382,15 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 /* ── Ghost — acción secundaria ── */
 .btn-ghost, .btn-secondary, .zbtn-ghost {
   color: var(--fg);
-  background: rgba(255,255,255,.05);
-  border-color: rgba(255,255,255,.14);
+  background: var(--surface);
+  border-color: var(--border2);
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
 }
 .btn-ghost:hover:not(:disabled), .btn-secondary:hover:not(:disabled), .zbtn-ghost:hover:not(:disabled) {
   color: var(--fg);
-  background: rgba(255,255,255,.09);
-  border-color: rgba(255,255,255,.22);
+  background: var(--raised);
+  border-color: var(--border3);
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
 }
 
 /* ── Outline teal ── */
