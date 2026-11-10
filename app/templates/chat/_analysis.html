@@ -1,0 +1,19 @@
+<p class="mb-1"><strong>{{ a.perfil }}</strong></p>
+<p class="mb-1 small">{{ a.intencion }}</p>
+<div class="d-flex gap-2 mb-2 flex-wrap">
+  <span class="badge bg-{{ 'danger' if a.urgencia == 'alta' else 'warning' if a.urgencia == 'media' else 'info' }}">
+    Urgencia: {{ a.urgencia }}
+  </span>
+  <span class="badge bg-{{ 'success' if a.capacidad_pago == 'alta' else 'warning' if a.capacidad_pago == 'media' else 'danger' }}">
+    Capacidad: {{ a.capacidad_pago }}
+  </span>
+</div>
+<p class="mb-1 small"><strong>Solución:</strong> {{ a.solucion_recomendada }}</p>
+<p class="mb-1 small"><strong>Precio:</strong> ${{ "{:,.0f}".format(a.precio_min) }} – ${{ "{:,.0f}".format(a.precio_max) }}</p>
+<p class="mb-1 small"><strong>Entrega:</strong> {{ a.tiempo_entrega }}</p>
+<div class="progress mb-1" style="height:10px">
+  <div class="progress-bar bg-success" style="width:{{ a.probabilidad_cierre }}%"></div>
+</div>
+<small class="text-muted">Prob. cierre: {{ a.probabilidad_cierre }}%</small>
+<hr class="my-2">
+<p class="mb-0 small text-warning"><strong>Consejo:</strong> {{ a.notas_vendedor }}</p>

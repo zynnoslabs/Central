@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Nuevo plan — {{ cliente.nombre }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Nuevo plan de mensualidad</h1>
+  <a href="{{ url_for('cobros.detalle_cliente', cliente_id=cliente.id) }}" class="btn btn-ghost">← {{ cliente.nombre }}</a>
+</div>
+
+<div class="info-box mb-4">
+  Si el cliente ya tiene un plan activo, se cerrará automáticamente al guardar este nuevo.
+</div>
+
+<section class="card card-form">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.descripcion.label(class="form-label") }}
+        {{ form.descripcion(class="form-control", placeholder="ej: PalermitanHost Plan Base") }}
+        {% for e in form.descripcion.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          {{ form.monto_ars.label(class="form-label") }}
+          {{ form.monto_ars(class="form-control", placeholder="0.00") }}
+          {% for e in form.monto_ars.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          {{ form.dia_vencimiento.label(class="form-label") }}
+          {{ form.dia_vencimiento(class="form-control") }}
+          <span class="form-hint">Día del mes que vence el pago (1–28)</span>
+          {% for e in form.dia_vencimiento.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          {{ form.vigente_desde.label(class="form-label") }}
+          {{ form.vigente_desde(class="form-control") }}
+          {% for e in form.vigente_desde.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          {{ form.vigente_hasta.label(class="form-label") }}
+          {{ form.vigente_hasta(class="form-control") }}
+          <span class="form-hint">Dejá vacío si el plan sigue vigente</span>
+          {% for e in form.vigente_hasta.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('cobros.detalle_cliente', cliente_id=cliente.id) }}" class="btn btn-ghost">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar plan</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+.info-box { background:rgba(244,162,97,.12); border:1px solid rgba(244,162,97,.35); border-radius:var(--radius); padding:.75rem 1rem; font-size:.9rem; }
+.mb-4 { margin-bottom:1.25rem; }
+.card-form { max-width:600px; }
+.form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+@media(max-width:480px) { .form-row-2 { grid-template-columns:1fr; } }
+.form-group { display:flex; flex-direction:column; gap:.3rem; margin-bottom:1rem; }
+.form-hint { font-size:.78rem; color:var(--fg-muted); }
+.form-actions { display:flex; justify-content:flex-end; gap:.75rem; margin-top:1.25rem; }
+</style>
+{% endblock %}

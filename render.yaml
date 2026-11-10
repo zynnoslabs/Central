@@ -3,11 +3,15 @@ services:
     name: zynnos-central
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --worker-class eventlet -w 1 app:app
+    startCommand: gunicorn --worker-class gevent -w 1 run:app
     envVars:
-      - key: SECRET_KEY
+      - key: FLASK_SECRET_KEY
         generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
       - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
         sync: false
       - key: GROQ_API_KEY
         sync: false
@@ -17,3 +21,5 @@ services:
         value: 5492392536325
       - key: CENTRAL_URL
         sync: false
+      - key: CRON_TOKEN
+        generateValue: true

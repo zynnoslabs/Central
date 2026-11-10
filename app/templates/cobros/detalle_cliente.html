@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Cobros — {{ cliente.nombre }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ cliente.nombre }}</h1>
+    <span class="badge badge-estado-{{ cliente.estado }}">{{ cliente.estado }}</span>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('cobros.inicio') }}" class="btn btn-ghost">← Cobros</a>
+    <a href="{{ url_for('cobros.nuevo_plan', cliente_id=cliente.id) }}" class="btn btn-ghost">+ Plan</a>
+    <a href="{{ url_for('cobros.nuevo_pago', cliente_id=cliente.id) }}" class="btn btn-primary">+ Pago</a>
+  </div>
+</div>
+
+{# ── Plan activo ── #}
+{% if plan_activo %}
+<div class="plan-banner mb-4">
+  <div class="plan-info">
+    <span class="plan-label">Plan activo</span>
+    <span class="plan-nombre">{{ plan_activo.descripcion }}</span>
+  </div>
+  <div class="plan-monto">$ {{ "{:,.0f}".format(plan_activo.monto_ars) }} / mes</div>
+  <div class="plan-meta text-muted text-sm">Vence día {{ plan_activo.dia_vencimiento }} · Desde {{ plan_activo.vigente_desde.strftime('%d/%m/%Y') }}</div>
+</div>
+{% else %}
+<div class="alert-box mb-4">
+  Este cliente no tiene un plan activo.
+  <a href="{{ url_for('cobros.nuevo_plan', cliente_id=cliente.id) }}">Asignar plan →</a>
+</div>
+{% endif %}
+
+{# ── Métricas ── #}
+<div class="metrics-row mb-4">
+  <div class="metric-card">
+    <span class="metric-label">Total cobrado</span>
+    <span class="metric-value">$ {{ "{:,.0f}".format(total_cobrado) }}</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-label">Total facturado</span>
+    <span class="metric-value">$ {{ "{:,.0f}".format(total_facturado) }}</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-label">Pagos registrados</span>
+    <span class="metric-value">{{ pagos|length }}</span>
+  </div>
+</div>
+
+{# ── Historial de pagos ── #}
+<section class="card mb-4">
+  <div class="card-header">
+    <h2 class="card-title">Pagos</h2>
+  </div>
+  <div class="card-body">
+    {% if pagos %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Período</th><th>Esperado</th><th>Recibido</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          {% for p in pagos %}
+          <tr>
+            <td>{{ p.anio }} / {{ "%02d"|format(p.mes) }}</td>
+            <td>$ {{ "{:,.0f}".format(p.monto_esperado) }}</td>
+            <td>{% if p.monto_recibido %}$ {{ "{:,.0f}".format(p.monto_recibido) }}{% else %}—{% endif %}</td>
+            <td><span class="badge badge-pago-{{ p.estado }}">{{ p.estado }}</span></td>
+            <td>{{ p.fecha_pago.strftime('%d/%m/%Y') if p.fecha_pago else '—' }}</td>
+            <td class="actions">
+              {% if p.estado != 'pagado' %}
+              <form method="POST" action="{{ url_for('cobros.marcar_pagado', pago_id=p.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-success">✓</button>
+              </form>
+              {% endif %}
+              <a href="{{ url_for('cobros.editar_pago', pago_id=p.id) }}" class="btn btn-sm btn-ghost">Editar</a>
+              <!-- CAMBIO AQUÍ: botón eliminar pago -->
+              <form method="POST" action="{{ url_for('cobros.eliminar_pago', pago_id=p.id) }}" style="display:inline"
+                    onsubmit="return confirm('¿Eliminar el pago de {{ p.anio }}/{{ '%02d'|format(p.mes) }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No hay pagos registrados aún.</p>
+    {% endif %}
+  </div>
+</section>
+
+{# ── Facturas ── #}
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Facturas</h2>
+    <a href="{{ url_for('cobros.nueva_factura') }}" class="btn btn-sm btn-ghost">+ Nueva factura</a>
+  </div>
+  <div class="card-body">
+    {% if facturas %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Número</th><th>Fecha</th><th>Monto</th><th>Concepto</th></tr>
+        </thead>
+        <tbody>
+          {% for f in facturas %}
+          <tr>
+            <td class="mono">{{ f.numero }}</td>
+            <td>{{ f.fecha.strftime('%d/%m/%Y') }}</td>
+            <td>$ {{ "{:,.0f}".format(f.monto_ars) }}</td>
+            <td class="text-muted text-sm">{{ f.concepto or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No hay facturas registradas aún.</p>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+.page-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+.header-actions { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+.mb-4 { margin-bottom:1.25rem; }
+.plan-banner { background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:var(--radius); padding:1rem 1.25rem; display:flex; flex-wrap:wrap; gap:.5rem 2rem; align-items:center; }
+.plan-info { display:flex; flex-direction:column; gap:.1rem; }
+.plan-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--fg-muted); }
+.plan-nombre { font-weight:600; }
+.plan-monto { font-size:1.2rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.plan-meta { align-self:center; }
+.alert-box { background:rgba(244,162,97,.12); border:1px solid rgba(244,162,97,.35); border-radius:var(--radius); padding:.75rem 1rem; font-size:.9rem; }
+.metrics-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1rem; }
+.metric-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:.9rem 1.1rem; display:flex; flex-direction:column; gap:.2rem; }
+.metric-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:var(--fg-muted); }
+.metric-value { font-size:1.4rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.mono { font-family:monospace; font-size:.9rem; }
+.text-sm { font-size:.85rem; }
+.badge-pago-pagado { background:rgba(45,198,83,.15); color:var(--success); }
+.badge-pago-pendiente { background:rgba(244,162,97,.15); color:var(--warning); }
+.badge-pago-atrasado { background:rgba(214,40,57,.15); color:var(--danger); }
+.badge-pago-perdonado { background:rgba(108,117,125,.15); color:var(--fg-muted); }
+.badge-estado-activo { background:rgba(45,198,83,.15); color:var(--success); }
+.badge-estado-en_prueba { background:rgba(67,97,238,.15); color:var(--accent); }
+.badge-estado-suspendido { background:rgba(244,162,97,.15); color:var(--warning); }
+.badge-estado-baja { background:rgba(214,40,57,.15); color:var(--danger); }
+</style>
+{% endblock %}

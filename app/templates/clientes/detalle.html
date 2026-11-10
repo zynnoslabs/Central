@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ cliente.nombre }} — Zynnos Central{% endblock %}
+
+{% block content %}
+<div class="flex gap-1 mb-3" style="justify-content:space-between; flex-wrap:wrap; align-items:flex-start;">
+  <div>
+    <p class="text-muted text-small mb-1"><a href="{{ url_for('clientes.lista') }}" style="color:var(--fg-muted); text-decoration:none;">← Clientes</a></p>
+    <h1 class="page-title" style="margin-bottom:0;">{{ cliente.nombre }}</h1>
+  </div>
+  <a href="{{ url_for('clientes.editar', cliente_id=cliente.id) }}" class="btn" style="background:var(--bg); border:1px solid var(--border);">Editar</a>
+</div>
+
+<!-- Datos del cliente -->
+<div class="card mb-2">
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:1rem;">
+    <div>
+      <p class="text-muted text-small">Email</p>
+      <p>{{ cliente.email }}</p>
+    </div>
+    <div>
+      <p class="text-muted text-small">Teléfono</p>
+      <p>{{ cliente.telefono or '—' }}</p>
+    </div>
+    <div>
+      <p class="text-muted text-small">Estado</p>
+      {% if cliente.estado == 'activo' %}
+        <span class="badge badge-ok">Activo</span>
+      {% elif cliente.estado == 'en_prueba' %}
+        <span class="badge badge-warn">En prueba</span>
+      {% elif cliente.estado == 'suspendido' %}
+        <span class="badge badge-error">Suspendido</span>
+      {% else %}
+        <span class="badge badge-inactivo">Baja</span>
+      {% endif %}
+    </div>
+    <div>
+      <p class="text-muted text-small">Cliente desde</p>
+      <p>{{ cliente.creado_en.strftime('%d/%m/%Y') }}</p>
+    </div>
+  </div>
+  <!-- Notas inline editables -->
+  <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+    <p class="text-muted text-small mb-1">Notas internas</p>
+    <form method="POST" action="{{ url_for('clientes.guardar_notas', cliente_id=cliente.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="notas" rows="4"
+        placeholder="Observaciones internas sobre este cliente…"
+        style="width:100%; padding:.5rem .65rem; border:1px solid var(--border); border-radius:6px;
+               background:var(--bg); color:var(--fg); font-size:.9rem; resize:vertical;
+               box-sizing:border-box; font-family:inherit; line-height:1.5;">{{ cliente.notas or '' }}</textarea>
+      <div style="margin-top:.5rem; text-align:right;">
+        <button type="submit" class="btn btn-primary" style="font-size:.85rem; padding:.3rem .75rem;">Guardar notas</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- CAMBIO AQUÍ: zona de peligro al fondo de la card -->
+  <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+    <p class="text-muted text-small mb-1" style="color:var(--danger); opacity:.7;">Zona de peligro</p>
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem;">
+      <p class="text-muted text-small" style="margin:0;">Elimina este cliente y todos sus datos (instalaciones, pagos, facturas). Irreversible.</p>
+      <form method="POST" action="{{ url_for('clientes.eliminar', cliente_id=cliente.id) }}"
+            onsubmit="return confirm('¿Eliminar al cliente {{ cliente.nombre }} y todos sus datos? Esta acción no se puede deshacer.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger" style="white-space:nowrap;">Eliminar cliente</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Instalaciones -->
+<div class="flex gap-1 mb-2" style="justify-content:space-between; align-items:center;">
+  <h2 style="font-size:1.1rem; font-weight:600;">Instalaciones</h2>
+  <a href="{{ url_for('clientes.nueva_instalacion', cliente_id=cliente.id) }}" class="btn btn-primary btn-sm">+ Nueva instalación</a>
+</div>
+
+{% if cliente.instalaciones %}
+<div class="card" style="padding:0;">
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Sistema</th>
+          <th>Producto</th>
+          <th>URL</th>
+          <th>Último estado</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inst in cliente.instalaciones %}
+        {% set ultimo = inst.ultimo_estado() %}
+        <tr>
+          <td style="font-weight:600;">{{ inst.nombre }}</td>
+          <td class="text-muted">{{ inst.producto.nombre }}</td>
+          <td><a href="{{ inst.url_sistema }}" target="_blank" style="color:var(--accent); font-size:.85rem;">{{ inst.url_sistema[:40] }}{% if inst.url_sistema|length > 40 %}…{% endif %}</a></td>
+          <td>
+            {% if ultimo %}
+              {% if ultimo.ok %}
+                <span class="badge badge-ok">✓ {{ ultimo.tiempo_ms }}ms</span>
+              {% else %}
+                <span class="badge badge-error">✗ Error</span>
+              {% endif %}
+              <span class="text-muted text-small" style="display:block; margin-top:.15rem;">{{ ultimo.chequeado_en.strftime('%d/%m %H:%M') }}</span>
+            {% else %}
+              <span class="text-muted text-small">Sin datos</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if inst.activa %}
+              <span class="badge badge-ok">Activa</span>
+            {% else %}
+              <span class="badge badge-inactivo">Inactiva</span>
+            {% endif %}
+          </td>
+          <!-- CAMBIO AQUÍ: botones Activar/Desactivar + Eliminar instalación -->
+          <td>
+            <div class="flex gap-1" style="flex-wrap:nowrap; align-items:center;">
+              <a href="{{ url_for('clientes.toggle_instalacion', inst_id=inst.id) }}"
+                 class="btn btn-sm" style="background:var(--bg); border:1px solid var(--border);">
+                {{ 'Desactivar' if inst.activa else 'Activar' }}
+              </a>
+              <form method="POST" action="{{ url_for('clientes.eliminar_instalacion', inst_id=inst.id) }}" style="display:inline;"
+                    onsubmit="return confirm('¿Eliminar la instalación {{ inst.nombre }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:2rem;">
+  <p class="text-muted text-small mb-2">Este cliente todavía no tiene instalaciones.</p>
+  <a href="{{ url_for('clientes.nueva_instalacion', cliente_id=cliente.id) }}" class="btn btn-primary btn-sm">+ Agregar instalación</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Clientes — Zynnos Central{% endblock %}
+
+{% block extra_head %}
+<style>
+  .clientes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+  .cliente-nombre a {
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    transition: color var(--transition);
+  }
+  .cliente-nombre a:hover { color: var(--accent-hover); text-decoration: underline; }
+  .instalaciones-count { font-variant-numeric: tabular-nums; }
+  .table-card { padding: 0; overflow: hidden; }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--fg-muted);
+  }
+  .empty-state-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+  .empty-state h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: .4rem; color: var(--fg); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="clientes-header">
+  <h1 class="page-title" style="margin-bottom:0;">Clientes</h1>
+  <a href="{{ url_for('clientes.nuevo') }}" class="btn btn-primary">+ Nuevo cliente</a>
+</div>
+
+{% if clientes %}
+<div class="card table-card">
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Email</th>
+          <th>Estado</th>
+          <th>Instalaciones</th>
+          <th>Alta</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clientes %}
+        <tr>
+          <td class="cliente-nombre"><a href="{{ url_for('clientes.detalle', cliente_id=c.id) }}">{{ c.nombre }}</a></td>
+          <td class="text-muted text-small">{{ c.email }}</td>
+          <td>
+            {% if c.estado == 'activo' %}
+              <span class="badge badge-ok">Activo</span>
+            {% elif c.estado == 'en_prueba' %}
+              <span class="badge badge-warn">En prueba</span>
+            {% elif c.estado == 'suspendido' %}
+              <span class="badge badge-error">Suspendido</span>
+            {% else %}
+              <span class="badge badge-inactivo">Baja</span>
+            {% endif %}
+          </td>
+          <td class="instalaciones-count text-small">
+            {{ c.instalaciones | selectattr('activa') | list | length }}
+            <span class="text-muted">activas</span>
+          </td>
+          <td class="text-muted text-small">{{ c.creado_en.strftime('%d/%m/%Y') }}</td>
+          <td style="text-align:right;">
+            <a href="{{ url_for('clientes.editar', cliente_id=c.id) }}" class="btn btn-sm btn-ghost">Editar</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-state-icon">👥</div>
+    <h2>Todavía no hay clientes</h2>
+    <p class="text-muted text-small mb-3">Agregá tu primer cliente para empezar a monitorear sus sistemas.</p>
+    <a href="{{ url_for('clientes.nuevo') }}" class="btn btn-primary">+ Agregar primer cliente</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

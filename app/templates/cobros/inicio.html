@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Cobros — {{ nombre_mes }} {{ anio }}{% endblock %}
+{% block extra_head %}
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+    gap: .75rem;
+  }
+  .header-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+  /* ── Métricas ── */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition);
+  }
+  .metric-card:hover { box-shadow: var(--shadow); }
+  .metric-card.metric-success { border-left: 3px solid var(--success); }
+  .metric-card.metric-warning { border-left: 3px solid var(--warning); }
+  .metric-card.metric-danger  { border-left: 3px solid var(--danger); }
+  .metric-label {
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--fg-subtle);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .metric-value {
+    font-size: 1.55rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.02em;
+    line-height: 1.2;
+  }
+  .metric-sub {
+    font-size: .78rem;
+    color: var(--fg-muted);
+    margin-top: .1rem;
+  }
+
+  /* ── Badges de pago ── */
+  .badge-pago-pagado    { background: var(--success-dim); color: var(--success); }
+  .badge-pago-pendiente { background: var(--warning-dim); color: var(--warning); }
+  .badge-pago-atrasado  { background: var(--danger-dim);  color: var(--danger); }
+  .badge-pago-perdonado { background: var(--bg); color: var(--fg-subtle); border: 1px solid var(--border); }
+
+  /* ── Tabla cobros ── */
+  .cobros-empty {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    color: var(--fg-muted);
+  }
+  .cobros-empty-icon { font-size: 2rem; margin-bottom: .5rem; }
+  td a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  td a:hover { text-decoration: underline; }
+  .monto { font-variant-numeric: tabular-nums; }
+
+  /* ── Sección sin pago ── */
+  .sin-pago-header {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--warning);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title" style="margin-bottom:0;">Cobros
+    <span class="text-muted" style="font-size:1rem; font-weight:400;">— {{ nombre_mes }} {{ anio }}</span>
+  </h1>
+  <div class="header-actions">
+    <a href="{{ url_for('cobros.lista_facturas') }}" class="btn btn-ghost btn-sm">Facturas</a>
+    <a href="{{ url_for('cobros.monotributo') }}" class="btn btn-ghost btn-sm">Monotributo</a>
+    <a href="{{ url_for('cobros.exportar_pagos', anio=anio) }}" class="btn btn-ghost btn-sm" title="Descargar pagos del año como CSV">↓ CSV Pagos</a>
+    <a href="{{ url_for('cobros.exportar_facturas', anio=anio) }}" class="btn btn-ghost btn-sm" title="Descargar facturas del año como CSV">↓ CSV Facturas</a>
+    <a href="{{ url_for('cobros.exportar_resumen_mensual') }}" class="btn btn-ghost btn-sm" title="Resumen mensual histórico">↓ Resumen</a>
+    <a href="{{ url_for('cobros.nueva_factura') }}" class="btn btn-primary btn-sm">+ Factura</a>
+  </div>
+</div>
+
+{# ── Métricas del mes ── #}
+<div class="metrics-row">
+  <div class="metric-card">
+    <span class="metric-label">Esperado {{ nombre_mes }}</span>
+    <span class="metric-value">$ {{ "{:,.0f}".format(total_esperado) }}</span>
+  </div>
+  <div class="metric-card metric-success">
+    <span class="metric-label">Cobrado</span>
+    <span class="metric-value">$ {{ "{:,.0f}".format(total_cobrado) }}</span>
+    {% if total_esperado > 0 %}
+    <span class="metric-sub">{{ "%.0f"|format(total_cobrado / total_esperado * 100) }}% del esperado</span>
+    {% endif %}
+  </div>
+  <div class="metric-card {% if pendientes %}metric-warning{% endif %}">
+    <span class="metric-label">Pendientes</span>
+    <span class="metric-value">{{ pendientes|length }}</span>
+    {% if pendientes %}
+    <span class="metric-sub">cliente{{ 's' if pendientes|length > 1 }} sin pago</span>
+    {% endif %}
+  </div>
+  <div class="metric-card">
+    <span class="metric-label">Facturado 12m</span>
+    <span class="metric-value">$ {{ "{:,.0f}".format(facturado_12m) }}</span>
+  </div>
+</div>
+
+{# ── Clientes sin pago registrado ── #}
+{% if sin_pago %}
+<section class="card mb-3">
+  <div class="card-header">
+    <h2 class="card-title sin-pago-header">
+      <span>⚠</span> Sin pago registrado este mes
+      <span class="badge badge-error" style="margin-left:.25rem;">{{ sin_pago|length }}</span>
+    </h2>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <div class="tabla-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Estado</th>
+            <th style="text-align:right;">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in sin_pago %}
+          <tr>
+            <td><strong>{{ c.nombre }}</strong></td>
+            <td><span class="badge badge-{{ c.estado }}">{{ c.estado }}</span></td>
+            <td style="text-align:right;">
+              <a href="{{ url_for('cobros.nuevo_pago', cliente_id=c.id) }}" class="btn btn-sm btn-primary">Registrar pago</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Pagos del mes ── #}
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Pagos — {{ nombre_mes }} {{ anio }}</h2>
+    <div class="card-header-actions">
+      <a href="{{ url_for('cobros.lista_pagos') }}" class="btn btn-sm btn-ghost">Ver historial</a>
+    </div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if pagos_mes %}
+    <div class="tabla-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Esperado</th>
+            <th>Recibido</th>
+            <th>Estado</th>
+            <th>Fecha pago</th>
+            <th style="text-align:right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pagos_mes %}
+          <tr>
+            <td><a href="{{ url_for('cobros.detalle_cliente', cliente_id=p.cliente_id) }}">{{ p.cliente.nombre }}</a></td>
+            <td class="monto">$ {{ "{:,.0f}".format(p.monto_esperado) }}</td>
+            <td class="monto">{% if p.monto_recibido %}$ {{ "{:,.0f}".format(p.monto_recibido) }}{% else %}<span class="text-subtle">—</span>{% endif %}</td>
+            <td><span class="badge badge-pago-{{ p.estado }}">{{ p.estado }}</span></td>
+            <td class="text-muted text-small">{{ p.fecha_pago.strftime('%d/%m/%Y') if p.fecha_pago else '—' }}</td>
+            <td style="text-align:right;">
+              <div class="actions" style="justify-content:flex-end;">
+                {% if p.estado != 'pagado' %}
+                <form method="POST" action="{{ url_for('cobros.marcar_pagado', pago_id=p.id) }}" style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-success">✓ Pagado</button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('cobros.editar_pago', pago_id=p.id) }}" class="btn btn-sm btn-ghost">Editar</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="cobros-empty">
+      <div class="cobros-empty-icon">💳</div>
+      <p class="font-medium mb-1">No hay pagos registrados este mes</p>
+      <p class="text-small text-muted">Los pagos registrados en {{ nombre_mes }} aparecerán acá.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

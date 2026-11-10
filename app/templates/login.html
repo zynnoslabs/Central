@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Login — Zynnos Central{% endblock %}
+
+{% block content %}
+<style>
+.login-wrap { max-width: 400px; margin: 3.5rem auto; }
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 2.2rem;
+}
+.login-logo { width: 34px; height: 34px; flex-shrink: 0; }
+.login-brand-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--fg, #f0f4f1);
+}
+.login-brand-name span { color: var(--teal, #34c994); }
+.login-brand-sub {
+  display: block;
+  font-size: .6rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--fg3, #4d6358);
+  margin-top: .1rem;
+}
+
+#render-notice {
+  display: none;
+  align-items: center;
+  gap: .6rem;
+  padding: .7rem 1rem;
+  border-radius: 8px;
+  background: rgba(52,201,148,.06);
+  border: 1px solid rgba(52,201,148,.15);
+  font-size: .78rem;
+  color: #8a9e94;
+  margin-bottom: 1.2rem;
+}
+#render-notice.show { display: flex; }
+.spin-sm {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(52,201,148,.2);
+  border-top-color: #34c994;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn-relative { position: relative; }
+.btn-spin-inner {
+  display: none;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  position: absolute;
+  right: .9rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.btn-relative.loading .btn-spin-inner { display: block; }
+</style>
+
+<div class="login-wrap">
+
+  <div class="login-brand">
+    <svg class="login-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <polygon points="50,6 82,24 82,58 50,76 18,58 18,24" fill="none" stroke="#34c994" stroke-width="1.5" opacity=".5"/>
+      <polygon points="50,6 82,24 66,36 50,20 34,36 18,24" fill="rgba(52,201,148,.09)" stroke="#34c994" stroke-width="1"/>
+      <polygon points="50,76 82,58 66,46 50,62 34,46 18,58" fill="rgba(52,201,148,.06)" stroke="#34c994" stroke-width="1"/>
+      <polygon points="50,20 66,36 50,52 34,36" fill="rgba(52,201,148,.14)" stroke="#34c994" stroke-width="1"/>
+      <polygon points="50,62 66,46 50,52" fill="rgba(200,241,53,.07)" stroke="#c8f135" stroke-width=".8"/>
+      <polygon points="50,6 66,36 50,20" fill="rgba(200,241,53,.06)" stroke="#c8f135" stroke-width=".8"/>
+      <polygon points="82,24 82,58 66,46 66,36" fill="rgba(52,201,148,.05)" stroke="#34c994" stroke-width=".8"/>
+      <polygon points="18,24 34,36 18,58 34,46" fill="rgba(52,201,148,.04)" stroke="#34c994" stroke-width=".8"/>
+      <polygon points="50,76 82,58 66,46" fill="rgba(52,201,148,.04)" stroke="#34c994" stroke-width=".8"/>
+      <polygon points="50,76 18,58 34,46" fill="rgba(52,201,148,.04)" stroke="#34c994" stroke-width=".8"/>
+    </svg>
+    <div>
+      <span class="login-brand-name">Zynnos<span>.</span></span>
+      <span class="login-brand-sub">Central Panel</span>
+    </div>
+  </div>
+
+  <div id="render-notice" role="status" aria-live="polite">
+    <span class="spin-sm"></span>
+    <span>Iniciando servidor… puede tardar unos segundos</span>
+  </div>
+
+  <div class="card">
+    <form method="POST" action="{{ url_for('auth.login_post') }}" novalidate id="login-form">
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.email.label(class="form-label") }}
+        {{ form.email(class="form-control", placeholder="tu@zynnos.com", autocomplete="email") }}
+        {% if form.email.errors %}
+          {% for error in form.email.errors %}
+            <p class="form-error">{{ error }}</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.password.label(class="form-label") }}
+        {{ form.password(class="form-control", placeholder="••••••••", autocomplete="current-password") }}
+        {% if form.password.errors %}
+          {% for error in form.password.errors %}
+            <p class="form-error">{{ error }}</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="form-group" style="display:flex; align-items:center; gap:.5rem;">
+        {{ form.recordarme() }}
+        {{ form.recordarme.label(class="text-small") }}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-relative" id="btn-submit"
+              style="width:100%; justify-content:center; padding:.7rem;">
+        Iniciar sesión
+        <span class="btn-spin-inner" aria-hidden="true"></span>
+      </button>
+    </form>
+  </div>
+
+  <p class="text-muted text-small" style="text-align:center; margin-top:1.25rem;">
+    Acceso exclusivo para el equipo Zynnos
+  </p>
+</div>
+
+<script>
+(function() {
+  var notice = document.getElementById('render-notice');
+  var shown = false;
+  var t = setTimeout(function() {
+    if (!shown) { notice.classList.add('show'); }
+  }, 1500);
+  window.addEventListener('load', function() {
+    shown = true;
+    clearTimeout(t);
+    notice.classList.remove('show');
+  });
+
+  var form = document.getElementById('login-form');
+  var btn  = document.getElementById('btn-submit');
+  form.addEventListener('submit', function() {
+    btn.classList.add('loading');
+    btn.disabled = true;
+    setTimeout(function() {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }, 6000);
+  });
+})();
+</script>
+{% endblock %}

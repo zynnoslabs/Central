@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}{{ inst.nombre }} — Zynnos Central{% endblock %}
+
+{% block content %}
+<p class="text-muted text-small mb-1">
+  <a href="{{ url_for('tablero.inicio') }}" style="color:var(--fg-muted); text-decoration:none;">← Tablero</a>
+</p>
+
+<!-- Encabezado -->
+<div class="flex" style="justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:.25rem;">{{ inst.nombre }}</h1>
+    <p class="text-muted text-small">
+      {{ inst.cliente.nombre }} · {{ inst.producto.nombre }}
+      {% if not inst.activa %}<span class="badge badge-error" style="margin-left:.4rem;">Inactiva</span>{% endif %}
+    </p>
+  </div>
+  <div class="flex gap-1" style="flex-wrap:wrap;">
+    <a href="{{ inst.url_sistema }}" target="_blank" rel="noopener" class="btn btn-secondary">↗ Abrir sistema</a>
+    <a href="{{ url_for('tablero.editar_instalacion', inst_id=inst.id) }}" class="btn btn-secondary">✎ Editar</a>
+  </div>
+</div>
+
+<!-- Tiles estado -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
+  <div class="card" style="text-align:center; border-left:4px solid {% if semaforo == 'ok' %}var(--success){% elif semaforo == 'error' %}var(--danger){% else %}var(--fg-muted){% endif %};">
+    {% if semaforo == 'ok' %}
+      <p style="font-size:1.8rem;">✅</p>
+      <p class="text-small font-bold" style="color:var(--success);">Sistema OK</p>
+    {% elif semaforo == 'error' %}
+      <p style="font-size:1.8rem;">🔴</p>
+      <p class="text-small font-bold" style="color:var(--danger);">Con errores</p>
+    {% else %}
+      <p style="font-size:1.8rem;">⚪</p>
+      <p class="text-small" style="color:var(--fg-muted);">Sin datos</p>
+    {% endif %}
+  </div>
+  {% if ultimo %}
+  <div class="card" style="text-align:center;">
+    <p style="font-size:1.8rem; font-weight:700; color:var(--fg);">{{ ultimo.tiempo_ms }}ms</p>
+    <p class="text-muted text-small">Último tiempo</p>
+  </div>
+  <div class="card" style="text-align:center;">
+    <p style="font-size:1rem; font-weight:600; color:var(--fg);">{{ ultimo.chequeado_en.strftime('%d/%m %H:%M') }}</p>
+    <p class="text-muted text-small">Último chequeo</p>
+  </div>
+  {% endif %}
+  <div class="card" style="text-align:center;">
+    <p style="font-size:1.8rem; font-weight:700; color:var(--success);">{{ uptime_pct }}%</p>
+    <p class="text-muted text-small">Uptime (últimos {{ total_eventos }} chequeos)</p>
+  </div>
+</div>
+
+{# CAMBIO AQUÍ: gráfico de tiempos de respuesta (últimos 60 eventos, más reciente a la derecha) #}
+{% set eventos_grafico = eventos[:60] | reverse | list %}
+{% if eventos_grafico %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <p class="font-bold">📈 Tiempos de respuesta</p>
+    <span class="text-muted text-small">últimos {{ eventos_grafico|length }} chequeos</span>
+  </div>
+
+  {# Calcular el máximo tiempo para escalar el gráfico #}
+  {% set tiempos_validos = eventos_grafico | selectattr('tiempo_ms') | map(attribute='tiempo_ms') | list %}
+  {% if tiempos_validos %}
+    {% set t_max = tiempos_validos | max %}
+    {% set t_max = [t_max, 100] | max %}
+  {% else %}
+    {% set t_max = 1000 %}
+  {% endif %}
+
+  {# Dimensiones del SVG #}
+  {% set svg_w = 800 %}
+  {% set svg_h = 140 %}
+  {% set pad_l = 48 %}
+  {% set pad_r = 12 %}
+  {% set pad_t = 12 %}
+  {% set pad_b = 28 %}
+  {% set plot_w = svg_w - pad_l - pad_r %}
+  {% set plot_h = svg_h - pad_t - pad_b %}
+  {% set n = eventos_grafico | length %}
+
+  <div style="overflow-x:auto;">
+  <svg viewBox="0 0 {{ svg_w }} {{ svg_h }}" width="100%" style="display:block; min-width:320px; max-width:100%;"
+       role="img" aria-label="Gráfico de tiempos de respuesta">
+
+    {# Líneas guía horizontales y etiquetas Y #}
+    {% for i in [0, 25, 50, 75, 100] %}
+      {% set y_val = (t_max * i / 100) | int %}
+      {% set y_pos = pad_t + plot_h - (plot_h * i / 100) %}
+      <line x1="{{ pad_l }}" y1="{{ y_pos }}" x2="{{ svg_w - pad_r }}" y2="{{ y_pos }}"
+            stroke="currentColor" stroke-opacity="0.08" stroke-width="1"/>
+      <text x="{{ pad_l - 4 }}" y="{{ y_pos + 4 }}" text-anchor="end"
+            font-size="9" fill="currentColor" opacity="0.45">
+        {% if y_val >= 1000 %}{{ (y_val / 1000) | round(1) }}s{% else %}{{ y_val }}ms{% endif %}
+      </text>
+    {% endfor %}
+
+    {# Línea de referencia 1000ms si t_max > 1000 #}
+    {% if t_max > 1000 %}
+      {% set y_ref = pad_t + plot_h - (plot_h * 1000 / t_max) %}
+      <line x1="{{ pad_l }}" y1="{{ y_ref }}" x2="{{ svg_w - pad_r }}" y2="{{ y_ref }}"
+            stroke="#f4a261" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="{{ pad_l + 4 }}" y="{{ y_ref - 3 }}" font-size="8" fill="#f4a261" opacity="0.8">1s</text>
+    {% endif %}
+
+    {# Barras #}
+    {% for ev in eventos_grafico %}
+      {% set i = loop.index0 %}
+      {% set bar_w = (plot_w / n) | int %}
+      {% set bar_w = [bar_w - 2, 2] | max %}
+      {% set x_center = pad_l + (plot_w * i / n) + (plot_w / n / 2) %}
+
+      {% if ev.tiempo_ms %}
+        {% set ratio = (ev.tiempo_ms / t_max) %}
+        {% set ratio = [ratio, 1.0] | min %}
+        {% set bar_h = (plot_h * ratio) | int %}
+        {% set bar_h = [bar_h, 2] | max %}
+        {% set y_bar = pad_t + plot_h - bar_h %}
+        {% if ev.ok %}
+          {% set color = "#2dc653" %}
+        {% else %}
+          {% set color = "#d62839" %}
+        {% endif %}
+      {% else %}
+        {% set bar_h = 3 %}
+        {% set y_bar = pad_t + plot_h - 3 %}
+        {% set color = "#6c757d" %}
+      {% endif %}
+
+      <rect
+        x="{{ x_center - bar_w / 2 }}"
+        y="{{ y_bar }}"
+        width="{{ bar_w }}"
+        height="{{ bar_h }}"
+        rx="2"
+        fill="{{ color }}"
+        opacity="0.8">
+        <title>{% if ev.tiempo_ms %}{{ ev.tiempo_ms }}ms · {% endif %}{% if ev.ok %}OK{% else %}Error{% endif %} · {{ ev.chequeado_en.strftime('%d/%m %H:%M') }}{% if ev.detalle %} · {{ ev.detalle }}{% endif %}</title>
+      </rect>
+    {% endfor %}
+
+    {# Eje X: fecha del primer y último evento #}
+    {% if eventos_grafico | length >= 2 %}
+      <text x="{{ pad_l }}" y="{{ svg_h - 6 }}" font-size="9" fill="currentColor" opacity="0.45" text-anchor="start">
+        {{ eventos_grafico[0].chequeado_en.strftime('%d/%m %H:%M') }}
+      </text>
+      <text x="{{ svg_w - pad_r }}" y="{{ svg_h - 6 }}" font-size="9" fill="currentColor" opacity="0.45" text-anchor="end">
+        {{ eventos_grafico[-1].chequeado_en.strftime('%d/%m %H:%M') }}
+      </text>
+    {% endif %}
+
+    {# Borde izquierdo del área #}
+    <line x1="{{ pad_l }}" y1="{{ pad_t }}" x2="{{ pad_l }}" y2="{{ pad_t + plot_h }}"
+          stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+  </svg>
+  </div>
+
+  <!-- Leyenda -->
+  <div class="flex gap-1" style="margin-top:.6rem; flex-wrap:wrap;">
+    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg-muted);">
+      <span style="width:10px; height:10px; border-radius:2px; background:#2dc653; display:inline-block;"></span> OK
+    </span>
+    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg-muted);">
+      <span style="width:10px; height:10px; border-radius:2px; background:#d62839; display:inline-block;"></span> Error
+    </span>
+    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg-muted);">
+      <span style="width:10px; height:10px; border-radius:2px; background:#6c757d; display:inline-block;"></span> Sin datos
+    </span>
+    {% if t_max > 1000 %}
+    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg-muted);">
+      <span style="width:14px; height:2px; background:#f4a261; display:inline-block;"></span> Umbral 1s
+    </span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{# FIN CAMBIO: gráfico de tiempos de respuesta #}
+
+<!-- Token del agente -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <p class="font-bold mb-1">🔑 Token del agente</p>
+  <p class="text-muted text-small mb-1">Usá este token en la variable <code>CENTRAL_TOKEN</code> del sistema instalado para que pueda reportar actividad.</p>
+  {% if inst.agente_token %}
+  <div class="flex gap-1" style="flex-wrap:wrap; align-items:center;">
+    <code id="token-val" style="background:var(--bg); padding:.35rem .75rem; border-radius:6px; border:1px solid var(--border); font-size:.85rem; word-break:break-all; flex:1;">{{ inst.agente_token }}</code>
+    <button onclick="copiarToken()" class="btn btn-secondary" style="white-space:nowrap;">Copiar</button>
+  </div>
+  {% else %}
+  <p class="text-muted text-small" style="margin-bottom:.75rem;">Esta instalación no tiene token. Generalo para habilitar el agente.</p>
+  {% endif %}
+  <form method="POST" action="{{ url_for('tablero.regenerar_token', inst_id=inst.id) }}" style="margin-top:.75rem;"
+        onsubmit="return confirm('¿Regenerar token? El token anterior dejará de funcionar.')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-secondary btn-sm">
+      {% if inst.agente_token %}↻ Regenerar token{% else %}+ Generar token{% endif %}
+    </button>
+  </form>
+</div>
+
+<!-- Links de infraestructura -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <p class="font-bold mb-1">🔗 Infraestructura</p>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:.75rem; margin-top:.5rem;">
+    <div>
+      <p class="text-muted text-small">URL sistema</p>
+      <a href="{{ inst.url_sistema }}" target="_blank" rel="noopener" style="font-size:.85rem; word-break:break-all;">{{ inst.url_sistema }}</a>
+    </div>
+    <div>
+      <p class="text-muted text-small">URL salud</p>
+      <a href="{{ inst.url_salud }}" target="_blank" rel="noopener" style="font-size:.85rem; word-break:break-all;">{{ inst.url_salud }}</a>
+    </div>
+    {% if inst.render_service_id %}
+    <div>
+      <p class="text-muted text-small">Render Service ID</p>
+      <code style="font-size:.85rem;">{{ inst.render_service_id }}</code>
+    </div>
+    {% endif %}
+    {% if inst.neon_project_id %}
+    <div>
+      <p class="text-muted text-small">Neon Project ID</p>
+      <code style="font-size:.85rem;">{{ inst.neon_project_id }}</code>
+    </div>
+    {% endif %}
+    {% if inst.sentry_project %}
+    <div>
+      <p class="text-muted text-small">Sentry Project</p>
+      <code style="font-size:.85rem;">{{ inst.sentry_project }}</code>
+    </div>
+    {% endif %}
+    {% if inst.costo_usd %}
+    <div>
+      <p class="text-muted text-small">Costo mensual</p>
+      <p style="font-size:.85rem;">USD {{ "%.2f"|format(inst.costo_usd) }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Historial completo -->
+<div class="card">
+  <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <p class="font-bold">📋 Historial de chequeos</p>
+    <span class="text-muted text-small">{{ eventos|length }} registros</span>
+  </div>
+
+  {% if not eventos %}
+  <p class="text-muted text-small" style="text-align:center; padding:1.5rem 0;">Todavía no se realizó ningún chequeo.</p>
+  {% else %}
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th>Tiempo</th>
+          <th>HTTP</th>
+          <th>Detalle</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in eventos %}
+        <tr>
+          <td>
+            {% if ev.ok %}
+              <span class="badge badge-ok">✓ OK</span>
+            {% else %}
+              <span class="badge badge-error">✗ Error</span>
+            {% endif %}
+          </td>
+          <td>{% if ev.tiempo_ms %}{{ ev.tiempo_ms }}ms{% else %}—{% endif %}</td>
+          <td>{% if ev.codigo_http %}{{ ev.codigo_http }}{% else %}—{% endif %}</td>
+          <td class="text-muted text-small">{{ ev.detalle or '—' }}</td>
+          <td class="text-muted text-small" style="white-space:nowrap;">{{ ev.chequeado_en.strftime('%d/%m/%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function copiarToken() {
+  const val = document.getElementById('token-val')?.textContent?.trim();
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = 'Copiar', 2000);
+  }).catch(() => {
+    const range = document.createRange();
+    range.selectNode(document.getElementById('token-val'));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  });
+}
+</script>
+{% endblock %}

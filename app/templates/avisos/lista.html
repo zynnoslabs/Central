@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Avisos — Zynnos Central{% endblock %}
+
+{% block extra_head %}
+<style>
+  .avisos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .avisos-titulo {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+  .filtros {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .aviso-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition), opacity var(--transition);
+    animation: fadeUp .2s ease-out both;
+  }
+  .aviso-card:hover { box-shadow: var(--shadow); }
+  .aviso-card.resuelto { opacity: .55; }
+  .aviso-card.resuelto:hover { opacity: .85; }
+
+  .aviso-prioridad-alta    { border-left: 3px solid var(--danger); }
+  .aviso-prioridad-media   { border-left: 3px solid var(--warning); }
+  .aviso-prioridad-baja    { border-left: 3px solid var(--success); }
+
+  .aviso-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .aviso-meta { flex: 1; min-width: 0; }
+  .aviso-tags { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .4rem; }
+  .aviso-titulo-texto {
+    font-weight: 600;
+    margin-bottom: .2rem;
+    word-break: break-word;
+  }
+  .aviso-titulo-texto.tachado { text-decoration: line-through; color: var(--fg-muted); }
+  .aviso-cuerpo {
+    color: var(--fg-muted);
+    font-size: .88rem;
+    white-space: pre-wrap;
+    margin-bottom: .3rem;
+    word-break: break-word;
+  }
+  .aviso-fecha { font-size: .78rem; color: var(--fg-subtle); }
+  .aviso-acciones {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .lista-avisos { display: flex; flex-direction: column; gap: .65rem; }
+
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+    color: var(--fg-muted);
+  }
+  .empty-state-icon { font-size: 2rem; margin-bottom: .6rem; }
+  .empty-state p { max-width: 320px; margin: 0 auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="avisos-header">
+  <div class="avisos-titulo">
+    Avisos
+    {% if pendientes > 0 %}
+    <span class="badge badge-error">{{ pendientes }}</span>
+    {% endif %}
+  </div>
+  <a href="{{ url_for('avisos.nuevo') }}" class="btn btn-primary">+ Nuevo aviso</a>
+</div>
+
+{# ── Filtros ── #}
+<div class="filtros">
+  <a href="{{ url_for('avisos.lista', estado='pendiente') }}"
+     class="btn btn-sm {% if filtro == 'pendiente' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Pendientes{% if filtro != 'pendiente' and pendientes %} <span class="badge badge-error" style="font-size:.65rem; padding:.1rem .35rem;">{{ pendientes }}</span>{% endif %}
+  </a>
+  <a href="{{ url_for('avisos.lista', estado='resuelto') }}"
+     class="btn btn-sm {% if filtro == 'resuelto' %}btn-primary{% else %}btn-secondary{% endif %}">Resueltos</a>
+  <a href="{{ url_for('avisos.lista', estado='todos') }}"
+     class="btn btn-sm {% if filtro == 'todos' %}btn-primary{% else %}btn-secondary{% endif %}">Todos</a>
+</div>
+
+{# ── Lista de avisos ── #}
+{% if not avisos %}
+<div class="card empty-state">
+  {% if filtro == 'pendiente' %}
+  <div class="empty-state-icon">✅</div>
+  <p class="font-medium mb-1">Sin avisos pendientes</p>
+  <p class="text-small">Todo está en orden por ahora.</p>
+  {% elif filtro == 'resuelto' %}
+  <div class="empty-state-icon">📋</div>
+  <p class="font-medium mb-1">Sin avisos resueltos todavía</p>
+  <p class="text-small">Los avisos que resuelvas aparecerán acá.</p>
+  {% else %}
+  <div class="empty-state-icon">🔔</div>
+  <p class="font-medium mb-1">No hay avisos</p>
+  <p class="text-small mt-1"><a href="{{ url_for('avisos.nuevo') }}" style="color:var(--accent);">Crear el primero →</a></p>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="lista-avisos">
+  {% for aviso in avisos %}
+  <div class="aviso-card aviso-prioridad-{{ aviso.prioridad }} {% if aviso.estado == 'resuelto' %}resuelto{% endif %}">
+    <div class="aviso-inner">
+      <div class="aviso-meta">
+        <div class="aviso-tags">
+          <span class="badge {% if aviso.prioridad == 'alta' %}badge-error{% elif aviso.prioridad == 'media' %}badge-warn{% else %}badge-ok{% endif %}">
+            {% if aviso.prioridad == 'alta' %}🔴 Alta{% elif aviso.prioridad == 'media' %}🟡 Media{% else %}🟢 Baja{% endif %}
+          </span>
+          {% if aviso.estado == 'resuelto' %}
+          <span class="badge badge-ok">✓ Resuelto</span>
+          {% endif %}
+          {% if aviso.cliente %}
+          <span class="badge badge-inactivo">{{ aviso.cliente.nombre }}</span>
+          {% endif %}
+        </div>
+        <p class="aviso-titulo-texto {% if aviso.estado == 'resuelto' %}tachado{% endif %}">{{ aviso.titulo }}</p>
+        {% if aviso.cuerpo %}
+        <p class="aviso-cuerpo">{{ aviso.cuerpo }}</p>
+        {% endif %}
+        <p class="aviso-fecha">
+          Creado {{ aviso.creado_en.strftime('%d/%m/%Y %H:%M') }} UTC
+          {% if aviso.resuelto_en %}
+          · Resuelto {{ aviso.resuelto_en.strftime('%d/%m/%Y %H:%M') }} UTC
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="aviso-acciones">
+        {% if aviso.estado == 'pendiente' %}
+        <form method="POST" action="{{ url_for('avisos.resolver', aviso_id=aviso.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-success">✓ Resolver</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('avisos.reabrir', aviso_id=aviso.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-secondary">↩ Reabrir</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('avisos.editar', aviso_id=aviso.id) }}" class="btn btn-sm btn-secondary">Editar</a>
+        <form method="POST" action="{{ url_for('avisos.eliminar', aviso_id=aviso.id) }}" style="display:inline;"
+              onsubmit="return confirm('¿Eliminar este aviso?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

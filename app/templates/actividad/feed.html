@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Actividad — Zynnos Central{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Actividad</h1>
+
+<!-- Tiles resumen 24h -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
+  <div class="card" style="text-align:center;">
+    <p style="font-size:2.2rem; font-weight:700; color:var(--accent);">{{ total_24h }}</p>
+    <p class="text-muted text-small">Eventos últimas 24h</p>
+  </div>
+  {% for tipo, conteo in resumen_tipos[:4] %}
+  <div class="card" style="text-align:center;">
+    <p style="font-size:1.8rem; font-weight:700; color:var(--fg);">{{ conteo }}</p>
+    <p class="text-muted text-small">{{ tipo }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Feed -->
+<div class="card">
+  <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <p class="font-bold">Feed de eventos</p>
+    <span class="text-muted text-small">Últimos {{ eventos|length }}</span>
+  </div>
+
+  {% if not eventos %}
+  <p class="text-muted text-small" style="text-align:center; padding:2rem 0;">
+    No hay eventos todavía. Configurá el agente en cada instalación para empezar a recibir datos.
+  </p>
+  {% else %}
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th>Subtipo</th>
+          <th>Instalación</th>
+          <th>Cliente</th>
+          <th>Detalle</th>
+          <th>Recibido</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in eventos %}
+        <tr>
+          <td><span class="badge badge-ok" style="font-size:.75rem;">{{ ev.tipo }}</span></td>
+          <td class="text-muted text-small">{{ ev.subtipo or '—' }}</td>
+          <td>
+            <a href="{{ url_for('tablero.detalle_instalacion', inst_id=ev.instalacion.id) }}"
+               style="color:var(--accent); text-decoration:none; font-size:.85rem;">
+              {{ ev.instalacion.nombre }}
+            </a>
+          </td>
+          <td class="text-muted text-small">{{ ev.instalacion.cliente.nombre }}</td>
+          <td class="text-muted text-small" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+              title="{{ ev.detalle or '' }}">
+            {{ ev.detalle or '—' }}
+          </td>
+          <td class="text-muted text-small" style="white-space:nowrap;">
+            {{ ev.recibido_en.strftime('%d/%m %H:%M') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

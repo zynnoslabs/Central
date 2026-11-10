@@ -1,0 +1,601 @@
+{% extends "base.html" %}
+{% block title %}Tablero — Zynnos Central{% endblock %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════════
+   DESIGN SYSTEM — igual a zynnos.com
+   ══════════════════════════════════════════════════ */
+:root {
+  --bg:       #0e1a13;
+  --bg2:      #111f17;
+  --bg3:      #0b1510;
+  --surface:  #1a2e1f;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.13);
+  --fg:       #f0ede6;
+  --fg2:      #8a9e8f;
+  --fg3:      #4a5e4f;
+  --lime:     #c8f135;
+  --lime-d:   #a8cc1a;
+  --teal:     #34c994;
+  --teal-lo:  rgba(52,201,148,.10);
+  --danger:   #ff6b6b;
+  --warn:     #f59e0b;
+  --r:        6px;
+  --r2:       12px;
+  --ff-d:     'Space Grotesk', system-ui, sans-serif;
+  --ff-b:     'Inter', system-ui, sans-serif;
+}
+
+/* forzar base oscura sobre el base.html */
+body { background: var(--bg3) !important; color: var(--fg) !important; font-family: var(--ff-b) !important; }
+nav  { background: rgba(11,21,16,.96) !important; border-color: var(--border) !important; backdrop-filter: blur(20px) !important; }
+
+/* ── Gradiente ambiental ─────────────────────────── */
+#dash-ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 55% 50% at 80% 10%, rgba(52,201,148,.07) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 5%  85%, rgba(200,241,53,.04) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 30% at 50% 50%, rgba(52,201,148,.03) 0%, transparent 70%);
+}
+.dash-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 2.5rem); }
+
+/* ═══════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════ */
+.dash-head {
+  padding: 2.5rem 0 2rem;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2.5rem;
+}
+.dash-eyebrow {
+  font-size: .58rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: .6rem;
+  display: flex; align-items: center; gap: .6rem;
+}
+.dash-eyebrow::before { content: ''; width: 22px; height: 1px; background: var(--teal); display: inline-block; }
+
+.dash-h1 {
+  font-family: var(--ff-d); font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 700; letter-spacing: -.03em; line-height: 1.05;
+  color: var(--fg);
+}
+.dash-h1 .hl { color: var(--lime); }
+.dash-h1 .ht { color: var(--teal); }
+
+.dash-badges { display: flex; gap: .4rem; flex-wrap: wrap; padding-top: .2rem; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-family: var(--ff-b); font-size: .65rem; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: .3rem .75rem; border-radius: 100px; border: 1px solid;
+  transition: opacity .2s;
+}
+.chip-lime   { color: var(--lime);   border-color: rgba(200,241,53,.35);  background: rgba(200,241,53,.07); }
+.chip-teal   { color: var(--teal);   border-color: rgba(52,201,148,.35);  background: rgba(52,201,148,.07); }
+.chip-danger { color: var(--danger); border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.07); }
+.chip-warn   { color: var(--warn);   border-color: rgba(245,158,11,.35);  background: rgba(245,158,11,.07); }
+
+.chip-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.chip-dot.pulse { animation: pulse-dot 1.6s ease-in-out infinite; }
+.chip-lime   .chip-dot { background: var(--lime); }
+.chip-teal   .chip-dot { background: var(--teal); }
+.chip-danger .chip-dot { background: var(--danger); }
+.chip-warn   .chip-dot { background: var(--warn); }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.65)} }
+
+/* ═══════════════════════════════════════════════════
+   STATS STRIP — igual al #stats de la web
+   ═══════════════════════════════════════════════════ */
+.stats-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--border); gap: 1px;
+  border-radius: var(--r2); overflow: hidden;
+  margin-bottom: 2.5rem;
+}
+@media (max-width: 600px) { .stats-strip { grid-template-columns: 1fr 1fr; } }
+
+.stat-cell {
+  background: var(--bg2); padding: 1.6rem 1.5rem;
+  text-align: center; cursor: default;
+  transition: background .2s;
+  position: relative; overflow: hidden;
+}
+.stat-cell::after {
+  content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  opacity: 0; transition: opacity .3s;
+}
+.stat-cell:hover { background: var(--surface); }
+.stat-cell:hover::after { opacity: 1; }
+
+.stat-n {
+  font-family: var(--ff-d); font-weight: 700;
+  font-size: clamp(1.6rem, 2.8vw, 2.4rem);
+  letter-spacing: -.04em; line-height: 1;
+  color: var(--fg);
+}
+.stat-n sup { color: var(--teal); font-size: .5em; vertical-align: .3em; }
+.stat-n.c-lime   { color: var(--lime); }
+.stat-n.c-teal   { color: var(--teal); }
+.stat-n.c-warn   { color: var(--warn); }
+.stat-n.c-danger { color: var(--danger); }
+.stat-l { font-size: .62rem; color: var(--fg3); margin-top: .35rem; letter-spacing: .05em; text-transform: uppercase; }
+.stat-sub { font-size: .68rem; color: var(--fg2); margin-top: .2rem; }
+
+/* ═══════════════════════════════════════════════════
+   EYEBROW DE SECCIÓN
+   ═══════════════════════════════════════════════════ */
+.sec-eyebrow {
+  font-size: .58rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: .6rem;
+}
+.sec-eyebrow::before { content: ''; width: 18px; height: 1px; background: var(--teal); }
+.sec-eyebrow::after  { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT INFRA + LEADS
+   ═══════════════════════════════════════════════════ */
+.two-col {
+  display: grid; grid-template-columns: 320px 1fr;
+  gap: 1.5rem; margin-bottom: 2.5rem; align-items: start;
+}
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════════════════════════════
+   CARDS DE INFRAESTRUCTURA
+   (estilo hero-card de la web)
+   ═══════════════════════════════════════════════════ */
+.infra-box {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--r2); padding: 1.4rem 1.3rem; overflow: hidden;
+}
+.infra-header {
+  font-size: .58rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--fg3); padding-bottom: .85rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: .3rem;
+}
+
+.inst-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .8rem 0; border-bottom: 1px solid var(--border);
+  cursor: default; transition: background .15s;
+  gap: .5rem;
+}
+.inst-row:last-child { border-bottom: none; padding-bottom: 0; }
+.inst-row:hover .inst-name { color: var(--teal); }
+
+.inst-left  { display: flex; align-items: center; gap: .75rem; min-width: 0; }
+.inst-state {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.inst-state.ok     { background: var(--teal);  box-shadow: 0 0 7px rgba(52,201,148,.7); animation: pulse-dot 2s ease-in-out infinite; }
+.inst-state.error  { background: var(--danger); box-shadow: 0 0 7px rgba(255,107,107,.7); }
+.inst-state.nodata { background: var(--fg3); }
+
+.inst-info  { min-width: 0; }
+.inst-name  { font-size: .85rem; font-weight: 500; transition: color .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inst-meta  { font-size: .65rem; color: var(--fg3); margin-top: .08rem; }
+
+.inst-right { display: flex; align-items: center; gap: .4rem; flex-shrink: 0; }
+.inst-ms    { font-size: .65rem; color: var(--fg3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.pulsos { display: flex; gap: 2px; }
+.pulso  { width: 4px; height: 12px; border-radius: 2px; background: rgba(74,94,79,.35); }
+.pulso.ok  { background: var(--teal); }
+.pulso.err { background: var(--danger); }
+
+.infra-empty { text-align: center; padding: 2rem; font-size: .8rem; color: var(--fg3); }
+.infra-empty a { color: var(--teal); }
+
+/* ═══════════════════════════════════════════════════
+   BOTONES
+   ═══════════════════════════════════════════════════ */
+.zbtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
+  font-family: var(--ff-b); font-size: .7rem; font-weight: 600;
+  border-radius: 100px; padding: .32rem .8rem; cursor: pointer;
+  border: 1px solid; text-decoration: none; transition: all .18s;
+  line-height: 1.4; white-space: nowrap;
+}
+.zbtn:disabled { opacity: .45; cursor: not-allowed; }
+.zbtn-sm { font-size: .62rem; padding: .22rem .55rem; }
+
+.zbtn-lime {
+  color: #0a1409; background: var(--lime); border-color: var(--lime);
+  animation: cta-breathe 3s ease-in-out infinite;
+}
+.zbtn-lime:hover { background: var(--lime-d); border-color: var(--lime-d); animation: none; }
+@keyframes cta-breathe {
+  0%,100%{ box-shadow: 0 0 0 0 rgba(200,241,53,0); }
+  50%    { box-shadow: 0 0 0 7px rgba(200,241,53,.18); }
+}
+
+.zbtn-teal   { color: #0a1409; background: var(--teal);  border-color: var(--teal);  }
+.zbtn-teal:hover { background: rgba(52,201,148,.8); }
+
+.zbtn-ghost  { color: var(--fg2); border-color: var(--border2); background: transparent; }
+.zbtn-ghost:hover { color: var(--teal); border-color: rgba(52,201,148,.4); background: var(--teal-lo); }
+
+.zbtn-outline { color: var(--teal); border-color: rgba(52,201,148,.4); background: transparent; }
+.zbtn-outline:hover { background: var(--teal-lo); }
+
+/* ═══════════════════════════════════════════════════
+   CARDS DE LEAD
+   ═══════════════════════════════════════════════════ */
+.leads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1px; background: var(--border); border-radius: var(--r2); overflow: hidden; }
+
+.lead-card {
+  background: var(--bg2); padding: 1.4rem 1.3rem;
+  display: flex; flex-direction: column; gap: .7rem;
+  transition: background .2s, opacity .4s, transform .4s;
+  position: relative; cursor: default;
+}
+.lead-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--lime), var(--teal));
+  opacity: .6;
+}
+.lead-card:hover { background: var(--surface); }
+.lead-card.fading { opacity: 0; transform: scale(.97); }
+
+.lead-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.lead-nombre {
+  font-family: var(--ff-d); font-size: .95rem; font-weight: 600;
+  color: var(--fg); letter-spacing: -.01em;
+}
+.lead-fecha { font-size: .62rem; color: var(--fg3); padding-top: .1rem; }
+
+.lead-label { font-size: .58rem; letter-spacing: .15em; text-transform: uppercase; color: var(--fg3); margin-bottom: .2rem; }
+.lead-val   { font-size: .78rem; color: var(--fg2); line-height: 1.4; }
+
+.tag {
+  display: inline-flex; align-items: center;
+  font-size: .68rem; font-weight: 600; border-radius: var(--r); padding: .18rem .55rem;
+  border: 1px solid;
+}
+.tag-teal { color: var(--teal);  border-color: rgba(52,201,148,.3);  background: rgba(52,201,148,.07); }
+.tag-lime { color: var(--lime);  border-color: rgba(200,241,53,.3);  background: rgba(200,241,53,.07); }
+
+.lead-contacto { font-size: .68rem; color: var(--fg3); display: flex; gap: .6rem; flex-wrap: wrap; }
+
+/* ── Groq skeleton ─── */
+.groq-skel { display: none; }
+.groq-skel.on { display: block; padding: .4rem 0; }
+.sk-line {
+  height: 8px; border-radius: 3px; margin-bottom: .4rem;
+  background: linear-gradient(90deg, var(--surface) 25%, rgba(52,201,148,.12) 50%, var(--surface) 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s infinite;
+}
+.sk-line:last-child { width: 45%; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── Panel Groq ─── */
+.groq-panel {
+  display: none;
+  background: rgba(52,201,148,.04); border: 1px solid rgba(52,201,148,.18);
+  border-radius: var(--r2); padding: .85rem .95rem;
+  font-size: .76rem; line-height: 1.65; white-space: pre-wrap; color: var(--fg2);
+}
+.groq-panel.on { display: block; }
+.groq-panel-head {
+  font-size: .56rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: .5rem;
+  display: flex; align-items: center; gap: .4rem;
+}
+.groq-panel-head::before { content: ''; width: 12px; height: 1px; background: var(--teal); }
+
+.lead-actions { display: flex; gap: .4rem; flex-wrap: wrap; padding-top: .1rem; }
+
+/* ── Empty lead ─── */
+.leads-empty {
+  background: var(--bg2); border-radius: var(--r2);
+  padding: 3rem 2rem; text-align: center; color: var(--fg3);
+}
+.leads-empty strong { display: block; font-family: var(--ff-d); font-size: 1.1rem; color: var(--fg2); margin-bottom: .5rem; }
+
+/* ── Alerta lentitud ─── */
+.slow-alert {
+  background: rgba(245,158,11,.05); border: 1px solid rgba(245,158,11,.2);
+  border-radius: var(--r2); padding: .65rem 1.1rem;
+  font-size: .72rem; color: var(--warn);
+  display: flex; flex-wrap: wrap; gap: .3rem .6rem; align-items: center;
+  margin-bottom: 2rem;
+}
+.slow-tag { background: rgba(245,158,11,.12); border-radius: var(--r); padding: .15rem .45rem; font-size: .65rem; font-weight: 700; }
+
+/* ── Rechequear micro-btn ─── */
+.recheck-btn {
+  font-size: .65rem; color: var(--fg3); background: none; border: none;
+  cursor: pointer; padding: .15rem .3rem; border-radius: 4px; transition: color .15s;
+}
+.recheck-btn:hover { color: var(--teal); }
+
+/* ── Fade in sections ─── */
+.dash-section { animation: fadeUp .3s cubic-bezier(.4,0,.2,1) both; }
+.dash-section:nth-child(2) { animation-delay: .05s; }
+.dash-section:nth-child(3) { animation-delay: .1s; }
+.dash-section:nth-child(4) { animation-delay: .15s; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+</style>
+
+<div id="dash-ambient" aria-hidden="true"></div>
+
+<div class="dash-wrap">
+
+  {# ══ HEADER ══════════════════════════════════════════════════════════════ #}
+  <div class="dash-head dash-section">
+    <div>
+      <div class="dash-eyebrow">Panel de control</div>
+      <div class="dash-h1">
+        Hola, <span class="hl">Pedro</span> 👋
+      </div>
+      <div style="font-size:.7rem;letter-spacing:.08em;color:var(--fg3);margin-top:.5rem;text-transform:uppercase">
+        {{ hoy.strftime("%-d de %B de %Y") }}
+      </div>
+    </div>
+    <div class="dash-badges">
+      {% if leads_parsed %}
+      <span class="chip chip-lime">
+        <span class="chip-dot pulse"></span>
+        {{ leads_parsed|length }} lead{% if leads_parsed|length != 1 %}s{% endif %} nuevos
+      </span>
+      {% endif %}
+      {% if avisos_alta %}
+      <span class="chip chip-danger"><span class="chip-dot"></span>{{ avisos_alta }} aviso{% if avisos_alta != 1 %}s{% endif %} urgente{% if avisos_alta != 1 %}s{% endif %}</span>
+      {% endif %}
+      {% if error_count %}
+      <span class="chip chip-danger"><span class="chip-dot"></span>{{ error_count }} sistema{% if error_count != 1 %}s{% endif %} caído{% if error_count != 1 %}s{% endif %}</span>
+      {% elif total > 0 %}
+      <span class="chip chip-teal"><span class="chip-dot pulse"></span>Todos online</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ══ STATS STRIP ══════════════════════════════════════════════════════════ #}
+  <div class="stats-strip dash-section">
+
+    <div class="stat-cell">
+      <div class="stat-n {% if monto_cobrado_mes > 0 %}c-lime{% endif %}">
+        <sup>$</sup>{{ "{:,.0f}".format(monto_cobrado_mes) }}
+      </div>
+      <div class="stat-l">Cobrado este mes</div>
+      <div class="stat-sub">de ${{ "{:,.0f}".format(monto_esperado_mes) }}</div>
+    </div>
+
+    <div class="stat-cell">
+      <div class="stat-n c-teal">{{ clientes_activos }}</div>
+      <div class="stat-l">Clientes activos</div>
+      <div class="stat-sub">{{ clientes_en_prueba }} en prueba</div>
+    </div>
+
+    <div class="stat-cell">
+      <div class="stat-n {% if cobros_atrasados > 0 %}c-danger{% elif cobros_pendientes > 0 %}c-warn{% else %}c-teal{% endif %}">
+        {{ cobros_pendientes }}
+      </div>
+      <div class="stat-l">Cobros pendientes</div>
+      <div class="stat-sub">{% if cobros_atrasados %}{{ cobros_atrasados }} atrasado{% if cobros_atrasados != 1 %}s{% endif %}{% else %}Al día{% endif %}</div>
+    </div>
+
+    <div class="stat-cell">
+      <div class="stat-n {% if uptime_promedio is not none %}{% if uptime_promedio >= 95 %}c-teal{% elif uptime_promedio >= 80 %}c-warn{% else %}c-danger{% endif %}{% endif %}">
+        {% if uptime_promedio is not none %}{{ uptime_promedio }}<sup>%</sup>{% else %}—{% endif %}
+      </div>
+      <div class="stat-l">Uptime promedio</div>
+      <div class="stat-sub">{{ ok_count }}/{{ total }} OK</div>
+    </div>
+
+  </div>
+
+  {# ══ ALERTA LENTITUD ═══════════════════════════════════════════════════════ #}
+  {% if instalaciones_lentas %}
+  <div class="slow-alert dash-section">
+    ⚠ Respuesta lenta detectada —
+    {% for item in instalaciones_lentas %}
+    <span class="slow-tag">{{ item.inst.nombre }} {{ item.avg_ms }}ms</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ══ INFRA + LEADS EN DOS COLUMNAS ════════════════════════════════════════ #}
+  <div class="two-col">
+
+    {# — Infraestructura — #}
+    <div class="dash-section">
+      <div class="sec-eyebrow">Infraestructura</div>
+      <div class="infra-box">
+        <div class="infra-header">Sistemas activos</div>
+        {% if resumen %}
+          {% for r in resumen %}
+          <div class="inst-row" id="irow-{{ r.inst.id }}">
+            <div class="inst-left">
+              <span class="inst-state {% if r.semaforo == 'ok' %}ok{% elif r.semaforo == 'error' %}error{% else %}nodata{% endif %}" id="dot-{{ r.inst.id }}"></span>
+              <div class="inst-info">
+                <div class="inst-name">{{ r.inst.nombre }}</div>
+                <div class="inst-meta">{{ r.inst.cliente.nombre }}</div>
+              </div>
+            </div>
+            <div class="inst-right">
+              <div class="pulsos">
+                {% for e in r.historial %}
+                <div class="pulso {% if e.ok %}ok{% else %}err{% endif %}" title="{{ e.chequeado_en.strftime('%H:%M') }}"></div>
+                {% endfor %}
+              </div>
+              {% if r.ultimo %}
+              <span class="inst-ms" id="ms-{{ r.inst.id }}">{{ r.ultimo.tiempo_ms or '—' }}ms</span>
+              {% endif %}
+              <button class="recheck-btn" onclick="rechequear({{ r.inst.id }}, this)" title="Rechequear">↻</button>
+              <a href="{{ url_for('tablero.detalle_instalacion', inst_id=r.inst.id) }}" class="recheck-btn" title="Detalle">↗</a>
+            </div>
+          </div>
+          {% if r.ultimo and not r.ultimo.ok and r.ultimo.detalle %}
+          <div id="det-{{ r.inst.id }}" style="font-size:.65rem;color:var(--danger);padding:.2rem 0 .4rem 1.4rem">{{ r.ultimo.detalle }}</div>
+          {% else %}
+          <div id="det-{{ r.inst.id }}" style="font-size:.65rem;color:var(--danger);padding:.2rem 0 .4rem 1.4rem;display:none"></div>
+          {% endif %}
+          {% endfor %}
+        {% else %}
+          <div class="infra-empty">Sin instalaciones.<br><a href="{{ url_for('clientes.lista') }}">Agregar cliente →</a></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# — Leads web — #}
+    <div class="dash-section">
+      <div class="sec-eyebrow">Leads web</div>
+
+      {% if leads_parsed %}
+      <div class="leads-grid">
+        {% for item in leads_parsed %}
+        {% set lead = item.cliente %}
+        {% set info = item.info %}
+        <div class="lead-card" id="lead-{{ lead.id }}">
+
+          <div class="lead-top">
+            <div class="lead-nombre">{{ lead.nombre }}</div>
+            <div class="lead-fecha">{{ lead.creado_en.strftime("%-d %b") if lead.creado_en else "" }}</div>
+          </div>
+
+          {% if info.rubro %}
+          <div><span class="tag tag-teal">{{ info.rubro }}</span></div>
+          {% endif %}
+
+          {% if info.problema %}
+          <div>
+            <div class="lead-label">Problema</div>
+            <div class="lead-val">{{ info.problema }}</div>
+          </div>
+          {% endif %}
+
+          {% if info.solucion %}
+          <div>
+            <div class="lead-label">Solución sugerida</div>
+            <span class="tag tag-lime">{{ info.solucion }}</span>
+          </div>
+          {% endif %}
+
+          {% if lead.email or lead.telefono %}
+          <div class="lead-contacto">
+            {% if lead.email %}<span>✉ {{ lead.email }}</span>{% endif %}
+            {% if lead.telefono %}<span>📱 {{ lead.telefono }}</span>{% endif %}
+          </div>
+          {% endif %}
+
+          <div class="groq-skel" id="sk-{{ lead.id }}">
+            <div class="sk-line" style="width:85%"></div>
+            <div class="sk-line" style="width:70%"></div>
+            <div class="sk-line"></div>
+          </div>
+
+          <div class="groq-panel" id="groq-{{ lead.id }}">
+            <div class="groq-panel-head">Consejo estratégico</div>
+            <div id="groq-txt-{{ lead.id }}"></div>
+          </div>
+
+          <div class="lead-actions">
+            <button class="zbtn zbtn-outline" onclick="consultarGroq({{ lead.id }}, this)">🤖 ¿Qué hago?</button>
+            <button class="zbtn zbtn-lime" onclick="activarLead({{ lead.id }}, this)">✓ Activar</button>
+            <a href="{{ url_for('clientes.ver_cliente', cliente_id=lead.id) }}" class="zbtn zbtn-ghost zbtn-sm">Ver ficha</a>
+          </div>
+
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <div class="leads-empty">
+        <strong>Sin leads nuevos</strong>
+        Los leads llegan desde la calculadora en zynnos.com
+      </div>
+      {% endif %}
+    </div>
+
+  </div>{# /two-col #}
+
+</div>{# /dash-wrap #}
+
+<script>
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+async function consultarGroq(id, btn) {
+  const sk    = document.getElementById("sk-"       + id);
+  const panel = document.getElementById("groq-"     + id);
+  const txt   = document.getElementById("groq-txt-" + id);
+  btn.disabled = true; btn.textContent = "Consultando…";
+  sk.classList.add("on"); panel.classList.remove("on");
+  try {
+    const r = await fetch("/tablero/groq-lead/" + id, {
+      method: "POST",
+      headers: { "X-CSRFToken": CSRF, "Content-Type": "application/json" }
+    });
+    const d = await r.json();
+    sk.classList.remove("on");
+    txt.textContent = d.ok ? d.respuesta : ("Error: " + (d.error || "?"));
+    panel.classList.add("on");
+    btn.textContent = d.ok ? "🤖 Regenerar" : "🤖 Reintentar";
+  } catch(e) {
+    sk.classList.remove("on");
+    txt.textContent = "Error de red: " + e.message;
+    panel.classList.add("on");
+    btn.textContent = "🤖 Reintentar";
+  }
+  btn.disabled = false;
+}
+
+async function activarLead(id, btn) {
+  if (!confirm("¿Marcar a este lead como cliente activo?")) return;
+  btn.disabled = true; btn.textContent = "Activando…";
+  try {
+    const r = await fetch("/tablero/activar-lead/" + id, {
+      method: "POST",
+      headers: { "X-CSRFToken": CSRF, "Content-Type": "application/json" }
+    });
+    const d = await r.json();
+    if (d.ok) {
+      const card = document.getElementById("lead-" + id);
+      card.classList.add("fading");
+      setTimeout(() => card.style.display = "none", 420);
+    } else {
+      btn.disabled = false; btn.textContent = "✓ Activar";
+      alert("Error: " + (d.error || "?"));
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "✓ Activar";
+    alert("Error de red: " + e.message);
+  }
+}
+
+async function rechequear(instId, btn) {
+  btn.disabled = true; btn.textContent = "…";
+  try {
+    const r = await fetch("/rechequear/" + instId, {
+      method: "POST", headers: { "X-CSRFToken": CSRF }
+    });
+    const d = await r.json();
+    const dot = document.getElementById("dot-" + instId);
+    const ms  = document.getElementById("ms-"  + instId);
+    const det = document.getElementById("det-" + instId);
+    if (dot) dot.className = "inst-state " + (d.ok ? "ok" : "error");
+    if (ms && d.tiempo_ms != null) ms.textContent = d.tiempo_ms + "ms";
+    if (det) {
+      det.textContent = (!d.ok && d.detalle) ? d.detalle : "";
+      det.style.display = (!d.ok && d.detalle) ? "block" : "none";
+    }
+  } catch(e) { console.error(e); }
+  btn.disabled = false; btn.textContent = "↻";
+}
+</script>
+{% endblock %}

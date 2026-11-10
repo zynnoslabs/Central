@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Chat {{ conv.id }} — La Central{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- Chat en vivo -->
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+          <strong>{{ conv.nombre or 'Visitante' }}</strong>
+          {% if conv.rubro %}<span class="text-muted ms-2">· {{ conv.rubro }}</span>{% endif %}
+          {% if conv.telefono %}<span class="text-muted ms-2">📱 {{ conv.telefono }}</span>{% endif %}
+        </span>
+        <span class="badge {% if conv.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ conv.status }}</span>
+      </div>
+
+      <div class="card-body overflow-auto" id="chat-box" style="max-height:420px">
+        {% for m in messages %}
+        <div class="mb-2 {% if m.role == 'user' %}text-start{% else %}text-end{% endif %}">
+          <span class="badge {% if m.role == 'user' %}bg-secondary{% else %}bg-primary{% endif %} mb-1">
+            {{ 'Cliente' if m.role == 'user' else 'IA' }}
+          </span>
+          <div class="p-2 rounded {% if m.role == 'user' %}bg-light{% else %}bg-primary bg-opacity-10{% endif %}" style="display:inline-block;max-width:85%">
+            {{ m.content }}
+          </div>
+          <br><small class="text-muted">{{ m.sent_at.strftime('%H:%M') }}</small>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Instrucción secreta para la IA -->
+      <div class="card-footer">
+        <label class="form-label small text-muted mb-1">Instrucción secreta para la IA (el cliente no la ve)</label>
+        <div class="input-group">
+          <input type="text" id="hint-input" class="form-control form-control-sm" placeholder="Ej: Ofrecele un 10% de descuento si cierra hoy">
+          <button class="btn btn-outline-warning btn-sm" id="hint-btn">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de análisis -->
+  <div class="col-lg-5">
+
+    <!-- Análisis IA -->
+    <div class="card mb-3" id="analysis-card">
+      <div class="card-header"><strong>🧠 Análisis IA</strong></div>
+      <div class="card-body" id="analysis-body">
+        {% if conv.budget_est %}
+          {% set a = conv.budget_est | from_json %}
+          {% include "chat/_analysis.html" %}
+        {% else %}
+          <p class="text-muted small">El análisis se genera cada 3 mensajes del cliente.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Historial de hints -->
+    {% if hints %}
+    <div class="card">
+      <div class="card-header"><strong>💬 Instrucciones enviadas</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for h in hints %}
+        <li class="list-group-item small {% if h.applied %}text-muted{% endif %}">
+          {{ h.hint }}
+          {% if h.applied %}<span class="badge bg-success ms-1">aplicada</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <!-- Cerrar conversación -->
+    {% if conv.status == 'active' %}
+    <button class="btn btn-outline-danger btn-sm mt-3 w-100" id="close-btn">Cerrar conversación</button>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const CONV_ID = "{{ conv.id }}";
+const socket = io({ transports: ['websocket'] });
+socket.emit('join_operators');
+socket.emit('join_conversation', { conv_id: CONV_ID });
+
+const box = document.getElementById('chat-box');
+box.scrollTop = box.scrollHeight;
+
+socket.on('new_message', (data) => {
+  if (data.conv_id !== CONV_ID) return;
+  const isUser = data.role === 'user';
+  const div = document.createElement('div');
+  div.className = `mb-2 ${isUser ? 'text-start' : 'text-end'}`;
+  div.innerHTML = `
+    <span class="badge ${isUser ? 'bg-secondary' : 'bg-primary'} mb-1">${isUser ? 'Cliente' : 'IA'}</span>
+    <div class="p-2 rounded ${isUser ? 'bg-light' : 'bg-primary bg-opacity-10'}" style="display:inline-block;max-width:85%">
+      ${data.content}
+    </div>
+    <br><small class="text-muted">ahora</small>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+});
+
+socket.on('analysis_update', (data) => {
+  if (data.conv_id !== CONV_ID) return;
+  const a = data.analysis;
+  document.getElementById('analysis-body').innerHTML = `
+    <p class="mb-1"><strong>${a.perfil}</strong></p>
+    <p class="mb-1 small">${a.intencion}</p>
+    <div class="d-flex gap-2 mb-2 flex-wrap">
+      <span class="badge bg-${a.urgencia==='alta'?'danger':a.urgencia==='media'?'warning':'info'}">Urgencia: ${a.urgencia}</span>
+      <span class="badge bg-${a.capacidad_pago==='alta'?'success':a.capacidad_pago==='media'?'warning':'danger'}">Capacidad: ${a.capacidad_pago}</span>
+    </div>
+    <p class="mb-1 small"><strong>Solución:</strong> ${a.solucion_recomendada}</p>
+    <p class="mb-1 small"><strong>Precio:</strong> $${a.precio_min.toLocaleString('es-AR')} – $${a.precio_max.toLocaleString('es-AR')}</p>
+    <p class="mb-1 small"><strong>Entrega:</strong> ${a.tiempo_entrega}</p>
+    <div class="progress mb-2" style="height:10px">
+      <div class="progress-bar bg-success" style="width:${a.probabilidad_cierre}%"></div>
+    </div>
+    <small class="text-muted">Prob. cierre: ${a.probabilidad_cierre}%</small>
+    <hr class="my-2">
+    <p class="mb-0 small text-warning"><strong>Consejo:</strong> ${a.notas_vendedor}</p>`;
+});
+
+// Enviar hint
+document.getElementById('hint-btn').addEventListener('click', async () => {
+  const inp = document.getElementById('hint-input');
+  const hint = inp.value.trim();
+  if (!hint) return;
+  await fetch('/chat/api/hint', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ conv_id: CONV_ID, hint })
+  });
+  inp.value = '';
+});
+
+// Cerrar conversación
+const closeBtn = document.getElementById('close-btn');
+if (closeBtn) {
+  closeBtn.addEventListener('click', async () => {
+    if (!confirm('¿Cerrar esta conversación?')) return;
+    await fetch('/chat/api/close', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ conv_id: CONV_ID })
+    });
+    location.reload();
+  });
+}
+</script>
+{% endblock %}

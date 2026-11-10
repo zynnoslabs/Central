@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} — Zynnos Central{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;">
+  <p class="text-muted text-small mb-1">
+    <a href="{{ url_for('clientes.detalle', cliente_id=cliente.id) }}" style="color:var(--fg-muted); text-decoration:none;">← {{ cliente.nombre }}</a>
+  </p>
+  <h1 class="page-title">{{ titulo }}</h1>
+
+  <div class="card">
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.nombre.label(class="form-label") }}
+        {{ form.nombre(class="form-control", placeholder="Ej: PalermitanHost — Adriano") }}
+        {% for e in form.nombre.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.producto_id.label(class="form-label") }}
+        {{ form.producto_id(class="form-control") }}
+      </div>
+
+      <div class="form-group">
+        {{ form.url_sistema.label(class="form-label") }}
+        {{ form.url_sistema(class="form-control", placeholder="https://mi-app.onrender.com") }}
+        {% for e in form.url_sistema.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.url_salud.label(class="form-label") }}
+        {{ form.url_salud(class="form-control", placeholder="https://mi-app.onrender.com/salud") }}
+        <p class="text-muted text-small" style="margin-top:.25rem;">Este endpoint debe responder JSON con { "ok": true } cuando el sistema funciona.</p>
+        {% for e in form.url_salud.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <p class="text-muted text-small mb-1" style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+        IDs de servicios externos (opcionales, para integración futura)
+      </p>
+
+      <div class="form-group">
+        {{ form.render_service_id.label(class="form-label") }}
+        {{ form.render_service_id(class="form-control") }}
+      </div>
+      <div class="form-group">
+        {{ form.neon_project_id.label(class="form-label") }}
+        {{ form.neon_project_id(class="form-control") }}
+      </div>
+      <div class="form-group">
+        {{ form.sentry_project.label(class="form-label") }}
+        {{ form.sentry_project(class="form-control") }}
+      </div>
+
+      <!-- ### CAMBIO AQUÍ ### -->
+      <div class="form-group" style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+        <p class="text-muted text-small mb-1">Token del agente Zynnos</p>
+        {{ form.agente_token.label(class="form-label") }}
+        {{ form.agente_token(class="form-control", placeholder="Token secreto para firmar eventos (mín. 32 chars)") }}
+        <p class="text-muted text-small" style="margin-top:.25rem;">
+          Generalo con: <code>python -c "import secrets; print(secrets.token_hex(32))"</code>
+          y guardalo también en <code>ZYNNOS_AGENTE_TOKEN</code> del sistema cliente.
+        </p>
+      </div>
+
+      <div class="flex gap-1" style="flex-wrap:wrap;">
+        <button type="submit" class="btn btn-primary">Guardar instalación</button>
+        <a href="{{ url_for('clientes.detalle', cliente_id=cliente.id) }}" class="btn" style="background:var(--bg); border:1px solid var(--border);">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
