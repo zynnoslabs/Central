@@ -207,7 +207,7 @@
       </table>
     </div>
     {% else %}
-    <div class="empty-state">
+    <div class="empty-state" style="padding:1.5rem;">
       <p class="text-muted text-small mb-2">No hay pagos registrados en {{ nombre_mes }}.</p>
       <a href="{{ url_for('cobros.lista_pagos', anio=anio, mes=mes) }}" class="btn btn-ghost btn-sm">Ver historial completo</a>
     </div>
