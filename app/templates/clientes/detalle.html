@@ -140,4 +140,60 @@
   <a href="{{ url_for('clientes.nueva_instalacion', cliente_id=cliente.id) }}" class="btn btn-primary btn-sm">+ Agregar instalación</a>
 </div>
 {% endif %}
+
+{# ### CAMBIO AQUÍ ### — Avisos vinculados al cliente #}
+<div style="display:flex; justify-content:space-between; align-items:center; margin:2rem 0 .75rem;">
+  <h2 class="section-title" style="margin:0;">Avisos
+    {% set pend = avisos_cliente | selectattr('estado','eq','pendiente') | list | length %}
+    {% if pend %}<span class="badge badge-danger" style="font-size:.7rem; vertical-align:middle; margin-left:.4rem;">{{ pend }}</span>{% endif %}
+  </h2>
+  <a href="{{ url_for('avisos.nuevo') }}?cliente_id={{ cliente.id }}"
+     class="btn btn-sm btn-ghost">+ Nuevo aviso</a>
+</div>
+
+{% if avisos_cliente %}
+<div style="display:flex; flex-direction:column; gap:.5rem;">
+  {% for aviso in avisos_cliente %}
+  <div class="card" style="padding:.75rem 1rem; border-left:3px solid {% if aviso.prioridad=='alta' %}var(--danger){% elif aviso.prioridad=='media' %}var(--warning){% else %}var(--teal){% endif %}; {% if aviso.estado=='resuelto' %}opacity:.55;{% endif %}">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:.3rem;">
+          <span class="badge {% if aviso.prioridad=='alta' %}badge-error{% elif aviso.prioridad=='media' %}badge-warn{% else %}badge-ok{% endif %}" style="font-size:.7rem;">
+            {% if aviso.prioridad=='alta' %}🔴 Alta{% elif aviso.prioridad=='media' %}🟡 Media{% else %}🟢 Baja{% endif %}
+          </span>
+          {% if aviso.estado=='resuelto' %}<span class="badge badge-teal" style="font-size:.7rem;">✓ Resuelto</span>{% endif %}
+        </div>
+        <p style="font-weight:600; margin:0 0 .15rem; {% if aviso.estado=='resuelto' %}text-decoration:line-through; color:var(--fg2);{% endif %}">{{ aviso.titulo }}</p>
+        {% if aviso.cuerpo %}<p style="font-size:.82rem; color:var(--fg2); margin:0 0 .2rem; white-space:pre-wrap;">{{ aviso.cuerpo }}</p>{% endif %}
+        <p style="font-size:.75rem; color:var(--fg3); margin:0;">
+          Creado {{ aviso.creado_en.strftime('%d/%m/%Y') }}
+          {% if aviso.fecha_vencimiento and aviso.estado=='pendiente' %}
+            {% set dias = (aviso.fecha_vencimiento - hoy).days %}
+            · {% if dias < 0 %}<span style="color:var(--danger);">⚠ Vencido hace {{ dias|abs }}d</span>
+              {% elif dias == 0 %}<span style="color:var(--warn);">🔔 Vence hoy</span>
+              {% elif dias <= 3 %}<span style="color:var(--warn);">⏰ {{ dias }}d</span>
+              {% else %}<span style="color:var(--fg3);">📅 {{ aviso.fecha_vencimiento.strftime('%-d %b') }}</span>{% endif %}
+          {% endif %}
+        </p>
+      </div>
+      <div style="display:flex; gap:.35rem; flex-shrink:0;">
+        <a href="{{ url_for('avisos.editar', aviso_id=aviso.id) }}" class="btn btn-sm btn-ghost">Editar</a>
+        {% if aviso.estado=='pendiente' %}
+        <form method="POST" action="{{ url_for('avisos.resolver', aviso_id=aviso.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-success">✓</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:1.5rem; color:var(--fg2);">
+  <p style="font-size:.9rem; margin:0;">Sin avisos para este cliente.
+    <a href="{{ url_for('avisos.nuevo') }}" style="color:var(--teal);">Crear uno →</a>
+  </p>
+</div>
+{% endif %}
 {% endblock %}

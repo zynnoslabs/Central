@@ -124,8 +124,18 @@ def nuevo():
 @clientes_bp.route("/<int:cliente_id>")
 @login_required
 def detalle(cliente_id):
+    from app.models import Aviso  ### CAMBIO AQUÍ ### — avisos del cliente en ficha
+    from datetime import date
     cliente = Cliente.query.get_or_404(cliente_id)
-    return render_template("clientes/detalle.html", cliente=cliente)
+    avisos_cliente = (
+        Aviso.query
+        .filter_by(cliente_id=cliente_id)
+        .order_by(Aviso.estado.asc(), Aviso.creado_en.desc())
+        .all()
+    )
+    hoy = date.today()
+    return render_template("clientes/detalle.html", cliente=cliente,
+                           avisos_cliente=avisos_cliente, hoy=hoy)
 
 
 @clientes_bp.route("/<int:cliente_id>/editar", methods=["GET", "POST"])
