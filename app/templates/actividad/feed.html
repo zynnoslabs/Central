@@ -2,18 +2,24 @@
 {% block title %}Actividad — Zynnos Central{% endblock %}
 
 {% block content %}
-<h1 class="page-title">Actividad</h1>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Actividad</h1>
+    <p class="page-sub">Eventos del sistema en tiempo real</p>
+  </div>
+</div>
 
 <!-- Tiles resumen 24h -->
-<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
-  <div class="card" style="text-align:center;">
-    <p style="font-size:2.2rem; font-weight:700; color:var(--teal);">{{ total_24h }}</p>
-    <p class="text-muted text-small">Eventos últimas 24h</p>
+<div class="kpi-grid" style="margin-bottom:2rem;">
+  <div class="kpi">
+    <div class="kpi-label">Eventos 24h</div>
+    <div class="kpi-value c-teal">{{ total_24h }}</div>
+    <div class="kpi-delta">últimas 24 horas</div>
   </div>
   {% for tipo, conteo in resumen_tipos[:4] %}
-  <div class="card" style="text-align:center;">
-    <p style="font-size:1.8rem; font-weight:700; color:var(--fg);">{{ conteo }}</p>
-    <p class="text-muted text-small">{{ tipo }}</p>
+  <div class="kpi">
+    <div class="kpi-label">{{ tipo }}</div>
+    <div class="kpi-value">{{ conteo }}</div>
   </div>
   {% endfor %}
 </div>

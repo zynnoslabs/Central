@@ -160,7 +160,7 @@
     <div>
       <div class="dash-eyebrow">Panel de control</div>
       <div class="dash-h1">
-        Hola, <span class="hl">Pedro</span> 👋
+        Hola, <span class="hl">{{ current_user.email.split('@')[0]|title }}</span>
       </div>
       <div style="font-size:.7rem;letter-spacing:.08em;color:var(--fg3);margin-top:.5rem;text-transform:uppercase">
         {{ hoy.strftime("%-d de %B de %Y") }}

@@ -69,13 +69,13 @@
   --transition:    .14s ease;
 
   /* ── Geometría ─────────────────────────────── */
-  --r:         5px;
+  --r:         6px;
   --r2:        10px;
   --r3:        16px;
   --radius:    10px;    /* alias para compatibilidad */
-  --nav-h:     48px;
-  --max:       1200px;
-  --pad:       clamp(1rem, 3vw, 2rem);
+  --nav-h:     52px;
+  --max:       1280px;
+  --pad:       clamp(1.25rem, 3vw, 2.5rem);
 
   /* ── Tipografía ────────────────────────────── */
   --font:      'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -87,7 +87,7 @@
   --t-slow:    .28s cubic-bezier(.4,0,.2,1);
 }
 
-html { font-size: 15px; scroll-behavior: smooth; }
+html { font-size: 16px; scroll-behavior: smooth; }
 
 body {
   font-family: var(--font);
@@ -113,10 +113,10 @@ a { color: inherit; text-decoration: none; }
 nav {
   position: sticky; top: 0; z-index: 100;
   height: var(--nav-h);
-  background: rgba(11,21,16,.94);
+  background: rgba(11,21,16,.96);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   padding: 0 var(--pad);
   display: flex; align-items: center; gap: .5rem;
 }
@@ -140,9 +140,9 @@ nav {
   flex: 1;
 }
 .nav-links a {
-  font-size: .875rem; font-weight: 500;
+  font-size: .9375rem; font-weight: 500;
   color: var(--fg2);
-  padding: .3rem .7rem;
+  padding: .35rem .8rem;
   border-radius: var(--r);
   transition: color var(--t), background var(--t);
   position: relative; white-space: nowrap;
@@ -185,7 +185,7 @@ nav {
 main {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 2.25rem var(--pad) 4rem;
+  padding: 2.5rem var(--pad) 5rem;
   animation: pageIn .2s cubic-bezier(.4,0,.2,1) both;
 }
 
@@ -207,19 +207,19 @@ main {
 /* ═══════════════════════════════════════════════
    TIPOGRAFÍA
    ═══════════════════════════════════════════════ */
-h1 { font-size: 1.4rem;   font-weight: 600; letter-spacing: -.022em; color: var(--fg); line-height: 1.2; }
-h2 { font-size: 1.1rem;  font-weight: 600; letter-spacing: -.012em; color: var(--fg); }
-h3 { font-size: .9375rem; font-weight: 600; color: var(--fg); }
-h4 { font-size: .8125rem; font-weight: 500; color: var(--fg2); }
-p  { font-size: .9375rem; color: var(--fg2); line-height: 1.65; }
+h1 { font-size: 1.625rem; font-weight: 600; letter-spacing: -.025em; color: var(--fg); line-height: 1.2; }
+h2 { font-size: 1.25rem;  font-weight: 600; letter-spacing: -.018em; color: var(--fg); }
+h3 { font-size: 1.0625rem; font-weight: 600; color: var(--fg); }
+h4 { font-size: .9375rem;  font-weight: 500; color: var(--fg2); }
+p  { font-size: 1rem;      color: var(--fg2); line-height: 1.65; }
 
 .page-header {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; margin-bottom: 1.75rem; flex-wrap: wrap;
-  padding-bottom: 1.25rem; border-bottom: 1px solid var(--border);
+  gap: 1.25rem; margin-bottom: 2rem; flex-wrap: wrap;
+  padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
 }
-.page-title { font-size: 1.25rem; font-weight: 600; letter-spacing: -.022em; }
-.page-sub   { font-size: .875rem; color: var(--fg2); margin-top: .2rem; }
+.page-title { font-size: 1.5rem; font-weight: 600; letter-spacing: -.025em; color: var(--fg); }
+.page-sub   { font-size: .9375rem; color: var(--fg2); margin-top: .25rem; }
 
 /* ═══════════════════════════════════════════════
    CARDS

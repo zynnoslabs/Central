@@ -2,14 +2,7 @@
 {% block title %}Cobros — {{ nombre_mes }} {{ anio }}{% endblock %}
 {% block extra_head %}
 <style>
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.75rem;
-    flex-wrap: wrap;
-    gap: .75rem;
-  }
+  /* page-header heredado del sistema global — solo override de acciones */
   .header-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 
   /* ── Métricas ── */
@@ -19,14 +12,15 @@
     gap: 1rem;
     margin-bottom: 1.75rem;
   }
+  /* ### CAMBIO AQUÍ ### metric-cards con proporciones del sistema global */
   .metric-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--r2);
-    padding: 1.1rem 1.25rem;
+    padding: 1.375rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: .3rem;
+    gap: .35rem;
     box-shadow: 0 1px 3px rgba(0,0,0,.3);
     transition: box-shadow var(--t);
   }
@@ -35,21 +29,21 @@
   .metric-card.metric-warning { border-left: 3px solid var(--warn); }
   .metric-card.metric-danger  { border-left: 3px solid var(--danger); }
   .metric-label {
-    font-size: .72rem;
+    font-size: .6875rem;
     font-weight: 600;
     color: var(--fg3);
     text-transform: uppercase;
-    letter-spacing: .06em;
+    letter-spacing: .07em;
   }
   .metric-value {
-    font-size: 1.55rem;
+    font-size: 1.75rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -.02em;
-    line-height: 1.2;
+    letter-spacing: -.03em;
+    line-height: 1.15;
   }
   .metric-sub {
-    font-size: .78rem;
+    font-size: .8125rem;
     color: var(--fg2);
     margin-top: .1rem;
   }
