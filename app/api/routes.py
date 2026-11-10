@@ -96,3 +96,79 @@ def nuevo_lead():
         "cliente_id": cliente.id,
         "mensaje": f"Lead «{nombre}» registrado correctamente.",
     }), 201
+
+
+# ─── GET /api/resumen ─────────────────────────────────────────────────────────
+### CAMBIO AQUÍ ### — KPIs como JSON para consumo externo o widget
+
+@api_bp.route("/resumen", methods=["GET"])
+def resumen():
+    """
+    Devuelve KPIs principales del panel como JSON.
+    Autenticación: header X-Zynnos-Token (mismo token de leads).
+    """
+    if not _verificar_token():
+        return jsonify({"ok": False, "error": "Token inválido o ausente."}), 403
+
+    from datetime import date
+    from app.models import Pago, Aviso, Instalacion, EventoSalud
+
+    hoy = date.today()
+
+    # ── Clientes ──────────────────────────────────────────────────────────────
+    total_clientes  = Cliente.query.count()
+    activos         = Cliente.query.filter_by(estado="activo").count()
+    en_prueba       = Cliente.query.filter_by(estado="en_prueba").count()
+    suspendidos     = Cliente.query.filter_by(estado="suspendido").count()
+
+    # ── Cobros del mes actual ─────────────────────────────────────────────────
+    pagos_mes = Pago.query.filter_by(anio=hoy.year, mes=hoy.month).all()
+    esperado_mes  = float(sum(p.monto_esperado for p in pagos_mes))
+    cobrado_mes   = float(sum(p.monto_recibido or 0 for p in pagos_mes if p.estado == "pagado"))
+    pendientes_mes = sum(1 for p in pagos_mes if p.estado in ("pendiente", "atrasado"))
+    efectividad   = round(cobrado_mes / esperado_mes * 100, 1) if esperado_mes else 0
+
+    # ── Avisos ────────────────────────────────────────────────────────────────
+    avisos_pendientes = Aviso.query.filter_by(estado="pendiente").count()
+    avisos_alta       = Aviso.query.filter_by(estado="pendiente", prioridad="alta").count()
+
+    # ── Instalaciones y salud ─────────────────────────────────────────────────
+    total_instalaciones  = Instalacion.query.filter_by(activa=True).count()
+    caidas = (
+        db.session.query(Instalacion.id)
+        .join(EventoSalud, EventoSalud.instalacion_id == Instalacion.id)
+        .filter(Instalacion.activa == True, EventoSalud.ok == False)
+        .filter(EventoSalud.id == (
+            db.session.query(db.func.max(EventoSalud.id))
+            .filter(EventoSalud.instalacion_id == Instalacion.id)
+            .correlate(Instalacion)
+            .scalar_subquery()
+        ))
+        .count()
+    )
+
+    return jsonify({
+        "ok": True,
+        "generado_en": datetime.now(timezone.utc).isoformat(),
+        "periodo": {"anio": hoy.year, "mes": hoy.month},
+        "clientes": {
+            "total": total_clientes,
+            "activos": activos,
+            "en_prueba": en_prueba,
+            "suspendidos": suspendidos,
+        },
+        "cobros": {
+            "esperado": esperado_mes,
+            "cobrado": cobrado_mes,
+            "efectividad_pct": efectividad,
+            "pagos_pendientes": pendientes_mes,
+        },
+        "avisos": {
+            "pendientes": avisos_pendientes,
+            "alta_prioridad": avisos_alta,
+        },
+        "instalaciones": {
+            "activas": total_instalaciones,
+            "caidas": caidas,
+        },
+    })
