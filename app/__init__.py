@@ -141,3 +141,8 @@ def _crear_admin_si_no_existe(app):
     )
     db.session.add(log)
     db.session.commit()
+
+
+# ── Compatibilidad con gunicorn app:app ──────────────────────────────────────
+### CAMBIO AQUÍ ### — permite arrancar con "gunicorn app:app" O "gunicorn run:app"
+app = create_app()
