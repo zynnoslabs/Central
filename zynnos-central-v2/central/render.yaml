@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: zynnos-central
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CALLMEBOT_KEY
+        sync: false
+      - key: OPERATOR_PHONE
+        value: 5492392536325
+      - key: CENTRAL_URL
+        sync: false
