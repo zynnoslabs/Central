@@ -76,6 +76,7 @@ def create_app(config_class=Config):
     # ─── Crear tablas y usuario admin inicial ──────────────────────────────────
     with app.app_context():
         db.create_all()
+        _migrar_columnas(app)  ### CAMBIO AQUÍ ### — migraciones manuales para PostgreSQL
         _crear_admin_si_no_existe(app)
 
     # ─── Filtro Jinja para parsear JSON en templates ──────────────────────────
@@ -142,6 +143,44 @@ def _crear_admin_si_no_existe(app):
     )
     db.session.add(log)
     db.session.commit()
+
+
+# ── Migraciones manuales para PostgreSQL (ADD COLUMN idempotente) ────────────
+### CAMBIO AQUÍ ###
+def _migrar_columnas(app):
+    """Agrega columnas nuevas que db.create_all() no añade a tablas existentes."""
+    try:
+        engine = db.engine
+        with engine.connect() as conn:
+            # Detectar si es PostgreSQL o SQLite
+            dialect = engine.dialect.name
+
+            migraciones = [
+                # (tabla, columna, definición SQL)
+                ("avisos", "fecha_vencimiento", "DATE"),
+            ]
+
+            for tabla, columna, tipo in migraciones:
+                if dialect == "postgresql":
+                    resultado = conn.execute(db.text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_name = :t AND column_name = :c"
+                    ), {"t": tabla, "c": columna})
+                    existe = resultado.fetchone()
+                else:
+                    # SQLite: PRAGMA table_info
+                    resultado = conn.execute(db.text(f"PRAGMA table_info({tabla})"))
+                    cols = [row[1] for row in resultado.fetchall()]
+                    existe = columna in cols
+
+                if not existe:
+                    conn.execute(db.text(
+                        f"ALTER TABLE {tabla} ADD COLUMN {columna} {tipo}"
+                    ))
+                    conn.commit()
+                    app.logger.info(f"Migración: {tabla}.{columna} ({tipo}) agregada.")
+    except Exception as e:
+        app.logger.warning(f"_migrar_columnas error (no crítico): {e}")
 
 
 # ── Compatibilidad con gunicorn app:app ──────────────────────────────────────
