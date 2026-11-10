@@ -7,7 +7,7 @@
 <!-- Tiles resumen 24h -->
 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
   <div class="card" style="text-align:center;">
-    <p style="font-size:2.2rem; font-weight:700; color:var(--accent);">{{ total_24h }}</p>
+    <p style="font-size:2.2rem; font-weight:700; color:var(--teal);">{{ total_24h }}</p>
     <p class="text-muted text-small">Eventos últimas 24h</p>
   </div>
   {% for tipo, conteo in resumen_tipos[:4] %}
@@ -45,11 +45,11 @@
       <tbody>
         {% for ev in eventos %}
         <tr>
-          <td><span class="badge badge-ok" style="font-size:.75rem;">{{ ev.tipo }}</span></td>
+          <td><span class="badge badge-teal" style="font-size:.75rem;">{{ ev.tipo }}</span></td>
           <td class="text-muted text-small">{{ ev.subtipo or '—' }}</td>
           <td>
             <a href="{{ url_for('tablero.detalle_instalacion', inst_id=ev.instalacion.id) }}"
-               style="color:var(--accent); text-decoration:none; font-size:.85rem;">
+               style="color:var(--teal); text-decoration:none; font-size:.85rem;">
               {{ ev.instalacion.nombre }}
             </a>
           </td>

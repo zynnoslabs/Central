@@ -20,24 +20,24 @@
     margin-bottom: 1.75rem;
   }
   .metric-card {
-    background: var(--bg-card);
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--r2);
     padding: 1.1rem 1.25rem;
     display: flex;
     flex-direction: column;
     gap: .3rem;
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow var(--transition);
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    transition: box-shadow var(--t);
   }
-  .metric-card:hover { box-shadow: var(--shadow); }
-  .metric-card.metric-success { border-left: 3px solid var(--success); }
-  .metric-card.metric-warning { border-left: 3px solid var(--warning); }
+  .metric-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+  .metric-card.metric-success { border-left: 3px solid var(--teal); }
+  .metric-card.metric-warning { border-left: 3px solid var(--warn); }
   .metric-card.metric-danger  { border-left: 3px solid var(--danger); }
   .metric-label {
     font-size: .72rem;
     font-weight: 600;
-    color: var(--fg-subtle);
+    color: var(--fg3);
     text-transform: uppercase;
     letter-spacing: .06em;
   }
@@ -50,24 +50,24 @@
   }
   .metric-sub {
     font-size: .78rem;
-    color: var(--fg-muted);
+    color: var(--fg2);
     margin-top: .1rem;
   }
 
   /* ── Badges de pago ── */
-  .badge-pago-pagado    { background: var(--success-dim); color: var(--success); }
-  .badge-pago-pendiente { background: var(--warning-dim); color: var(--warning); }
-  .badge-pago-atrasado  { background: var(--danger-dim);  color: var(--danger); }
-  .badge-pago-perdonado { background: var(--bg); color: var(--fg-subtle); border: 1px solid var(--border); }
+  .badge-pago-pagado    { background: rgba(52,201,148,.10); color: var(--teal); }
+  .badge-pago-pendiente { background: rgba(245,158,11,.10); color: var(--warn); }
+  .badge-pago-atrasado  { background: rgba(255,107,107,.10);  color: var(--danger); }
+  .badge-pago-perdonado { background: var(--bg); color: var(--fg3); border: 1px solid var(--border); }
 
   /* ── Tabla cobros ── */
   .cobros-empty {
     text-align: center;
     padding: 2.5rem 1.5rem;
-    color: var(--fg-muted);
+    color: var(--fg2);
   }
   .cobros-empty-icon { font-size: 2rem; margin-bottom: .5rem; }
-  td a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  td a { color: var(--teal); text-decoration: none; font-weight: 500; }
   td a:hover { text-decoration: underline; }
   .monto { font-variant-numeric: tabular-nums; }
 
@@ -76,7 +76,7 @@
     display: flex;
     align-items: center;
     gap: .5rem;
-    color: var(--warning);
+    color: var(--warn);
   }
 </style>
 {% endblock %}
@@ -128,7 +128,7 @@
   <div class="card-header">
     <h2 class="card-title sin-pago-header">
       <span>⚠</span> Sin pago registrado este mes
-      <span class="badge badge-error" style="margin-left:.25rem;">{{ sin_pago|length }}</span>
+      <span class="badge badge-danger" style="margin-left:.25rem;">{{ sin_pago|length }}</span>
     </h2>
   </div>
   <div class="card-body" style="padding:0;">

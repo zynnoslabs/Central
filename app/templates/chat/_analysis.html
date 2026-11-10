@@ -1,19 +1,20 @@
-<p class="mb-1"><strong>{{ a.perfil }}</strong></p>
-<p class="mb-1 small">{{ a.intencion }}</p>
-<div class="d-flex gap-2 mb-2 flex-wrap">
-  <span class="badge bg-{{ 'danger' if a.urgencia == 'alta' else 'warning' if a.urgencia == 'media' else 'info' }}">
+<p style="font-weight:600;margin-bottom:.3rem;">{{ a.perfil }}</p>
+<p style="font-size:.875rem;color:var(--fg2);margin-bottom:.6rem;">{{ a.intencion }}</p>
+<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem;">
+  <span class="badge {{ 'badge-danger' if a.urgencia == 'alta' else 'badge-warn' if a.urgencia == 'media' else 'badge-info' }}">
     Urgencia: {{ a.urgencia }}
   </span>
-  <span class="badge bg-{{ 'success' if a.capacidad_pago == 'alta' else 'warning' if a.capacidad_pago == 'media' else 'danger' }}">
+  <span class="badge {{ 'badge-teal' if a.capacidad_pago == 'alta' else 'badge-warn' if a.capacidad_pago == 'media' else 'badge-danger' }}">
     Capacidad: {{ a.capacidad_pago }}
   </span>
 </div>
-<p class="mb-1 small"><strong>Solución:</strong> {{ a.solucion_recomendada }}</p>
-<p class="mb-1 small"><strong>Precio:</strong> ${{ "{:,.0f}".format(a.precio_min) }} – ${{ "{:,.0f}".format(a.precio_max) }}</p>
-<p class="mb-1 small"><strong>Entrega:</strong> {{ a.tiempo_entrega }}</p>
-<div class="progress mb-1" style="height:10px">
-  <div class="progress-bar bg-success" style="width:{{ a.probabilidad_cierre }}%"></div>
+<p style="font-size:.875rem;margin-bottom:.3rem;"><strong>Solución:</strong> {{ a.solucion_recomendada }}</p>
+<p style="font-size:.875rem;margin-bottom:.3rem;"><strong>Precio:</strong> ${{ "{:,.0f}".format(a.precio_min) }} – ${{ "{:,.0f}".format(a.precio_max) }}</p>
+<p style="font-size:.875rem;margin-bottom:.6rem;"><strong>Entrega:</strong> {{ a.tiempo_entrega }}</p>
+<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:.3rem;">
+  <div style="height:100%;width:{{ a.probabilidad_cierre }}%;background:var(--teal);border-radius:3px;"></div>
 </div>
-<small class="text-muted">Prob. cierre: {{ a.probabilidad_cierre }}%</small>
-<hr class="my-2">
-<p class="mb-0 small text-warning"><strong>Consejo:</strong> {{ a.notas_vendedor }}</p>
+<p style="font-size:.72rem;color:var(--fg3);margin-bottom:.6rem;">Prob. cierre: {{ a.probabilidad_cierre }}%</p>
+<div style="border-top:1px solid var(--border);padding-top:.6rem;margin-top:.4rem;">
+  <p style="font-size:.875rem;color:var(--warn);"><strong>Consejo:</strong> {{ a.notas_vendedor }}</p>
+</div>

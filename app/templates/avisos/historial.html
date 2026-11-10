@@ -26,9 +26,9 @@
           <td class="text-muted">{{ e.instalacion.cliente.nombre }}</td>
           <td>
             {% if e.ok %}
-              <span class="badge badge-ok">✓ OK</span>
+              <span class="badge badge-teal">✓ OK</span>
             {% else %}
-              <span class="badge badge-error">✗ Error</span>
+              <span class="badge badge-danger">✗ Error</span>
             {% endif %}
           </td>
           <td>{{ e.tiempo_ms ~ 'ms' if e.tiempo_ms else '—' }}</td>

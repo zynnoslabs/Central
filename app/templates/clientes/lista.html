@@ -4,30 +4,13 @@
 {% block extra_head %}
 <style>
   .clientes-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.75rem;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1rem; margin-bottom: 1.75rem;
   }
-  .cliente-nombre a {
-    font-weight: 600;
-    color: var(--accent);
-    text-decoration: none;
-    transition: color var(--transition);
-  }
-  .cliente-nombre a:hover { color: var(--accent-hover); text-decoration: underline; }
+  .cliente-nombre a { font-weight: 600; color: var(--teal); text-decoration: none; transition: color var(--t); }
+  .cliente-nombre a:hover { color: var(--teal-d); text-decoration: underline; }
   .instalaciones-count { font-variant-numeric: tabular-nums; }
-  .table-card { padding: 0; overflow: hidden; }
-
-  .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: var(--fg-muted);
-  }
-  .empty-state-icon { font-size: 2.5rem; margin-bottom: .75rem; }
-  .empty-state h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: .4rem; color: var(--fg); }
+  .card-table { padding: 0; overflow: hidden; }
 </style>
 {% endblock %}
 
@@ -38,7 +21,7 @@
 </div>
 
 {% if clientes %}
-<div class="card table-card">
+<div class="card card-table">
   <div class="tabla-wrap">
     <table>
       <thead>
@@ -58,13 +41,13 @@
           <td class="text-muted text-small">{{ c.email }}</td>
           <td>
             {% if c.estado == 'activo' %}
-              <span class="badge badge-ok">Activo</span>
+              <span class="badge badge-teal">Activo</span>
             {% elif c.estado == 'en_prueba' %}
               <span class="badge badge-warn">En prueba</span>
             {% elif c.estado == 'suspendido' %}
-              <span class="badge badge-error">Suspendido</span>
+              <span class="badge badge-danger">Suspendido</span>
             {% else %}
-              <span class="badge badge-inactivo">Baja</span>
+              <span class="badge badge-muted">Baja</span>
             {% endif %}
           </td>
           <td class="instalaciones-count text-small">

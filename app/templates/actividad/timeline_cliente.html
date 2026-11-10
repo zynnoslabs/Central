@@ -3,7 +3,7 @@
 
 {% block content %}
 <p class="text-muted text-small mb-1">
-  <a href="{{ url_for('actividad.feed') }}" style="color:var(--fg-muted); text-decoration:none;">← Actividad</a>
+  <a href="{{ url_for('actividad.feed') }}" style="color:var(--fg2); text-decoration:none;">← Actividad</a>
 </p>
 <h1 class="page-title">{{ cliente.nombre }}</h1>
 <p class="text-muted text-small" style="margin-bottom:1.5rem;">Línea de tiempo de actividad</p>
@@ -14,7 +14,7 @@
   {% for inst in cliente.instalaciones %}
   <div class="card" style="text-align:center;">
     <a href="{{ url_for('tablero.detalle_instalacion', inst_id=inst.id) }}" style="text-decoration:none; color:inherit;">
-      <p style="font-size:1.8rem; font-weight:700; color:var(--accent);">{{ conteo_inst.get(inst.id, 0) }}</p>
+      <p style="font-size:1.8rem; font-weight:700; color:var(--teal);">{{ conteo_inst.get(inst.id, 0) }}</p>
       <p class="text-muted text-small">{{ inst.nombre }}</p>
       <p class="text-muted" style="font-size:.7rem;">eventos 24h</p>
     </a>
@@ -49,7 +49,7 @@
       <tbody>
         {% for ev in eventos %}
         <tr>
-          <td><span class="badge badge-ok" style="font-size:.75rem;">{{ ev.tipo }}</span></td>
+          <td><span class="badge badge-teal" style="font-size:.75rem;">{{ ev.tipo }}</span></td>
           <td class="text-muted text-small">{{ ev.subtipo or '—' }}</td>
           <td class="text-muted text-small">{{ ev.instalacion.nombre }}</td>
           <td class="text-muted text-small" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"

@@ -26,21 +26,21 @@
     margin-bottom: 1.25rem;
   }
   .aviso-card {
-    background: var(--bg-card);
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--r2);
     padding: 1rem 1.25rem;
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow var(--transition), opacity var(--transition);
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    transition: box-shadow var(--t), opacity var(--t);
     animation: fadeUp .2s ease-out both;
   }
-  .aviso-card:hover { box-shadow: var(--shadow); }
+  .aviso-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.4); }
   .aviso-card.resuelto { opacity: .55; }
   .aviso-card.resuelto:hover { opacity: .85; }
 
   .aviso-prioridad-alta    { border-left: 3px solid var(--danger); }
   .aviso-prioridad-media   { border-left: 3px solid var(--warning); }
-  .aviso-prioridad-baja    { border-left: 3px solid var(--success); }
+  .aviso-prioridad-baja    { border-left: 3px solid var(--teal); }
 
   .aviso-inner {
     display: flex;
@@ -56,15 +56,15 @@
     margin-bottom: .2rem;
     word-break: break-word;
   }
-  .aviso-titulo-texto.tachado { text-decoration: line-through; color: var(--fg-muted); }
+  .aviso-titulo-texto.tachado { text-decoration: line-through; color: var(--fg2); }
   .aviso-cuerpo {
-    color: var(--fg-muted);
+    color: var(--fg2);
     font-size: .88rem;
     white-space: pre-wrap;
     margin-bottom: .3rem;
     word-break: break-word;
   }
-  .aviso-fecha { font-size: .78rem; color: var(--fg-subtle); }
+  .aviso-fecha { font-size: .78rem; color: var(--fg3); }
   .aviso-acciones {
     display: flex;
     gap: .35rem;
@@ -77,7 +77,7 @@
   .empty-state {
     text-align: center;
     padding: 3.5rem 1.5rem;
-    color: var(--fg-muted);
+    color: var(--fg2);
   }
   .empty-state-icon { font-size: 2rem; margin-bottom: .6rem; }
   .empty-state p { max-width: 320px; margin: 0 auto; }
@@ -89,7 +89,7 @@
   <div class="avisos-titulo">
     Avisos
     {% if pendientes > 0 %}
-    <span class="badge badge-error">{{ pendientes }}</span>
+    <span class="badge badge-danger">{{ pendientes }}</span>
     {% endif %}
   </div>
   <a href="{{ url_for('avisos.nuevo') }}" class="btn btn-primary">+ Nuevo aviso</a>
@@ -99,7 +99,7 @@
 <div class="filtros">
   <a href="{{ url_for('avisos.lista', estado='pendiente') }}"
      class="btn btn-sm {% if filtro == 'pendiente' %}btn-primary{% else %}btn-secondary{% endif %}">
-    Pendientes{% if filtro != 'pendiente' and pendientes %} <span class="badge badge-error" style="font-size:.65rem; padding:.1rem .35rem;">{{ pendientes }}</span>{% endif %}
+    Pendientes{% if filtro != 'pendiente' and pendientes %} <span class="badge badge-danger" style="font-size:.65rem; padding:.1rem .35rem;">{{ pendientes }}</span>{% endif %}
   </a>
   <a href="{{ url_for('avisos.lista', estado='resuelto') }}"
      class="btn btn-sm {% if filtro == 'resuelto' %}btn-primary{% else %}btn-secondary{% endif %}">Resueltos</a>
@@ -121,7 +121,7 @@
   {% else %}
   <div class="empty-state-icon">🔔</div>
   <p class="font-medium mb-1">No hay avisos</p>
-  <p class="text-small mt-1"><a href="{{ url_for('avisos.nuevo') }}" style="color:var(--accent);">Crear el primero →</a></p>
+  <p class="text-small mt-1"><a href="{{ url_for('avisos.nuevo') }}" style="color:var(--teal);">Crear el primero →</a></p>
   {% endif %}
 </div>
 
@@ -136,10 +136,10 @@
             {% if aviso.prioridad == 'alta' %}🔴 Alta{% elif aviso.prioridad == 'media' %}🟡 Media{% else %}🟢 Baja{% endif %}
           </span>
           {% if aviso.estado == 'resuelto' %}
-          <span class="badge badge-ok">✓ Resuelto</span>
+          <span class="badge badge-teal">✓ Resuelto</span>
           {% endif %}
           {% if aviso.cliente %}
-          <span class="badge badge-inactivo">{{ aviso.cliente.nombre }}</span>
+          <span class="badge badge-muted">{{ aviso.cliente.nombre }}</span>
           {% endif %}
         </div>
         <p class="aviso-titulo-texto {% if aviso.estado == 'resuelto' %}tachado{% endif %}">{{ aviso.titulo }}</p>

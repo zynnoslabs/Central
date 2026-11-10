@@ -3,7 +3,7 @@
 
 {% block content %}
 <p class="text-muted text-small mb-1">
-  <a href="{{ url_for('tablero.inicio') }}" style="color:var(--fg-muted); text-decoration:none;">← Tablero</a>
+  <a href="{{ url_for('tablero.inicio') }}" style="color:var(--fg2); text-decoration:none;">← Tablero</a>
 </p>
 
 <!-- Encabezado -->
@@ -12,7 +12,7 @@
     <h1 class="page-title" style="margin-bottom:.25rem;">{{ inst.nombre }}</h1>
     <p class="text-muted text-small">
       {{ inst.cliente.nombre }} · {{ inst.producto.nombre }}
-      {% if not inst.activa %}<span class="badge badge-error" style="margin-left:.4rem;">Inactiva</span>{% endif %}
+      {% if not inst.activa %}<span class="badge badge-danger" style="margin-left:.4rem;">Inactiva</span>{% endif %}
     </p>
   </div>
   <div class="flex gap-1" style="flex-wrap:wrap;">
@@ -23,16 +23,16 @@
 
 <!-- Tiles estado -->
 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
-  <div class="card" style="text-align:center; border-left:4px solid {% if semaforo == 'ok' %}var(--success){% elif semaforo == 'error' %}var(--danger){% else %}var(--fg-muted){% endif %};">
+  <div class="card" style="text-align:center; border-left:4px solid {% if semaforo == 'ok' %}var(--teal){% elif semaforo == 'error' %}var(--danger){% else %}var(--fg2){% endif %};">
     {% if semaforo == 'ok' %}
       <p style="font-size:1.8rem;">✅</p>
-      <p class="text-small font-bold" style="color:var(--success);">Sistema OK</p>
+      <p class="text-small font-bold" style="color:var(--teal);">Sistema OK</p>
     {% elif semaforo == 'error' %}
       <p style="font-size:1.8rem;">🔴</p>
       <p class="text-small font-bold" style="color:var(--danger);">Con errores</p>
     {% else %}
       <p style="font-size:1.8rem;">⚪</p>
-      <p class="text-small" style="color:var(--fg-muted);">Sin datos</p>
+      <p class="text-small" style="color:var(--fg2);">Sin datos</p>
     {% endif %}
   </div>
   {% if ultimo %}
@@ -46,7 +46,7 @@
   </div>
   {% endif %}
   <div class="card" style="text-align:center;">
-    <p style="font-size:1.8rem; font-weight:700; color:var(--success);">{{ uptime_pct }}%</p>
+    <p style="font-size:1.8rem; font-weight:700; color:var(--teal);">{{ uptime_pct }}%</p>
     <p class="text-muted text-small">Uptime (últimos {{ total_eventos }} chequeos)</p>
   </div>
 </div>
@@ -158,17 +158,17 @@
 
   <!-- Leyenda -->
   <div class="flex gap-1" style="margin-top:.6rem; flex-wrap:wrap;">
-    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg-muted);">
+    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg2);">
       <span style="width:10px; height:10px; border-radius:2px; background:#2dc653; display:inline-block;"></span> OK
     </span>
-    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg-muted);">
+    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg2);">
       <span style="width:10px; height:10px; border-radius:2px; background:#d62839; display:inline-block;"></span> Error
     </span>
-    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg-muted);">
+    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg2);">
       <span style="width:10px; height:10px; border-radius:2px; background:#6c757d; display:inline-block;"></span> Sin datos
     </span>
     {% if t_max > 1000 %}
-    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg-muted);">
+    <span style="display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; color:var(--fg2);">
       <span style="width:14px; height:2px; background:#f4a261; display:inline-block;"></span> Umbral 1s
     </span>
     {% endif %}
@@ -263,9 +263,9 @@
         <tr>
           <td>
             {% if ev.ok %}
-              <span class="badge badge-ok">✓ OK</span>
+              <span class="badge badge-teal">✓ OK</span>
             {% else %}
-              <span class="badge badge-error">✗ Error</span>
+              <span class="badge badge-danger">✗ Error</span>
             {% endif %}
           </td>
           <td>{% if ev.tiempo_ms %}{{ ev.tiempo_ms }}ms{% else %}—{% endif %}</td>

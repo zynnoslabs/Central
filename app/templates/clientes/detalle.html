@@ -4,7 +4,7 @@
 {% block content %}
 <div class="flex gap-1 mb-3" style="justify-content:space-between; flex-wrap:wrap; align-items:flex-start;">
   <div>
-    <p class="text-muted text-small mb-1"><a href="{{ url_for('clientes.lista') }}" style="color:var(--fg-muted); text-decoration:none;">← Clientes</a></p>
+    <p class="text-muted text-small mb-1"><a href="{{ url_for('clientes.lista') }}" style="color:var(--fg2); text-decoration:none;">← Clientes</a></p>
     <h1 class="page-title" style="margin-bottom:0;">{{ cliente.nombre }}</h1>
   </div>
   <a href="{{ url_for('clientes.editar', cliente_id=cliente.id) }}" class="btn" style="background:var(--bg); border:1px solid var(--border);">Editar</a>
@@ -24,13 +24,13 @@
     <div>
       <p class="text-muted text-small">Estado</p>
       {% if cliente.estado == 'activo' %}
-        <span class="badge badge-ok">Activo</span>
+        <span class="badge badge-teal">Activo</span>
       {% elif cliente.estado == 'en_prueba' %}
         <span class="badge badge-warn">En prueba</span>
       {% elif cliente.estado == 'suspendido' %}
-        <span class="badge badge-error">Suspendido</span>
+        <span class="badge badge-danger">Suspendido</span>
       {% else %}
-        <span class="badge badge-inactivo">Baja</span>
+        <span class="badge badge-muted">Baja</span>
       {% endif %}
     </div>
     <div>
@@ -94,13 +94,13 @@
         <tr>
           <td style="font-weight:600;">{{ inst.nombre }}</td>
           <td class="text-muted">{{ inst.producto.nombre }}</td>
-          <td><a href="{{ inst.url_sistema }}" target="_blank" style="color:var(--accent); font-size:.85rem;">{{ inst.url_sistema[:40] }}{% if inst.url_sistema|length > 40 %}…{% endif %}</a></td>
+          <td><a href="{{ inst.url_sistema }}" target="_blank" style="color:var(--teal); font-size:.85rem;">{{ inst.url_sistema[:40] }}{% if inst.url_sistema|length > 40 %}…{% endif %}</a></td>
           <td>
             {% if ultimo %}
               {% if ultimo.ok %}
-                <span class="badge badge-ok">✓ {{ ultimo.tiempo_ms }}ms</span>
+                <span class="badge badge-teal">✓ {{ ultimo.tiempo_ms }}ms</span>
               {% else %}
-                <span class="badge badge-error">✗ Error</span>
+                <span class="badge badge-danger">✗ Error</span>
               {% endif %}
               <span class="text-muted text-small" style="display:block; margin-top:.15rem;">{{ ultimo.chequeado_en.strftime('%d/%m %H:%M') }}</span>
             {% else %}
@@ -109,9 +109,9 @@
           </td>
           <td>
             {% if inst.activa %}
-              <span class="badge badge-ok">Activa</span>
+              <span class="badge badge-teal">Activa</span>
             {% else %}
-              <span class="badge badge-inactivo">Inactiva</span>
+              <span class="badge badge-muted">Inactiva</span>
             {% endif %}
           </td>
           <!-- CAMBIO AQUÍ: botones Activar/Desactivar + Eliminar instalación -->
