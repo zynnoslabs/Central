@@ -78,7 +78,7 @@
     <h1 class="page-title" style="margin-bottom:0;">Historial de pagos</h1>
     <p class="page-sub">{{ nombre_mes }} {{ anio }}</p>
   </div>
-  <a href="{{ url_for('cobros.inicio') }}" class="btn btn-ghost btn-sm">← Cobros</a>
+  <a href="{{ url_for('cobros.inicio') }}" class="chip">← Cobros</a>
 </div>
 
 {# ── Toolbar: filtros ── #}
@@ -241,10 +241,11 @@ function submitBulk(accion) {
 
 {% else %}
 <div class="card">
-  <div class="empty-pagos">
-    <p>No hay pagos registrados para este período{% if estado_filtro != 'todos' %} con estado "{{ estado_filtro }}"{% endif %}.</p>
+  <div class="empty-state" style="padding:1.5rem;">
+    {# ### CAMBIO AQUÍ ### empty-state sistema en lugar de custom empty-pagos #}
+    <p class="text-muted text-small mb-2">No hay pagos registrados para este período{% if estado_filtro != 'todos' %} con estado "{{ estado_filtro }}"{% endif %}.</p>
     {% if estado_filtro != 'todos' %}
-    <a href="{{ url_for('cobros.lista_pagos', anio=anio, mes=mes) }}" class="btn btn-ghost btn-sm" style="margin-top:.75rem;">Ver todos</a>
+    <a href="{{ url_for('cobros.lista_pagos', anio=anio, mes=mes) }}" class="btn btn-ghost btn-sm">Ver todos</a>
     {% endif %}
   </div>
 </div>
