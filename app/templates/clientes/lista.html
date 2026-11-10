@@ -14,8 +14,8 @@
   }
   /* ### CAMBIO AQUÍ ### — chips dentro del toolbar no duplican margen */
   .clientes-toolbar .filter-chips { margin-bottom: 0; }
-  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
-  .search-wrap svg { position:absolute; left:.7rem; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--fg3); }
+  .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 340px; display: flex; align-items: center; }
+  .search-wrap svg { position:absolute; left:.7rem; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--fg3); z-index:1; }
   #search-input {
     width: 100%; padding: .5rem .875rem .5rem 2.1rem;
     border: 1px solid var(--border2); border-radius: var(--r);
