@@ -75,13 +75,13 @@
   .lista-avisos { display: flex; flex-direction: column; gap: .65rem; }
 
   .chip {
-    padding: .35rem .95rem; border-radius: 999px; font-size: .857rem; font-weight: 500;
-    border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); color: var(--fg);
+    padding: .3rem .85rem; border-radius: var(--r); font-size: .8rem; font-weight: 500;
+    border: 1px solid var(--border); background: var(--bg2); color: var(--fg2);
     cursor: pointer; transition: background .12s ease, border-color .12s ease, color .12s ease;
     white-space: nowrap; text-decoration: none; display: inline-block; letter-spacing: .01em;
   }
-  .chip:hover { border-color: rgba(255,255,255,.32); background: rgba(255,255,255,.1); }
-  .chip.active { background: rgba(52,201,148,.15); border-color: rgba(52,201,148,.55); color: var(--teal); font-weight: 600; box-shadow: 0 0 0 1px rgba(52,201,148,.2); }
+  .chip:hover { background: var(--surface); color: var(--fg); border-color: var(--border2); }
+  .chip.active { background: var(--teal-lo); border-color: rgba(52,201,148,.4); color: var(--teal); font-weight: 600; }
 
   /* ### CAMBIO AQUÍ ### — vencimiento con color urgencia */
   .aviso-venc {
