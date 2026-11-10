@@ -685,8 +685,10 @@ a.link:hover { background-size: 100% 1px; }
   .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
 }
 </style>
+  {# ### CAMBIO AQUÍ ### — HTMX: actualiza solo el contenido sin recargar la página #}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.3/htmx.min.js"></script>
 </head>
-<body>
+<body hx-boost="true">
 
 {# ══ NAV ══ #}
 {% if current_user.is_authenticated %}
@@ -732,7 +734,7 @@ a.link:hover { background-size: 100% 1px; }
 </nav>
 {% endif %}
 
-<main>
+<main id="main-content">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div class="alertas">
