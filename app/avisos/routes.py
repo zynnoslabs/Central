@@ -3,7 +3,8 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from flask_mail import Message
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField
+from datetime import date
+from wtforms import StringField, TextAreaField, SelectField, DateField
 from wtforms.validators import DataRequired, Length, Optional
 
 from app import mail
@@ -23,6 +24,7 @@ class AvisoForm(FlaskForm):
         ("baja", "🟢 Baja"),
     ], default="media")
     cliente_id = SelectField("Cliente (opcional)", coerce=int, validators=[Optional()])
+    fecha_vencimiento = DateField("Vence el (opcional)", validators=[Optional()])  ### CAMBIO AQUÍ ###
 
 
 # ─── Lista de avisos ──────────────────────────────────────────────────────────
@@ -31,19 +33,26 @@ class AvisoForm(FlaskForm):
 @login_required
 def lista():
     filtro = request.args.get("estado", "pendiente")
+    ### CAMBIO AQUÍ ### — ordenar: vencidos primero, luego por prioridad
+    orden_prioridad = db.case(
+        {"alta": 0, "media": 1, "baja": 2}, value=Aviso.prioridad, else_=3
+    )
     if filtro == "todos":
         avisos = Aviso.query.order_by(
             Aviso.estado.asc(),
-            Aviso.prioridad.asc(),
+            orden_prioridad,
+            Aviso.fecha_vencimiento.asc().nullslast(),
             Aviso.creado_en.desc()
         ).all()
     else:
         avisos = Aviso.query.filter_by(estado=filtro).order_by(
-            Aviso.prioridad.asc(),
+            orden_prioridad,
+            Aviso.fecha_vencimiento.asc().nullslast(),
             Aviso.creado_en.desc()
         ).all()
     pendientes = Aviso.query.filter_by(estado="pendiente").count()
-    return render_template("avisos/lista.html", avisos=avisos, filtro=filtro, pendientes=pendientes)
+    hoy = date.today()
+    return render_template("avisos/lista.html", avisos=avisos, filtro=filtro, pendientes=pendientes, hoy=hoy)
 
 
 # ─── Nuevo aviso ──────────────────────────────────────────────────────────────
@@ -61,6 +70,7 @@ def nuevo():
             prioridad=form.prioridad.data,
             estado="pendiente",
             cliente_id=form.cliente_id.data if form.cliente_id.data != 0 else None,
+            fecha_vencimiento=form.fecha_vencimiento.data or None,  ### CAMBIO AQUÍ ###
         )
         db.session.add(aviso)
         db.session.commit()
@@ -85,6 +95,7 @@ def editar(aviso_id):
         aviso.cuerpo = form.cuerpo.data.strip() if form.cuerpo.data else None
         aviso.prioridad = form.prioridad.data
         aviso.cliente_id = form.cliente_id.data if form.cliente_id.data != 0 else None
+        aviso.fecha_vencimiento = form.fecha_vencimiento.data or None  ### CAMBIO AQUÍ ###
         db.session.commit()
         flash("Aviso actualizado.", "success")
         return redirect(url_for("avisos.lista"))

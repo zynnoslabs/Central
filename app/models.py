@@ -326,6 +326,8 @@ class Aviso(db.Model):
     # Vínculo opcional a un cliente
     cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=True)
 
+    fecha_vencimiento = db.Column(db.Date, nullable=True)  ### CAMBIO AQUÍ ### — vencimiento opcional
+
     creado_en = db.Column(db.DateTime(timezone=True), default=ahora)
     resuelto_en = db.Column(db.DateTime(timezone=True), nullable=True)
 

@@ -74,6 +74,25 @@
   }
   .lista-avisos { display: flex; flex-direction: column; gap: .65rem; }
 
+  .chip {
+    padding: .3rem .75rem; border-radius: 999px; font-size: .8125rem; font-weight: 500;
+    border: 1px solid var(--border2); background: var(--bg2); color: var(--fg2);
+    transition: all var(--t); white-space: nowrap; text-decoration: none; display: inline-block;
+  }
+  .chip:hover { border-color: var(--teal); color: var(--fg); }
+  .chip.active { background: rgba(52,201,148,.12); border-color: rgba(52,201,148,.4); color: var(--teal); }
+
+  /* ### CAMBIO AQUÍ ### — vencimiento con color urgencia */
+  .aviso-venc {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .75rem; font-weight: 500; padding: .18rem .5rem;
+    border-radius: 999px; border: 1px solid;
+  }
+  .aviso-venc-vencido { color: var(--danger); border-color: rgba(255,107,107,.4); background: rgba(255,107,107,.08); }
+  .aviso-venc-hoy     { color: var(--warn);   border-color: rgba(245,158,11,.4);  background: rgba(245,158,11,.08); }
+  .aviso-venc-pronto  { color: var(--warn);   border-color: rgba(245,158,11,.25); background: transparent; }
+  .aviso-venc-normal  { color: var(--fg3);    border-color: var(--border2);       background: transparent; }
+
   .empty-state {
     text-align: center;
     padding: 3.5rem 1.5rem;
@@ -85,26 +104,24 @@
 {% endblock %}
 
 {% block content %}
-<div class="avisos-header">
-  <div class="avisos-titulo">
-    Avisos
-    {% if pendientes > 0 %}
-    <span class="badge badge-danger">{{ pendientes }}</span>
-    {% endif %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title" style="margin-bottom:0;">Avisos
+      {% if pendientes > 0 %}<span class="badge badge-danger" style="font-size:.75rem; vertical-align:middle;">{{ pendientes }}</span>{% endif %}
+    </h1>
   </div>
-  <a href="{{ url_for('avisos.nuevo') }}" class="btn btn-primary">+ Nuevo aviso</a>
+  <a href="{{ url_for('avisos.nuevo') }}" class="btn btn-primary btn-sm" data-new-btn>+ Nuevo aviso</a>
 </div>
 
-{# ── Filtros ── #}
-<div class="filtros">
-  <a href="{{ url_for('avisos.lista', estado='pendiente') }}"
-     class="btn btn-sm {% if filtro == 'pendiente' %}btn-primary{% else %}btn-secondary{% endif %}">
-    Pendientes{% if filtro != 'pendiente' and pendientes %} <span class="badge badge-danger" style="font-size:.65rem; padding:.1rem .35rem;">{{ pendientes }}</span>{% endif %}
+{# ── Filtros ### CAMBIO AQUÍ ### — chips en lugar de botones ── #}
+<div class="filtros" style="gap:.375rem;">
+  {% set opciones = [('pendiente','Pendientes'), ('resuelto','Resueltos'), ('todos','Todos')] %}
+  {% for val, label in opciones %}
+  <a href="{{ url_for('avisos.lista', estado=val) }}"
+     class="chip {% if filtro == val %}active{% endif %}">
+    {{ label }}{% if val == 'pendiente' and pendientes %} <span style="color:var(--danger); font-size:.7rem;">{{ pendientes }}</span>{% endif %}
   </a>
-  <a href="{{ url_for('avisos.lista', estado='resuelto') }}"
-     class="btn btn-sm {% if filtro == 'resuelto' %}btn-primary{% else %}btn-secondary{% endif %}">Resueltos</a>
-  <a href="{{ url_for('avisos.lista', estado='todos') }}"
-     class="btn btn-sm {% if filtro == 'todos' %}btn-primary{% else %}btn-secondary{% endif %}">Todos</a>
+  {% endfor %}
 </div>
 
 {# ── Lista de avisos ── #}
@@ -147,9 +164,22 @@
         <p class="aviso-cuerpo">{{ aviso.cuerpo }}</p>
         {% endif %}
         <p class="aviso-fecha">
-          Creado {{ aviso.creado_en.strftime('%d/%m/%Y %H:%M') }} UTC
+          Creado {{ aviso.creado_en.strftime('%d/%m/%Y %H:%M') }}
           {% if aviso.resuelto_en %}
-          · Resuelto {{ aviso.resuelto_en.strftime('%d/%m/%Y %H:%M') }} UTC
+          · Resuelto {{ aviso.resuelto_en.strftime('%d/%m/%Y') }}
+          {% endif %}
+          {# ### CAMBIO AQUÍ ### — vencimiento con color urgencia #}
+          {% if aviso.fecha_vencimiento and aviso.estado == 'pendiente' %}
+            {% set dias = (aviso.fecha_vencimiento - hoy).days %}
+            {% if dias < 0 %}
+            · <span class="aviso-venc aviso-venc-vencido">⚠ Vencido hace {{ dias|abs }}d</span>
+            {% elif dias == 0 %}
+            · <span class="aviso-venc aviso-venc-hoy">🔔 Vence hoy</span>
+            {% elif dias <= 3 %}
+            · <span class="aviso-venc aviso-venc-pronto">⏰ Vence en {{ dias }}d</span>
+            {% else %}
+            · <span class="aviso-venc aviso-venc-normal">📅 Vence {{ aviso.fecha_vencimiento.strftime('%-d %b') }}</span>
+            {% endif %}
           {% endif %}
         </p>
       </div>
