@@ -28,7 +28,7 @@ socketio = SocketIO(app,
         'https://zynnos.com',
         os.environ.get('CENTRAL_URL', 'http://localhost:5000'),
     ],
-    async_mode='threading'
+    async_mode='gevent'
 )
 
 GROQ_API_KEY   = os.environ.get('GROQ_API_KEY', '')
