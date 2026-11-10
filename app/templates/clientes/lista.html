@@ -21,14 +21,19 @@
     box-sizing: border-box; transition: border-color var(--t), box-shadow var(--t);
   }
   #search-input:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(52,201,148,.15); }
+  /* ### CAMBIO AQUÍ ### — Chips de filtro más visibles y proporcionados */
   .filter-chips { display:flex; gap:.375rem; flex-wrap:wrap; }
   .chip {
-    padding:.3rem .75rem; border-radius:999px; font-size:.8125rem; font-weight:500;
-    border:1px solid var(--border2); background:var(--bg2); color:var(--fg2);
-    cursor:pointer; transition:all var(--t); white-space:nowrap;
+    padding:.35rem .9rem; border-radius:999px; font-size:.857rem; font-weight:500;
+    border:1px solid var(--border2); background:rgba(255,255,255,.03); color:var(--fg2);
+    cursor:pointer; transition:background var(--t), border-color var(--t), color var(--t);
+    white-space:nowrap; letter-spacing:.01em;
   }
-  .chip:hover { border-color:var(--teal); color:var(--fg); }
-  .chip.active { background:rgba(52,201,148,.12); border-color:rgba(52,201,148,.4); color:var(--teal); }
+  .chip:hover { border-color:var(--border3); color:var(--fg); background:rgba(255,255,255,.06); }
+  .chip.active {
+    background:rgba(52,201,148,.12); border-color:rgba(52,201,148,.45);
+    color:var(--teal); font-weight:600;
+  }
   .spacer { flex:1; }
 
   .cliente-nombre a { font-weight:600; color:var(--teal); text-decoration:none; transition:color var(--t); }
@@ -58,7 +63,7 @@
     <h1 class="page-title" style="margin-bottom:0;">Clientes</h1>
   </div>
   <div style="display:flex; gap:.5rem;">
-    <a href="{{ url_for('clientes.exportar_csv') }}" class="btn btn-ghost btn-sm" title="Descargar lista como CSV">↓ CSV</a>
+    <a href="{{ url_for('clientes.exportar_csv') }}" class="btn btn-ghost btn-sm" hx-boost="false" title="Descargar lista como CSV">↓ CSV</a>
     <a href="{{ url_for('clientes.nuevo') }}" class="btn btn-primary btn-sm" data-new-btn>+ Nuevo cliente</a>
   </div>
 </div>

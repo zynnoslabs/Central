@@ -83,9 +83,9 @@
   <div class="header-actions">
     <a href="{{ url_for('cobros.lista_facturas') }}" class="btn btn-ghost btn-sm">Facturas</a>
     <a href="{{ url_for('cobros.monotributo') }}" class="btn btn-ghost btn-sm">Monotributo</a>
-    <a href="{{ url_for('cobros.exportar_pagos', anio=anio) }}" class="btn btn-ghost btn-sm" title="Descargar pagos del año como CSV">↓ CSV Pagos</a>
-    <a href="{{ url_for('cobros.exportar_facturas', anio=anio) }}" class="btn btn-ghost btn-sm" title="Descargar facturas del año como CSV">↓ CSV Facturas</a>
-    <a href="{{ url_for('cobros.exportar_resumen_mensual') }}" class="btn btn-ghost btn-sm" title="Resumen mensual histórico">↓ Resumen</a>
+    <a href="{{ url_for('cobros.exportar_pagos', anio=anio) }}" class="btn btn-ghost btn-sm" hx-boost="false" title="Descargar pagos del año como CSV">↓ CSV Pagos</a>
+    <a href="{{ url_for('cobros.exportar_facturas', anio=anio) }}" class="btn btn-ghost btn-sm" hx-boost="false" title="Descargar facturas del año como CSV">↓ CSV Facturas</a>
+    <a href="{{ url_for('cobros.exportar_resumen_mensual') }}" class="btn btn-ghost btn-sm" hx-boost="false" title="Resumen mensual histórico">↓ Resumen</a>
     {# ### CAMBIO AQUÍ ### — botón generar alertas automáticas #}
     <form method="POST" action="{{ url_for('cobros.generar_alertas') }}" style="display:inline;">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
