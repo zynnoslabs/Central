@@ -7,8 +7,9 @@
     <span class="badge badge-estado-{{ cliente.estado }}">{{ cliente.estado }}</span>
   </div>
   <div class="header-actions">
-    <a href="{{ url_for('cobros.inicio') }}" class="btn btn-ghost">← Cobros</a>
-    <a href="{{ url_for('cobros.nuevo_plan', cliente_id=cliente.id) }}" class="btn btn-ghost">+ Plan</a>
+    {# ### CAMBIO AQUÍ ### — botones secundarios a chip #}
+    <a href="{{ url_for('cobros.inicio') }}" class="chip">← Cobros</a>
+    <a href="{{ url_for('cobros.nuevo_plan', cliente_id=cliente.id) }}" class="chip">+ Plan</a>
     <a href="{{ url_for('cobros.nuevo_pago', cliente_id=cliente.id) }}" class="btn btn-primary">+ Pago</a>
   </div>
 </div>

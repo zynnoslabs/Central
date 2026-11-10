@@ -2,12 +2,13 @@
 {% block title %}{{ cliente.nombre }} — Zynnos Central{% endblock %}
 
 {% block content %}
-<div class="flex gap-1 mb-3" style="justify-content:space-between; flex-wrap:wrap; align-items:flex-start;">
+{# ### CAMBIO AQUÍ ### — header con page-header del sistema #}
+<div class="page-header">
   <div>
-    <p class="text-muted text-small mb-1"><a href="{{ url_for('clientes.lista') }}" style="color:var(--fg2); text-decoration:none;">← Clientes</a></p>
+    <p class="text-muted text-small mb-1"><a href="{{ url_for('clientes.lista') }}" class="chip" style="text-decoration:none;">← Clientes</a></p>
     <h1 class="page-title" style="margin-bottom:0;">{{ cliente.nombre }}</h1>
   </div>
-  <a href="{{ url_for('clientes.editar', cliente_id=cliente.id) }}" class="btn" style="background:var(--bg); border:1px solid var(--border);">Editar</a>
+  <a href="{{ url_for('clientes.editar', cliente_id=cliente.id) }}" class="chip">Editar</a>
 </div>
 
 <!-- Datos del cliente -->
