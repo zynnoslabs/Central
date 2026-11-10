@@ -968,14 +968,21 @@ nav {
 <main id="main-content">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="alertas">
-        {% for category, message in messages %}
-          <div class="alerta alerta-{{ category }}">
-            {% if category == 'danger' %}✕{% elif category == 'success' %}✓{% elif category == 'warning' %}⚠{% else %}ℹ{% endif %}
-            {{ message }}
-          </div>
-        {% endfor %}
-      </div>
+    <!-- ### CAMBIO AQUÍ ### Flash → Toast automático -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var flashMessages = [
+          {% for category, message in messages %}
+          { type: "{{ 'error' if category == 'danger' else category }}", msg: {{ message|tojson }} }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ];
+        flashMessages.forEach(function(f) {
+          if (typeof window.toast === 'function') {
+            window.toast(f.msg, f.type, 4500);
+          }
+        });
+      });
+    </script>
     {% endif %}
   {% endwith %}
 

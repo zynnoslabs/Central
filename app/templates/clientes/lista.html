@@ -42,6 +42,12 @@
     text-align:center; padding:2.5rem 1.5rem; color:var(--fg2);
     font-size:.9375rem; display:none;
   }
+
+  /* ### CAMBIO AQUÍ ### skeleton rows para htmx-indicator */
+  .htmx-indicator tbody.sk-tbody { display:table-row-group; }
+  tbody.sk-tbody { display:none; }
+  tbody.sk-tbody td { padding:.75rem 1rem; }
+  tbody.sk-tbody .sk-line { display:inline-block; height:13px; border-radius:5px; vertical-align:middle; }
 </style>
 {% endblock %}
 
@@ -90,6 +96,20 @@
           <th></th>
         </tr>
       </thead>
+      {# ### CAMBIO AQUÍ ### skeleton rows — visibles solo con htmx-indicator activo #}
+      <tbody class="sk-tbody" aria-hidden="true">
+        {% for _ in range(5) %}
+        <tr>
+          <td><span class="sk-line skeleton" style="width:{{ [120,140,100,130,110][loop.index0] }}px;"></span></td>
+          <td class="col-hide-sm"><span class="sk-line skeleton" style="width:{{ [140,120,150,110,130][loop.index0] }}px;"></span></td>
+          <td><span class="sk-line skeleton" style="width:60px;"></span></td>
+          <td class="col-hide-sm"><span class="sk-line skeleton" style="width:50px;"></span></td>
+          <td class="col-hide-sm"><span class="sk-line skeleton" style="width:40px;"></span></td>
+          <td class="col-hide-xs"><span class="sk-line skeleton" style="width:70px;"></span></td>
+          <td></td>
+        </tr>
+        {% endfor %}
+      </tbody>
       <tbody id="clientes-tbody">
         {% for item in clientes_data %}
         {% set c = item.cliente %}

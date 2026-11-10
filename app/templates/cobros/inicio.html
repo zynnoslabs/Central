@@ -57,10 +57,13 @@
   /* ── Tabla cobros ── */
   .cobros-empty {
     text-align: center;
-    padding: 2.5rem 1.5rem;
+    padding: 3rem 1.5rem;
     color: var(--fg2);
   }
-  .cobros-empty-icon { font-size: 2rem; margin-bottom: .5rem; }
+  .cobros-empty-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+  /* ### CAMBIO AQUÍ ### skeleton rows */
+  .sk-row td { padding: .7rem 1rem; }
+  .sk-row .sk-line { display: inline-block; height: 14px; border-radius: 6px; vertical-align: middle; }
   td a { color: var(--teal); text-decoration: none; font-weight: 500; }
   td a:hover { text-decoration: underline; }
   .monto { font-variant-numeric: tabular-nums; }
@@ -132,11 +135,11 @@
   </div>
   <div class="card-body" style="padding:0;">
     <div class="tabla-wrap">
-      <table>
+      <table data-sortable>
         <thead>
           <tr>
-            <th>Cliente</th>
-            <th>Estado</th>
+            <th data-col="0">Cliente</th>
+            <th data-col="1">Estado</th>
             <th style="text-align:right;">Acción</th>
           </tr>
         </thead>
@@ -168,14 +171,14 @@
   <div class="card-body" style="padding:0;">
     {% if pagos_mes %}
     <div class="tabla-wrap">
-      <table>
+      <table data-sortable>
         <thead>
           <tr>
-            <th>Cliente</th>
-            <th>Esperado</th>
-            <th>Recibido</th>
-            <th>Estado</th>
-            <th>Fecha pago</th>
+            <th data-col="0">Cliente</th>
+            <th data-col="1">Esperado</th>
+            <th data-col="2">Recibido</th>
+            <th data-col="3">Estado</th>
+            <th data-col="4">Fecha pago</th>
             <th style="text-align:right;">Acciones</th>
           </tr>
         </thead>
@@ -204,10 +207,12 @@
       </table>
     </div>
     {% else %}
+    {# ### CAMBIO AQUÍ ### empty state mejorado #}
     <div class="cobros-empty">
-      <div class="cobros-empty-icon" style="color:var(--fg3);font-size:1.25rem;">—</div>
-      <p class="font-medium mb-1">No hay pagos registrados este mes</p>
-      <p class="text-small text-muted">Los pagos registrados en {{ nombre_mes }} aparecerán acá.</p>
+      <div class="cobros-empty-icon">📋</div>
+      <p style="font-weight:600; margin-bottom:.35rem; color:var(--fg);">Sin pagos en {{ nombre_mes }}</p>
+      <p class="text-small text-muted" style="margin-bottom:1.25rem;">Registrá el primer pago del mes para verlo acá.</p>
+      <a href="{{ url_for('cobros.lista_pagos', anio=anio, mes=mes) }}" class="btn btn-ghost btn-sm">Ver historial completo</a>
     </div>
     {% endif %}
   </div>
