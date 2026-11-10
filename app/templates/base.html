@@ -308,71 +308,146 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 /* ═══════════════════════════════════════════════
    BOTONES — sistema unificado
    ═══════════════════════════════════════════════ */
+/* ### CAMBIO AQUÍ ### — Sistema de botones rediseñado: proporciones, estados, profundidad */
 .btn, .zbtn {
-  display: inline-flex; align-items: center; gap: .35rem;
-  font-family: var(--font); font-size: 1rem; font-weight: 500; /* 14px */
-  border-radius: var(--r); padding: .45rem 1.1rem;
-  border: 1px solid; cursor: pointer; line-height: 1.4;
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  font-family: var(--font); font-size: .9375rem; font-weight: 500; /* 13px */
+  border-radius: var(--r); padding: .475rem 1.125rem;
+  border: 1px solid transparent; cursor: pointer; line-height: 1.4;
   white-space: nowrap; text-decoration: none;
-  transition: background var(--t), border-color var(--t), color var(--t),
-              transform .08s ease, box-shadow var(--t);
-  -webkit-appearance: none;
+  letter-spacing: -.005em;
+  position: relative; overflow: hidden;
+  transition:
+    background   .12s ease,
+    border-color .12s ease,
+    color        .12s ease,
+    box-shadow   .12s ease,
+    transform    .07s ease;
+  -webkit-appearance: none; user-select: none;
 }
-.btn:disabled, .zbtn:disabled { opacity: .4; cursor: not-allowed; }
-.btn:active:not(:disabled), .zbtn:active:not(:disabled) { transform: translateY(1px); }
+/* Ripple sutil al hacer click */
+.btn::after, .zbtn::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0); border-radius: inherit;
+  transition: background .18s ease;
+}
+.btn:active:not(:disabled)::after, .zbtn:active:not(:disabled)::after {
+  background: rgba(255,255,255,.07);
+}
+.btn:disabled, .zbtn:disabled { opacity: .38; cursor: not-allowed; pointer-events: none; }
+.btn:active:not(:disabled), .zbtn:active:not(:disabled) { transform: translateY(1px) scale(.99); }
 
-/* Primary / Lima */
+/* ── Primary (Lima) — acción principal ── */
 .btn-primary, .zbtn-lime {
-  color: #0a140a; background: var(--lime); border-color: var(--lime);
+  color: #071007;
+  background: var(--lime);
+  border-color: var(--lime);
+  box-shadow: 0 1px 2px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.12);
+  font-weight: 600;
 }
 .btn-primary:hover:not(:disabled), .zbtn-lime:hover:not(:disabled) {
-  background: var(--lime-d); border-color: var(--lime-d);
-  box-shadow: 0 0 0 3px rgba(200,241,53,.18);
+  background: #d4f83f;
+  border-color: #d4f83f;
+  box-shadow: 0 0 0 3px rgba(200,241,53,.2), 0 2px 8px rgba(200,241,53,.15);
+}
+.btn-primary:focus-visible, .zbtn-lime:focus-visible {
+  box-shadow: 0 0 0 3px rgba(200,241,53,.35);
 }
 
-/* Teal */
+/* ── Teal — acción positiva ── */
 .btn-teal, .zbtn-teal {
-  color: #0a140a; background: var(--teal); border-color: var(--teal);
+  color: #061410;
+  background: var(--teal);
+  border-color: var(--teal);
+  box-shadow: 0 1px 2px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.1);
+  font-weight: 600;
 }
 .btn-teal:hover:not(:disabled), .zbtn-teal:hover:not(:disabled) {
-  background: var(--teal-d); box-shadow: 0 0 0 3px rgba(52,201,148,.18);
+  background: #38d49c;
+  border-color: #38d49c;
+  box-shadow: 0 0 0 3px rgba(52,201,148,.2), 0 2px 8px rgba(52,201,148,.15);
 }
 
-/* Ghost / secundario */
+/* ── Ghost — acción secundaria ── */
 .btn-ghost, .btn-secondary, .zbtn-ghost {
-  color: var(--fg2); background: transparent; border-color: var(--border2);
+  color: var(--fg2);
+  background: rgba(255,255,255,.0);
+  border-color: var(--border2);
 }
 .btn-ghost:hover:not(:disabled), .btn-secondary:hover:not(:disabled), .zbtn-ghost:hover:not(:disabled) {
-  color: var(--fg); background: rgba(255,255,255,.05);
+  color: var(--fg);
+  background: rgba(255,255,255,.055);
+  border-color: var(--border3);
 }
 
-/* Outline teal */
+/* ── Outline teal ── */
 .btn-outline, .zbtn-outline {
-  color: var(--teal); background: transparent; border-color: rgba(52,201,148,.35);
+  color: var(--teal);
+  background: transparent;
+  border-color: rgba(52,201,148,.35);
 }
 .btn-outline:hover:not(:disabled), .zbtn-outline:hover:not(:disabled) {
-  background: var(--teal-lo);
+  background: rgba(52,201,148,.07);
+  border-color: rgba(52,201,148,.55);
+  box-shadow: 0 0 0 3px rgba(52,201,148,.1);
 }
 
-/* Danger */
+/* ── Danger — acción destructiva ── */
 .btn-danger {
-  color: var(--danger); background: transparent; border-color: rgba(255,107,107,.3);
+  color: var(--danger);
+  background: transparent;
+  border-color: rgba(255,107,107,.3);
 }
-.btn-danger:hover:not(:disabled) { background: var(--danger-dim); }
+.btn-danger:hover:not(:disabled) {
+  background: rgba(255,107,107,.08);
+  border-color: rgba(255,107,107,.5);
+  box-shadow: 0 0 0 3px rgba(255,107,107,.1);
+}
 
-/* Success / Warning alias */
-.btn-success { color: #0a140a; background: var(--teal); border-color: var(--teal); }
-.btn-warning { color: #0a140a; background: var(--warning); border-color: var(--warning); }
+/* ── Success alias (compatibilidad) ── */
+.btn-success {
+  color: #061410; background: var(--teal); border-color: var(--teal);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+.btn-success:hover:not(:disabled) {
+  background: #38d49c; border-color: #38d49c;
+  box-shadow: 0 0 0 3px rgba(52,201,148,.2);
+}
 
-/* Tamaños — base 14px */
-.btn-xs, .zbtn-sm { font-size: .857rem; padding: .22rem .6rem; }  /* 12px */
-.btn-sm           { font-size: .929rem; padding: .32rem .85rem; } /* 13px */
-.btn-lg           { font-size: 1.143rem; padding: .55rem 1.5rem; } /* 16px */
+/* ── Warning ── */
+.btn-warning {
+  color: #100800; background: var(--warning); border-color: var(--warning);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+.btn-warning:hover:not(:disabled) {
+  background: #f7aa1a; border-color: #f7aa1a;
+}
 
-/* Cta con latido */
+/* ── Tamaños — escala proporcionada ── */
+.btn-xs  { font-size: .786rem; padding: .2rem  .55rem;  border-radius: 4px; gap: .25rem; } /* 11px */
+.btn-sm  { font-size: .857rem; padding: .3rem  .75rem;  border-radius: 5px; gap: .3rem;  } /* 12px */
+.zbtn-sm { font-size: .857rem; padding: .3rem  .75rem;  border-radius: 5px; gap: .3rem;  }
+.btn-lg  { font-size: 1rem;    padding: .6rem  1.5rem;  gap: .5rem; font-weight: 600;   } /* 14px */
+.btn-xl  { font-size: 1.071rem; padding: .75rem 2rem;  gap: .6rem; font-weight: 600;   } /* 15px */
+
+/* ── Grupos de botones ── */
+.btn-group {
+  display: inline-flex; align-items: center;
+  border: 1px solid var(--border2); border-radius: var(--r); overflow: hidden;
+}
+.btn-group .btn {
+  border-radius: 0; border: none; border-right: 1px solid var(--border2);
+  box-shadow: none;
+}
+.btn-group .btn:last-child { border-right: none; }
+.btn-group .btn:hover { z-index: 1; }
+
+/* ── CTA animado ── */
 @keyframes cta-breathe {
-  0%,100% { box-shadow: 0 0 0 0 rgba(200,241,53,0); }
-  50%     { box-shadow: 0 0 0 7px rgba(200,241,53,.18); }
+  0%,100% { box-shadow: 0 1px 2px rgba(0,0,0,.2), 0 0 0 0 rgba(200,241,53,0); }
+  50%     { box-shadow: 0 1px 2px rgba(0,0,0,.2), 0 0 0 7px rgba(200,241,53,.18); }
 }
 .btn-cta { animation: cta-breathe 3s ease-in-out infinite; }
 .btn-cta:hover { animation: none; }
@@ -523,6 +598,23 @@ input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--lime); c
 .sk-line:last-child { width: 45%; }
 @keyframes sk { to { background-position: -200% 0; } }
 
+
+/* ### CAMBIO AQUÍ ### — Transición HTMX suave entre secciones */
+#main-content { transition: opacity .12s ease; }
+#main-content.htmx-swapping { opacity: 0; }
+#main-content.htmx-settling { animation: pageIn .18s cubic-bezier(.4,0,.2,1) both; }
+
+/* Indicador de carga sutil en la nav */
+#htmx-indicator {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  height: 2px;
+  background: linear-gradient(90deg, var(--lime), var(--teal));
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .3s ease;
+  opacity: 0;
+}
+#htmx-indicator.htmx-request { opacity: 1; transform: scaleX(0.7); }
+
 /* ═══════════════════════════════════════════════
    LOGIN / AUTH
    ═══════════════════════════════════════════════ */
@@ -602,8 +694,9 @@ input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--lime); c
 /* ═══════════════════════════════════════════════
    ANIMACIONES — sistema unificado
    ═══════════════════════════════════════════════ */
+/* ### CAMBIO AQUÍ ### — Animaciones refinadas para transiciones suaves */
 @keyframes pageIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeUp {
@@ -644,17 +737,20 @@ a.link {
 }
 a.link:hover { background-size: 100% 1px; }
 
-/* ### CAMBIO AQUÍ ### — View Transitions: fade suave sin parpadeo */
+/* ### CAMBIO AQUÍ ### — View Transitions: fade ultra suave */
 @view-transition { navigation: auto; }
 ::view-transition-old(root) {
-  animation: .1s ease both fadeOut;
+  animation: .08s ease both fadeOut;
 }
 ::view-transition-new(root) {
-  animation: .15s ease both pageIn;
+  animation: .12s ease both pageIn;
 }
-/* Evitar flash blanco: mantener fondo durante la transición */
 ::view-transition-image-pair(root) {
   isolation: auto;
+}
+/* Nav fija: no participa en la transición */
+nav {
+  view-transition-name: none;
 }
 
 /* ### CAMBIO AQUÍ ### — Paginación */
@@ -687,8 +783,22 @@ a.link:hover { background-size: 100% 1px; }
 </style>
   {# ### CAMBIO AQUÍ ### — HTMX: actualiza solo el contenido sin recargar la página #}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.3/htmx.min.js"></script>
+  <script>
+    htmx.config.defaultSwapStyle = 'innerHTML';
+    htmx.config.defaultSwapDelay = 0;
+    htmx.config.defaultSettleDelay = 60;
+    htmx.config.historyCacheSize = 10;
+    // Scroll suave al tope en cada navegación
+    document.addEventListener('htmx:afterSwap', function(e) {
+      if (e.detail.target.id === 'main-content') {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    });
+  </script>
 </head>
-<body hx-boost="true">
+<body hx-boost="true" hx-indicator="#htmx-indicator">
+  {# ### CAMBIO AQUÍ ### — Barra de progreso sutil para navegación HTMX #}
+  <div id="htmx-indicator"></div>
 
 {# ══ NAV ══ #}
 {% if current_user.is_authenticated %}
