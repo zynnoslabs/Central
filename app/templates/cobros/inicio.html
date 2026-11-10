@@ -3,7 +3,21 @@
 {% block extra_head %}
 <style>
   /* page-header heredado del sistema global — solo override de acciones */
-  .header-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .header-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+  /* ### CAMBIO AQUÍ ### — chips en header-actions misma apariencia que filter-chips */
+  .header-actions .chip, .header-actions button.chip {
+    font-size: .857rem; font-weight: 500;
+    letter-spacing: .01em; text-transform: none;
+    padding: .35rem 1rem;
+    cursor: pointer; white-space: nowrap;
+    border-color: rgba(255,255,255,.07);
+    color: var(--fg2);
+    background: var(--bg2);
+    text-decoration: none;
+  }
+  .header-actions .chip:hover, .header-actions button.chip:hover {
+    background: var(--surface); color: var(--fg); border-color: var(--border2);
+  }
 
   /* ── Métricas ── */
   .metrics-row {
@@ -84,15 +98,15 @@
     <span class="text-muted" style="font-size:1rem; font-weight:400;">— {{ nombre_mes }} {{ anio }}</span>
   </h1>
   <div class="header-actions">
-    <a href="{{ url_for('cobros.lista_facturas') }}" class="btn btn-ghost btn-sm">Facturas</a>
-    <a href="{{ url_for('cobros.monotributo') }}" class="btn btn-ghost btn-sm">Monotributo</a>
-    <a href="{{ url_for('cobros.exportar_pagos', anio=anio) }}" class="btn btn-ghost btn-sm" hx-boost="false" title="Descargar pagos del año como CSV">↓ CSV Pagos</a>
-    <a href="{{ url_for('cobros.exportar_facturas', anio=anio) }}" class="btn btn-ghost btn-sm" hx-boost="false" title="Descargar facturas del año como CSV">↓ CSV Facturas</a>
-    <a href="{{ url_for('cobros.exportar_resumen_mensual') }}" class="btn btn-ghost btn-sm" hx-boost="false" title="Resumen mensual histórico">↓ Resumen</a>
-    {# ### CAMBIO AQUÍ ### — botón generar alertas automáticas #}
+    {# ### CAMBIO AQUÍ ### — botones como chips para coincidir con estilo filtros #}
+    <a href="{{ url_for('cobros.lista_facturas') }}" class="chip">Facturas</a>
+    <a href="{{ url_for('cobros.monotributo') }}" class="chip">Monotributo</a>
+    <a href="{{ url_for('cobros.exportar_pagos', anio=anio) }}" class="chip" hx-boost="false" title="Descargar pagos del año como CSV">↓ CSV Pagos</a>
+    <a href="{{ url_for('cobros.exportar_facturas', anio=anio) }}" class="chip" hx-boost="false" title="Descargar facturas del año como CSV">↓ CSV Facturas</a>
+    <a href="{{ url_for('cobros.exportar_resumen_mensual') }}" class="chip" hx-boost="false" title="Resumen mensual histórico">↓ Resumen</a>
     <form method="POST" action="{{ url_for('cobros.generar_alertas') }}" style="display:inline;">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-ghost btn-sm" title="Crear avisos para clientes sin pago reciente (+35 días)">🔔 Alertas</button>
+      <button type="submit" class="chip" title="Crear avisos para clientes sin pago reciente (+35 días)">🔔 Alertas</button>
     </form>
     <a href="{{ url_for('cobros.nueva_factura') }}" class="btn btn-primary btn-sm">+ Factura</a>
   </div>
