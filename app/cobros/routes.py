@@ -111,14 +111,16 @@ def lista_pagos():
     anio   = request.args.get("anio",   hoy.year,  type=int)
     mes    = request.args.get("mes",    hoy.month, type=int)
     estado = request.args.get("estado", "todos")
+    pagina = request.args.get("pagina", 1, type=int)  ### CAMBIO AQUÍ ### — paginación
 
     q = Pago.query.filter_by(anio=anio, mes=mes).join(Cliente)
     if estado and estado != "todos":
         q = q.filter(Pago.estado == estado)
 
-    pagos = q.order_by(Cliente.nombre).all()
+    paginacion = q.order_by(Cliente.nombre).paginate(page=pagina, per_page=25, error_out=False)  ### CAMBIO AQUÍ ###
+    pagos = paginacion.items
 
-    # totales del período sin filtro de estado (para mostrar en métricas)
+    # totales del período completo (sin paginación ni filtro de estado, para métricas)
     todos_pagos = Pago.query.filter_by(anio=anio, mes=mes).all()
     total_esperado = sum(p.monto_esperado for p in todos_pagos)
     total_cobrado  = sum(p.monto_recibido or 0 for p in todos_pagos if p.estado == "pagado")
@@ -126,13 +128,14 @@ def lista_pagos():
     return render_template(
         "cobros/pagos.html",
         pagos=pagos,
+        paginacion=paginacion,
         anio=anio,
         mes=mes,
         estado_filtro=estado,
         nombre_mes=_nombre_mes(mes),
         meses=_lista_meses(),
-        total_esperado=total_esperado,  ### CAMBIO AQUÍ ###
-        total_cobrado=total_cobrado,    ### CAMBIO AQUÍ ###
+        total_esperado=total_esperado,
+        total_cobrado=total_cobrado,
     )
 
 

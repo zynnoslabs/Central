@@ -1,0 +1,46 @@
+{# ### CAMBIO AQUÍ ### — macro de paginación reutilizable
+   Uso: {% include '_paginacion.html' with context %}
+   Requiere: `paginacion` (Flask-SQLAlchemy Pagination) y los params de URL a preservar
+   Acepta: extra_params dict opcional con parámetros adicionales a preservar en los links
+#}
+{% if paginacion and paginacion.pages > 1 %}
+<nav class="paginacion-nav" aria-label="Paginación">
+  <div class="paginacion-wrap">
+
+    {# Anterior #}
+    {% if paginacion.has_prev %}
+    <a href="{{ request.url | replace('pagina=' ~ paginacion.page, 'pagina=' ~ paginacion.prev_num) if 'pagina=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'pagina=' ~ paginacion.prev_num }}"
+       class="pag-btn" aria-label="Anterior">←</a>
+    {% else %}
+    <span class="pag-btn pag-disabled" aria-disabled="true">←</span>
+    {% endif %}
+
+    {# Páginas #}
+    {% for p in paginacion.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+        {% if p == paginacion.page %}
+        <span class="pag-btn pag-active" aria-current="page">{{ p }}</span>
+        {% else %}
+        <a href="{{ request.url | replace('pagina=' ~ paginacion.page, 'pagina=' ~ p) if 'pagina=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'pagina=' ~ p }}"
+           class="pag-btn">{{ p }}</a>
+        {% endif %}
+      {% else %}
+        <span class="pag-sep">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {# Siguiente #}
+    {% if paginacion.has_next %}
+    <a href="{{ request.url | replace('pagina=' ~ paginacion.page, 'pagina=' ~ paginacion.next_num) if 'pagina=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'pagina=' ~ paginacion.next_num }}"
+       class="pag-btn" aria-label="Siguiente">→</a>
+    {% else %}
+    <span class="pag-btn pag-disabled" aria-disabled="true">→</span>
+    {% endif %}
+
+  </div>
+  <p class="pag-info">
+    {{ paginacion.total }} resultado{{ 's' if paginacion.total != 1 else '' }} —
+    página {{ paginacion.page }} de {{ paginacion.pages }}
+  </p>
+</nav>
+{% endif %}

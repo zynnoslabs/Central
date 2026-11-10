@@ -44,8 +44,18 @@ class InstalacionForm(FlaskForm):
 @clientes_bp.route("/")
 @login_required
 def lista():
-    clientes = Cliente.query.order_by(Cliente.creado_en.desc()).all()
-    ### CAMBIO AQUÍ ### — calcular días sin contacto desde último pago
+    ### CAMBIO AQUÍ ### — paginación + filtro estado
+    POR_PAGINA = 20
+    pagina   = request.args.get("pagina", 1, type=int)
+    estado_f = request.args.get("estado", "todos")
+
+    q = Cliente.query.order_by(Cliente.creado_en.desc())
+    if estado_f != "todos":
+        q = q.filter_by(estado=estado_f)
+
+    paginacion = q.paginate(page=pagina, per_page=POR_PAGINA, error_out=False)
+    clientes   = paginacion.items
+
     hoy = datetime.now(timezone.utc)
     clientes_data = []
     for c in clientes:
@@ -57,7 +67,6 @@ def lista():
             .first()
         )
         if ultimo_pago and ultimo_pago.fecha_pago:
-            # fecha_pago es db.Date — convertir a datetime para restar
             fp = datetime(
                 ultimo_pago.fecha_pago.year,
                 ultimo_pago.fecha_pago.month,
@@ -71,7 +80,14 @@ def lista():
                 creado = creado.replace(tzinfo=timezone.utc)
             dias = (hoy - creado).days
         clientes_data.append({"cliente": c, "dias_sin_contacto": dias})
-    return render_template("clientes/lista.html", clientes=clientes, clientes_data=clientes_data)
+
+    return render_template(
+        "clientes/lista.html",
+        clientes=clientes,
+        clientes_data=clientes_data,
+        paginacion=paginacion,
+        estado_f=estado_f,
+    )
 
 
 ### CAMBIO AQUÍ ### — exportar clientes a CSV
