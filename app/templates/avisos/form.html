@@ -2,11 +2,12 @@
 {% block title %}{{ titulo }} — Zynnos Central{% endblock %}
 
 {% block content %}
+{# ### CAMBIO AQUÍ ### — header con page-header del sistema #}
+<div class="page-header" style="max-width:560px;">
+  <h1 class="page-title" style="margin-bottom:0;">{{ titulo }}</h1>
+  <a href="{{ url_for('avisos.lista') }}" class="chip">← Avisos</a>
+</div>
 <div style="max-width:560px;">
-  <p class="text-muted text-small mb-1">
-    <a href="{{ url_for('avisos.lista') }}" style="color:var(--fg2); text-decoration:none;">← Avisos</a>
-  </p>
-  <h1 class="page-title">{{ titulo }}</h1>
 
   <div class="card">
     <form method="POST" novalidate>
@@ -45,7 +46,7 @@
 
       <div class="flex gap-1" style="flex-wrap:wrap; margin-top:1.5rem;">
         <button type="submit" class="btn btn-primary">Guardar</button>
-        <a href="{{ url_for('avisos.lista') }}" class="btn btn-secondary">Cancelar</a>
+        <a href="{{ url_for('avisos.lista') }}" class="chip">Cancelar</a>
       </div>
     </form>
   </div>

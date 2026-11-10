@@ -2,10 +2,11 @@
 {% block title %}Editar {{ inst.nombre }} — Zynnos Central{% endblock %}
 
 {% block content %}
-<p class="text-muted text-small mb-1">
-  <a href="{{ url_for('tablero.detalle_instalacion', inst_id=inst.id) }}" style="color:var(--fg2); text-decoration:none;">← {{ inst.nombre }}</a>
-</p>
-<h1 class="page-title">Editar instalación</h1>
+{# ### CAMBIO AQUÍ ### — header con page-header del sistema #}
+<div class="page-header">
+  <h1 class="page-title" style="margin-bottom:0;">Editar instalación</h1>
+  <a href="{{ url_for('tablero.detalle_instalacion', inst_id=inst.id) }}" class="chip">← {{ inst.nombre }}</a>
+</div>
 
 <div class="card" style="max-width:600px;">
   <form method="POST" novalidate>
@@ -60,7 +61,7 @@
 
     <div class="flex gap-1" style="margin-top:1.5rem; flex-wrap:wrap;">
       <button type="submit" class="btn btn-primary">Guardar cambios</button>
-      <a href="{{ url_for('tablero.detalle_instalacion', inst_id=inst.id) }}" class="btn btn-secondary">Cancelar</a>
+      <a href="{{ url_for('tablero.detalle_instalacion', inst_id=inst.id) }}" class="chip">Cancelar</a>
     </div>
   </form>
 </div>

@@ -2,11 +2,12 @@
 {% block title %}{{ titulo }} — Zynnos Central{% endblock %}
 
 {% block content %}
+{# ### CAMBIO AQUÍ ### — header con page-header del sistema #}
+<div class="page-header" style="max-width:560px;">
+  <h1 class="page-title" style="margin-bottom:0;">{{ titulo }}</h1>
+  <a href="{{ url_for('clientes.detalle', cliente_id=cliente.id) }}" class="chip">← {{ cliente.nombre }}</a>
+</div>
 <div style="max-width:560px;">
-  <p class="text-muted text-small mb-1">
-    <a href="{{ url_for('clientes.detalle', cliente_id=cliente.id) }}" style="color:var(--fg2); text-decoration:none;">← {{ cliente.nombre }}</a>
-  </p>
-  <h1 class="page-title">{{ titulo }}</h1>
 
   <div class="card">
     <form method="POST" novalidate>
