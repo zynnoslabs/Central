@@ -327,7 +327,7 @@
           <div class="lead-actions">
             <button class="btn btn-outline" onclick="consultarGroq({{ lead.id }}, this)">🤖 ¿Qué hago?</button>
             <button class="btn btn-primary" onclick="activarLead({{ lead.id }}, this)">✓ Activar</button>
-            <a href="{{ url_for('clientes.ver_cliente', cliente_id=lead.id) }}" class="btn btn-ghost btn-sm">Ver ficha</a>
+            <a href="{{ url_for('clientes.detalle', cliente_id=lead.id) }}" class="btn btn-ghost btn-sm">Ver ficha</a>
           </div>
 
         </div>
