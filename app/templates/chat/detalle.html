@@ -39,7 +39,7 @@
       {{ conv.nombre or 'Visitante' }}
       {% if conv.rubro %}<span class="text-muted" style="font-size:1rem;font-weight:400;margin-left:.5rem;">· {{ conv.rubro }}</span>{% endif %}
     </h1>
-    {% if conv.telefono %}<p class="page-sub">📱 {{ conv.telefono }}{% if conv.email %} · {{ conv.email }}{% endif %}</p>{% endif %}
+    {% if conv.telefono %}<p class="page-sub">{{ conv.telefono }}{% if conv.email %} · {{ conv.email }}{% endif %}</p>{% endif %}
   </div>
   <span class="badge {% if conv.status == 'active' %}badge-teal{% else %}badge-muted{% endif %}" style="font-size:.875rem;padding:.4rem .8rem;">
     {{ conv.status }}
@@ -79,7 +79,7 @@
     <!-- Análisis IA -->
     <div class="card" id="analysis-card">
       <div class="card-header" style="margin-bottom:.75rem;">
-        <span class="card-title">🧠 Análisis IA</span>
+        <span class="card-title">Análisis IA</span>
       </div>
       <div id="analysis-body">
         {% if conv.budget_est %}
@@ -95,7 +95,7 @@
     {% if hints %}
     <div class="card" style="padding:0;">
       <div class="card-header" style="padding:.75rem 1.25rem;margin-bottom:0;">
-        <span class="card-title">💬 Instrucciones enviadas</span>
+        <span class="card-title">Instrucciones enviadas</span>
       </div>
       {% for h in hints %}
       <div style="padding:.6rem 1.25rem;border-bottom:1px solid var(--border);font-size:.875rem;

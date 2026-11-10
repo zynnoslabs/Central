@@ -111,15 +111,15 @@
 {% if not avisos %}
 <div class="card empty-state">
   {% if filtro == 'pendiente' %}
-  <div class="empty-state-icon">✅</div>
+  <div class="empty-state-icon" style="font-size:1.5rem;color:var(--teal);">—</div>
   <p class="font-medium mb-1">Sin avisos pendientes</p>
   <p class="text-small">Todo está en orden por ahora.</p>
   {% elif filtro == 'resuelto' %}
-  <div class="empty-state-icon">📋</div>
+  <div class="empty-state-icon" style="font-size:1.5rem;color:var(--fg3);">—</div>
   <p class="font-medium mb-1">Sin avisos resueltos todavía</p>
   <p class="text-small">Los avisos que resuelvas aparecerán acá.</p>
   {% else %}
-  <div class="empty-state-icon">🔔</div>
+  <div class="empty-state-icon" style="font-size:1.5rem;color:var(--fg3);">—</div>
   <p class="font-medium mb-1">No hay avisos</p>
   <p class="text-small mt-1"><a href="{{ url_for('avisos.nuevo') }}" style="color:var(--teal);">Crear el primero →</a></p>
   {% endif %}

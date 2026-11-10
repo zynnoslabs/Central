@@ -309,7 +309,7 @@
           {% if lead.email or lead.telefono %}
           <div class="lead-contacto">
             {% if lead.email %}<span>✉ {{ lead.email }}</span>{% endif %}
-            {% if lead.telefono %}<span>📱 {{ lead.telefono }}</span>{% endif %}
+            {% if lead.telefono %}<span>{{ lead.telefono }}</span>{% endif %}
           </div>
           {% endif %}
 

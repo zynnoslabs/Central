@@ -25,13 +25,13 @@
 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
   <div class="card" style="text-align:center; border-left:4px solid {% if semaforo == 'ok' %}var(--teal){% elif semaforo == 'error' %}var(--danger){% else %}var(--fg2){% endif %};">
     {% if semaforo == 'ok' %}
-      <p style="font-size:1.8rem;">✅</p>
+      <p style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);padding:.25rem .5rem;background:var(--teal-lo);border-radius:var(--r1);display:inline-block;">OK</p>
       <p class="text-small font-bold" style="color:var(--teal);">Sistema OK</p>
     {% elif semaforo == 'error' %}
-      <p style="font-size:1.8rem;">🔴</p>
+      <p style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);padding:.25rem .5rem;background:var(--danger-dim);border-radius:var(--r1);display:inline-block;">ERROR</p>
       <p class="text-small font-bold" style="color:var(--danger);">Con errores</p>
     {% else %}
-      <p style="font-size:1.8rem;">⚪</p>
+      <p style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);padding:.25rem .5rem;background:var(--raised);border-radius:var(--r1);display:inline-block;">SIN DATOS</p>
       <p class="text-small" style="color:var(--fg2);">Sin datos</p>
     {% endif %}
   </div>
@@ -56,7 +56,7 @@
 {% if eventos_grafico %}
 <div class="card" style="margin-bottom:1.5rem;">
   <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
-    <p class="font-bold">📈 Tiempos de respuesta</p>
+    <p class="font-bold">Tiempos de respuesta</p>
     <span class="text-muted text-small">últimos {{ eventos_grafico|length }} chequeos</span>
   </div>
 
@@ -179,7 +179,7 @@
 
 <!-- Token del agente -->
 <div class="card" style="margin-bottom:1.5rem;">
-  <p class="font-bold mb-1">🔑 Token del agente</p>
+  <p class="font-bold mb-1">Token del agente</p>
   <p class="text-muted text-small mb-1">Usá este token en la variable <code>CENTRAL_TOKEN</code> del sistema instalado para que pueda reportar actividad.</p>
   {% if inst.agente_token %}
   <div class="flex gap-1" style="flex-wrap:wrap; align-items:center;">
@@ -240,7 +240,7 @@
 <!-- Historial completo -->
 <div class="card">
   <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
-    <p class="font-bold">📋 Historial de chequeos</p>
+    <p class="font-bold">Historial de chequeos</p>
     <span class="text-muted text-small">{{ eventos|length }} registros</span>
   </div>
 
