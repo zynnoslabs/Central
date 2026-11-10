@@ -381,14 +381,14 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 
 /* ── Ghost — acción secundaria ── */
 .btn-ghost, .btn-secondary, .zbtn-ghost {
-  color: var(--fg);
-  background: rgba(255,255,255,.04);
-  border-color: rgba(255,255,255,.18);
+  color: var(--fg2);
+  background: transparent;
+  border-color: var(--border2);
 }
 .btn-ghost:hover:not(:disabled), .btn-secondary:hover:not(:disabled), .zbtn-ghost:hover:not(:disabled) {
   color: var(--fg);
-  background: rgba(255,255,255,.09);
-  border-color: rgba(255,255,255,.28);
+  background: rgba(255,255,255,.05);
+  border-color: var(--border3);
 }
 
 /* ── Outline teal ── */
@@ -567,6 +567,57 @@ thead th[data-sorted="desc"]::after { content: ' ↓'; color: var(--teal); }
 }
 @media (max-width: 480px) {
   .col-hide-xs { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════
+   MOBILE — layout y componentes
+   ═══════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Layout principal: menos padding lateral */
+  main { padding: 1.5rem 1rem 4rem; }
+
+  /* Page header: apila título y acciones */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .75rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .page-header .header-actions,
+  .page-header > .btn,
+  .page-header > a.btn {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+  }
+  .page-header .header-actions .btn,
+  .page-header > .btn,
+  .page-header > a.btn { flex: 1; justify-content: center; min-width: 80px; }
+
+  /* Cards: menos padding interno */
+  .card, .aviso-card, .infra-box { padding: 1rem; }
+  .card-header { padding-bottom: .75rem; margin-bottom: 1rem; }
+
+  /* KPI grid: 2 columnas forzadas en mobile */
+  .kpi-grid, .stats-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+  .kpi, .stat-cell { padding: 1rem 1.125rem; }
+  .kpi-value, .stat-n { font-size: 1.714rem; }
+
+  /* Métricas (cobros): 2 columnas */
+  .metrics-row { grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: 1.25rem; }
+  .metric-card { padding: .875rem 1rem; }
+  .metric-value { font-size: 1.429rem; }
+
+  /* Formularios: columnas en 1 */
+  .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
+
+  /* Tipografía: títulos más ajustados */
+  h1 { font-size: 1.5rem; }
+  .page-title { font-size: 1.214rem; }
 }
 
 /* ═══════════════════════════════════════════════
