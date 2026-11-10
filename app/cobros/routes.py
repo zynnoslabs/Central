@@ -106,26 +106,33 @@ def inicio():
 @cobros_bp.route("/pagos")
 @login_required
 def lista_pagos():
-    """Lista de pagos, filtrable por año/mes."""
+    """Lista de pagos, filtrable por año/mes y estado."""  ### CAMBIO AQUÍ ###
     hoy = date.today()
-    anio = request.args.get("anio", hoy.year, type=int)
-    mes = request.args.get("mes", hoy.month, type=int)
+    anio   = request.args.get("anio",   hoy.year,  type=int)
+    mes    = request.args.get("mes",    hoy.month, type=int)
+    estado = request.args.get("estado", "todos")
 
-    pagos = (
-        Pago.query
-        .filter_by(anio=anio, mes=mes)
-        .join(Cliente)
-        .order_by(Cliente.nombre)
-        .all()
-    )
+    q = Pago.query.filter_by(anio=anio, mes=mes).join(Cliente)
+    if estado and estado != "todos":
+        q = q.filter(Pago.estado == estado)
+
+    pagos = q.order_by(Cliente.nombre).all()
+
+    # totales del período sin filtro de estado (para mostrar en métricas)
+    todos_pagos = Pago.query.filter_by(anio=anio, mes=mes).all()
+    total_esperado = sum(p.monto_esperado for p in todos_pagos)
+    total_cobrado  = sum(p.monto_recibido or 0 for p in todos_pagos if p.estado == "pagado")
 
     return render_template(
         "cobros/pagos.html",
         pagos=pagos,
         anio=anio,
         mes=mes,
+        estado_filtro=estado,
         nombre_mes=_nombre_mes(mes),
         meses=_lista_meses(),
+        total_esperado=total_esperado,  ### CAMBIO AQUÍ ###
+        total_cobrado=total_cobrado,    ### CAMBIO AQUÍ ###
     )
 
 
@@ -224,6 +231,46 @@ def marcar_pagado(pago_id):
     flash("Pago marcado como pagado.", "success")
     next_url = request.referrer or url_for("cobros.inicio")
     return redirect(next_url)
+
+
+### CAMBIO AQUÍ ### — Acción masiva: marcar múltiples pagos como pagados
+@cobros_bp.route("/pagos/bulk-accion", methods=["POST"])
+@login_required
+def bulk_accion():
+    """Marcar múltiples pagos como pagados (acción masiva desde checkbox)."""
+    ids_raw = request.form.getlist("pago_ids")
+    accion  = request.form.get("accion", "marcar_pagado")
+    anio    = request.form.get("anio", date.today().year, type=int)
+    mes     = request.form.get("mes",  date.today().month, type=int)
+
+    if not ids_raw:
+        flash("Seleccioná al menos un pago.", "warning")
+        return redirect(url_for("cobros.lista_pagos", anio=anio, mes=mes))
+
+    try:
+        ids = [int(i) for i in ids_raw]
+    except ValueError:
+        abort(400)
+
+    pagos = Pago.query.filter(Pago.id.in_(ids)).all()
+    hoy = date.today()
+    count = 0
+    for pago in pagos:
+        if accion == "marcar_pagado" and pago.estado != "pagado":
+            pago.estado = "pagado"
+            pago.fecha_pago = hoy
+            if not pago.monto_recibido:
+                pago.monto_recibido = pago.monto_esperado
+            _auditar("cobros.bulk_pagado", pago.cliente_id, {"pago_id": pago.id})
+            count += 1
+        elif accion == "marcar_atrasado" and pago.estado != "pagado":
+            pago.estado = "atrasado"
+            _auditar("cobros.bulk_atrasado", pago.cliente_id, {"pago_id": pago.id})
+            count += 1
+
+    db.session.commit()
+    flash(f"{count} pago{'s' if count != 1 else ''} actualizado{'s' if count != 1 else ''}.", "success")
+    return redirect(url_for("cobros.lista_pagos", anio=anio, mes=mes))
 
 
 # ─── Planes ───────────────────────────────────────────────────────────────────
