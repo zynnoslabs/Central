@@ -3,27 +3,39 @@
 
 {% block extra_head %}
 <style>
-  /* ### CAMBIO AQUÍ ### — header con búsqueda + acciones */
+  /* ### CAMBIO AQUÍ ### — header y toolbar unificados */
   .clientes-header {
     display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;
+    flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;
   }
+  /* toolbar: search + chips en una sola fila, sin romper */
   .clientes-toolbar {
     display: flex; align-items: center; flex-wrap: wrap; gap: .625rem;
     margin-bottom: 1.25rem;
   }
-  /* ### CAMBIO AQUÍ ### — chips dentro del toolbar no duplican margen */
-  .clientes-toolbar .filter-chips { margin-bottom: 0; }
-  .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 340px; display: flex; align-items: center; }
-  .search-wrap svg { position:absolute; left:.7rem; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--fg3); z-index:1; }
+  .clientes-toolbar .filter-chips { margin-bottom: 0; flex-shrink: 0; }
+  /* search-wrap: el SVG está DENTRO del input container, no flotando solo */
+  .search-wrap {
+    position: relative;
+    display: inline-flex; align-items: center;
+    flex: 1; min-width: 200px; max-width: 320px;
+  }
+  .search-wrap svg {
+    position: absolute; left: .7rem;
+    pointer-events: none; color: var(--fg3); z-index: 1;
+    /* sin top/transform — el flex centra verticalmente el SVG */
+    flex-shrink: 0;
+  }
   #search-input {
-    width: 100%; padding: .5rem .875rem .5rem 2.1rem;
+    flex: 1; width: 100%;
+    padding: .45rem .875rem .45rem 2.1rem;
     border: 1px solid var(--border2); border-radius: var(--r);
-    background: var(--bg2); color: var(--fg); font-size: 1rem;
+    background: var(--bg2); color: var(--fg); font-size: .9375rem;
     box-sizing: border-box; transition: border-color var(--t), box-shadow var(--t);
+    line-height: 1.4;
   }
   #search-input:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(52,201,148,.15); }
-  .spacer { flex:1; }
+  .spacer { flex:1; min-width: 0; }
 
   .cliente-nombre a { font-weight:600; color:var(--teal); text-decoration:none; transition:color var(--t); }
   .cliente-nombre a:hover { color:var(--teal); text-decoration:underline; }
@@ -43,11 +55,6 @@
     font-size:.9375rem; display:none;
   }
 
-  /* ### CAMBIO AQUÍ ### skeleton rows para htmx-indicator */
-  .htmx-indicator tbody.sk-tbody { display:table-row-group; }
-  tbody.sk-tbody { display:none; }
-  tbody.sk-tbody td { padding:.75rem 1rem; }
-  tbody.sk-tbody .sk-line { display:inline-block; height:13px; border-radius:5px; vertical-align:middle; }
 </style>
 {% endblock %}
 
@@ -96,20 +103,6 @@
           <th></th>
         </tr>
       </thead>
-      {# ### CAMBIO AQUÍ ### skeleton rows — visibles solo con htmx-indicator activo #}
-      <tbody class="sk-tbody" aria-hidden="true">
-        {% for _ in range(5) %}
-        <tr>
-          <td><span class="sk-line skeleton" style="width:{{ [120,140,100,130,110][loop.index0] }}px;"></span></td>
-          <td class="col-hide-sm"><span class="sk-line skeleton" style="width:{{ [140,120,150,110,130][loop.index0] }}px;"></span></td>
-          <td><span class="sk-line skeleton" style="width:60px;"></span></td>
-          <td class="col-hide-sm"><span class="sk-line skeleton" style="width:50px;"></span></td>
-          <td class="col-hide-sm"><span class="sk-line skeleton" style="width:40px;"></span></td>
-          <td class="col-hide-xs"><span class="sk-line skeleton" style="width:70px;"></span></td>
-          <td></td>
-        </tr>
-        {% endfor %}
-      </tbody>
       <tbody id="clientes-tbody">
         {% for item in clientes_data %}
         {% set c = item.cliente %}
@@ -169,6 +162,9 @@
   let activeFilter = 'todos';
   let searchTerm = '';
 
+  // ### CAMBIO AQUÍ ### — userActed evita mostrar "sin resultados" en carga inicial
+  let userActed = false;
+
   function applyFilters() {
     let visible = 0;
     rows.forEach(row => {
@@ -187,16 +183,19 @@
     } else {
       resultCount.textContent = '';
     }
-    emptyMsg.style.display = visible === 0 ? 'block' : 'none';
+    // solo mostrar "sin resultados" si el usuario ya interactuó
+    emptyMsg.style.display = (userActed && visible === 0) ? 'block' : 'none';
   }
 
   searchInput.addEventListener('input', () => {
+    userActed = true;
     searchTerm = searchInput.value.toLowerCase().trim();
     applyFilters();
   });
 
   chips.forEach(chip => {
     chip.addEventListener('click', () => {
+      userActed = true;
       chips.forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       activeFilter = chip.dataset.filter;
