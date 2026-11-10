@@ -21,19 +21,6 @@
     box-sizing: border-box; transition: border-color var(--t), box-shadow var(--t);
   }
   #search-input:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(52,201,148,.15); }
-  /* ### CAMBIO AQUÍ ### — Chips alto contraste desktop+mobile */
-  .filter-chips { display:flex; gap:.375rem; flex-wrap:wrap; }
-  .chip {
-    padding:.3rem .85rem !important; border-radius:6px !important; font-size:.8rem; font-weight:500;
-    border:1px solid rgba(255,255,255,.07) !important; background:#0e1a13 !important; color:#8a9e8f !important;
-    cursor:pointer; transition:background .12s ease, border-color .12s ease, color .12s ease;
-    white-space:nowrap; letter-spacing:.01em;
-  }
-  .chip:hover { background:#172019 !important; color:#f0ede6 !important; border-color:rgba(255,255,255,.13) !important; }
-  .chip.active {
-    background:rgba(52,201,148,.08) !important; border-color:rgba(52,201,148,.4) !important;
-    color:#34c994 !important; font-weight:600;
-  }
   .spacer { flex:1; }
 
   .cliente-nombre a { font-weight:600; color:var(--teal); text-decoration:none; transition:color var(--t); }

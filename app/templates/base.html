@@ -508,20 +508,32 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 }
 
 /* Chips de filtro (clientes/avisos/cobros) */
+.filter-chips { display: flex; gap: .375rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .filter-chips .chip, button.chip, a.chip {
   border-radius: var(--r);
   border-color: rgba(255,255,255,.07);
-  background: #0e1a13;
-  color: #8a9e8f;
-  font-size: .8rem; font-weight: 500;
+  background: var(--bg2);
+  color: var(--fg2);
+  font-size: .857rem; font-weight: 500;
   letter-spacing: .01em; text-transform: none;
-  cursor: pointer;
+  padding: .35rem 1rem;
+  cursor: pointer; white-space: nowrap;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
 }
 .filter-chips .chip:hover, button.chip:hover, a.chip:hover {
-  background: #172019; color: #f0ede6; border-color: rgba(255,255,255,.13);
+  background: var(--surface); color: var(--fg); border-color: var(--border2);
 }
 .filter-chips .chip.active, button.chip.active, a.chip.active {
-  background: rgba(52,201,148,.08); border-color: rgba(52,201,148,.4); color: #34c994; font-weight: 600;
+  background: rgba(52,201,148,.08); border-color: rgba(52,201,148,.4);
+  color: var(--teal); font-weight: 600;
+}
+
+/* Chips filtro — mobile */
+@media (max-width: 640px) {
+  .filter-chips { gap: .25rem; }
+  .filter-chips .chip, button.chip, a.chip {
+    font-size: .8rem; padding: .3rem .75rem;
+  }
 }
 .chip-lime   { color: var(--lime);    border-color: rgba(200,241,53,.35);  background: rgba(200,241,53,.07); }
 .chip-teal   { color: var(--teal);    border-color: rgba(52,201,148,.35);  background: rgba(52,201,148,.07); }
