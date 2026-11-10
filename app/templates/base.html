@@ -385,13 +385,24 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 /* ── Ghost — acción secundaria ── */
 .btn-ghost, .btn-secondary, .zbtn-ghost {
   color: var(--fg);
-  background: rgba(255,255,255,.04);
-  border-color: rgba(255,255,255,.18);
+  background: var(--bg2);
+  border-color: var(--border2);
 }
 .btn-ghost:hover:not(:disabled), .btn-secondary:hover:not(:disabled), .zbtn-ghost:hover:not(:disabled) {
   color: var(--fg);
-  background: rgba(255,255,255,.08);
-  border-color: rgba(255,255,255,.28);
+  background: var(--surface);
+  border-color: rgba(255,255,255,.32);
+}
+
+/* ── Danger ghost — acción destructiva sutil ── */
+.btn-danger-ghost {
+  color: var(--danger);
+  background: transparent;
+  border-color: transparent;
+}
+.btn-danger-ghost:hover:not(:disabled) {
+  background: rgba(255,107,107,.08);
+  border-color: rgba(255,107,107,.3);
 }
 
 /* ── Outline teal ── */
@@ -441,8 +452,8 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 
 /* ── Tamaños — escala proporcionada ── */
 .btn-xs  { font-size: .786rem; padding: .2rem  .55rem;  border-radius: 4px; gap: .25rem; } /* 11px */
-.btn-sm  { font-size: .857rem; padding: .3rem  .75rem;  border-radius: 5px; gap: .3rem;  } /* 12px */
-.zbtn-sm { font-size: .857rem; padding: .3rem  .75rem;  border-radius: 5px; gap: .3rem;  }
+.btn-sm  { font-size: .857rem; padding: .3rem  .75rem;  border-radius: var(--r); gap: .3rem;  } /* 12px */
+.zbtn-sm { font-size: .857rem; padding: .3rem  .75rem;  border-radius: var(--r); gap: .3rem;  }
 .btn-lg  { font-size: 1rem;    padding: .6rem  1.5rem;  gap: .5rem; font-weight: 600;   } /* 14px */
 .btn-xl  { font-size: 1.071rem; padding: .75rem 2rem;  gap: .6rem; font-weight: 600;   } /* 15px */
 

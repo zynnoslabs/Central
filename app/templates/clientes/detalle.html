@@ -118,7 +118,7 @@
           <td>
             <div class="flex gap-1" style="flex-wrap:nowrap; align-items:center;">
               <a href="{{ url_for('clientes.toggle_instalacion', inst_id=inst.id) }}"
-                 class="btn btn-sm" style="background:var(--bg); border:1px solid var(--border);">
+                 class="btn btn-sm btn-ghost">
                 {{ 'Desactivar' if inst.activa else 'Activar' }}
               </a>
               <form method="POST" action="{{ url_for('clientes.eliminar_instalacion', inst_id=inst.id) }}" style="display:inline;"
