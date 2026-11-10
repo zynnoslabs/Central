@@ -182,6 +182,17 @@ nav {
 
 @media (max-width: 640px) { .hide-sm { display: none !important; } }
 
+/* ### CAMBIO AQUÍ ### — Nav responsive mobile: scroll horizontal sin scrollbar visible */
+@media (max-width: 768px) {
+  nav { padding: 0 1rem; gap: .25rem; overflow-x: auto; overflow-y: hidden; }
+  nav::-webkit-scrollbar { display: none; }
+  nav { -ms-overflow-style: none; scrollbar-width: none; }
+  .nav-links { gap: 0; flex-shrink: 0; }
+  .nav-links a { padding: .3rem .6rem; font-size: .9rem; white-space: nowrap; }
+  .nav-brand { margin-right: .5rem; flex-shrink: 0; }
+  .nav-brand-text { display: none; }  /* En móvil solo el ícono */
+}
+
 /* ═══════════════════════════════════════════════
    LAYOUT PRINCIPAL
    ═══════════════════════════════════════════════ */
@@ -541,6 +552,22 @@ thead th[data-col] { cursor: pointer; }
 thead th[data-col]:hover { color: var(--fg2); }
 thead th[data-sorted="asc"]::after  { content: ' ↑'; color: var(--teal); }
 thead th[data-sorted="desc"]::after { content: ' ↓'; color: var(--teal); }
+
+/* ═══════════════════════════════════════════════
+   TABLA RESPONSIVE MOBILE
+   ═══════════════════════════════════════════════ */
+/* Columnas opcionales — se ocultan en mobile */
+@media (max-width: 640px) {
+  .col-hide-sm { display: none !important; }
+  .tabla-wrap table { font-size: .857rem; }
+  .tabla-wrap thead th,
+  .tabla-wrap tbody td { padding: .5rem .65rem; }
+  /* Acción al final siempre visible */
+  th:last-child, td:last-child { white-space: nowrap; }
+}
+@media (max-width: 480px) {
+  .col-hide-xs { display: none !important; }
+}
 
 /* ═══════════════════════════════════════════════
    FORMULARIOS

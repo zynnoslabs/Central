@@ -93,11 +93,11 @@
       <thead>
         <tr>
           <th data-col="0">Cliente</th>
-          <th data-col="1">Email</th>
+          <th data-col="1" class="col-hide-sm">Email</th>
           <th data-col="2">Estado</th>
-          <th data-col="3">Instalaciones</th>
-          <th data-col="4">Sin contacto</th>
-          <th data-col="5">Alta</th>
+          <th data-col="3" class="col-hide-sm">Instalaciones</th>
+          <th data-col="4" class="col-hide-sm">Sin contacto</th>
+          <th data-col="5" class="col-hide-xs">Alta</th>
           <th></th>
         </tr>
       </thead>
@@ -107,7 +107,7 @@
         {% set dias = item.dias_sin_contacto %}
         <tr data-nombre="{{ c.nombre|lower }}" data-email="{{ c.email|lower }}" data-estado="{{ c.estado }}">
           <td class="cliente-nombre"><a href="{{ url_for('clientes.detalle', cliente_id=c.id) }}">{{ c.nombre }}</a></td>
-          <td class="text-muted text-small">{{ c.email }}</td>
+          <td class="text-muted text-small col-hide-sm">{{ c.email }}</td>
           <td>
             {% if c.estado == 'activo' %}
               <span class="badge badge-teal">Activo</span>
@@ -123,7 +123,7 @@
             {{ c.instalaciones | selectattr('activa') | list | length }}
             <span class="text-muted">activas</span>
           </td>
-          <td class="text-small" data-dias="{{ dias }}">
+          <td class="text-small col-hide-sm" data-dias="{{ dias }}">
             {% if dias <= 30 %}
               <span class="dias-ok">{{ dias }}d</span>
             {% elif dias <= 60 %}
@@ -132,7 +132,7 @@
               <span class="dias-danger">{{ dias }}d ⚠</span>
             {% endif %}
           </td>
-          <td class="text-muted text-small">{{ c.creado_en.strftime('%d/%m/%Y') }}</td>
+          <td class="text-muted text-small col-hide-xs">{{ c.creado_en.strftime('%d/%m/%Y') }}</td>
           <td style="text-align:right;">
             <a href="{{ url_for('clientes.editar', cliente_id=c.id) }}" class="btn btn-sm btn-ghost">Editar</a>
           </td>
