@@ -32,6 +32,7 @@ def create_app(config_class=Config):
             "https://zynnos-site.vercel.app",
             "https://www.zynnos.com",
             "https://zynnos.com",
+            "https://central-gh9z.onrender.com",   # ### CAMBIO AQUÍ ### fix CORS producción
             app.config.get("CENTRAL_URL", "http://localhost:5000"),
         ],
         async_mode="gevent"

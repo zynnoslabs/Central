@@ -1,11 +1,14 @@
+import csv
+import io
 import json
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from datetime import datetime, timezone
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, Response
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
-from app.models import db, Cliente, Producto, Instalacion, Auditoria
+from app.models import db, Cliente, Producto, Instalacion, Auditoria, Pago  ### CAMBIO AQUÍ ###
 
 clientes_bp = Blueprint("clientes", __name__)
 
@@ -42,7 +45,59 @@ class InstalacionForm(FlaskForm):
 @login_required
 def lista():
     clientes = Cliente.query.order_by(Cliente.creado_en.desc()).all()
-    return render_template("clientes/lista.html", clientes=clientes)
+    ### CAMBIO AQUÍ ### — calcular días sin contacto desde último pago
+    hoy = datetime.now(timezone.utc)
+    clientes_data = []
+    for c in clientes:
+        ultimo_pago = (
+            Pago.query
+            .filter_by(cliente_id=c.id)
+            .filter(Pago.fecha_pago.isnot(None))
+            .order_by(Pago.fecha_pago.desc())
+            .first()
+        )
+        if ultimo_pago and ultimo_pago.fecha_pago:
+            # fecha_pago es db.Date — convertir a datetime para restar
+            fp = datetime(
+                ultimo_pago.fecha_pago.year,
+                ultimo_pago.fecha_pago.month,
+                ultimo_pago.fecha_pago.day,
+                tzinfo=timezone.utc,
+            )
+            dias = (hoy - fp).days
+        else:
+            creado = c.creado_en
+            if creado.tzinfo is None:
+                creado = creado.replace(tzinfo=timezone.utc)
+            dias = (hoy - creado).days
+        clientes_data.append({"cliente": c, "dias_sin_contacto": dias})
+    return render_template("clientes/lista.html", clientes=clientes, clientes_data=clientes_data)
+
+
+### CAMBIO AQUÍ ### — exportar clientes a CSV
+@clientes_bp.route("/exportar.csv")
+@login_required
+def exportar_csv():
+    clientes = Cliente.query.order_by(Cliente.nombre).all()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Nombre", "Email", "Teléfono", "Estado", "Instalaciones activas", "Alta"])
+    for c in clientes:
+        inst_activas = sum(1 for i in c.instalaciones if i.activa)
+        writer.writerow([
+            c.nombre,
+            c.email,
+            c.telefono or "",
+            c.estado,
+            inst_activas,
+            c.creado_en.strftime("%d/%m/%Y"),
+        ])
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=clientes.csv"}
+    )
 
 
 @clientes_bp.route("/nuevo", methods=["GET", "POST"])
