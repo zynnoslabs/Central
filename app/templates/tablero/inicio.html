@@ -219,25 +219,6 @@
 
 {% block content %}<div id="dash-ambient" aria-hidden="true"></div>
 
-{# ### CAMBIO AQUÍ ### — Skeleton loader del tablero #}
-<div id="dash-skeleton" class="dash-skeleton" aria-hidden="true" style="max-width:1200px; margin:0 auto; padding-top:2rem;">
-  <div class="skel skel-title" style="width:40%;"></div>
-  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem;">
-    <div class="skel skel-stat"></div>
-    <div class="skel skel-stat"></div>
-    <div class="skel skel-stat"></div>
-    <div class="skel skel-stat"></div>
-  </div>
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
-    <div class="skel skel-card"></div>
-    <div class="skel skel-card"></div>
-  </div>
-  <div class="skel skel-line" style="width:80%;"></div>
-  <div class="skel skel-line" style="width:65%;"></div>
-  <div class="skel skel-line" style="width:72%;"></div>
-</div>
-
-<div id="dash-real" class="dash-content">
 <div class="dash-wrap">
 
   {# ══ HEADER ══════════════════════════════════════════════════════════════ #}
@@ -526,24 +507,8 @@
   </div>{# /two-col #}
 
 </div>{# /dash-wrap #}
-</div>{# /dash-real #}
 
 <script>
-/* ### CAMBIO AQUÍ ### — mostrar contenido real, ocultar skeleton */
-(function() {
-  const sk   = document.getElementById('dash-skeleton');
-  const real = document.getElementById('dash-real');
-  function reveal() {
-    if (sk)   sk.style.display   = 'none';
-    if (real) real.style.display = 'block';
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', reveal);
-  } else {
-    reveal();
-  }
-})();
-
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
 async function consultarGroq(id, btn) {

@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="color-scheme" content="dark">
   <title>{% block title %}Zynnos Central{% endblock %}</title>
+  {# ### CAMBIO AQUÍ ### — anti-flash: fija el fondo ANTES de cualquier CSS externo #}
+  <style>:root{color-scheme:dark}html,body{background:#0b1510;color:#e8f0ea;margin:0}</style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
@@ -641,10 +644,18 @@ a.link {
 }
 a.link:hover { background-size: 100% 1px; }
 
-/* View Transitions API */
+/* ### CAMBIO AQUÍ ### — View Transitions: fade suave sin parpadeo */
 @view-transition { navigation: auto; }
-::view-transition-old(root) { animation: .15s ease both fadeOut; }
-::view-transition-new(root) { animation: .2s .05s ease both pageIn; }
+::view-transition-old(root) {
+  animation: .1s ease both fadeOut;
+}
+::view-transition-new(root) {
+  animation: .15s ease both pageIn;
+}
+/* Evitar flash blanco: mantener fondo durante la transición */
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
 
 /* ### CAMBIO AQUÍ ### — Paginación */
 .paginacion-nav { margin-top: 1.25rem; }
