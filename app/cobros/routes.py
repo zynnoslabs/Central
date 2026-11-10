@@ -505,11 +505,10 @@ def _facturado_ultimos_12_meses():
     """Suma de facturas emitidas en los últimos 12 meses corridos."""
     from sqlalchemy import func
     hoy = date.today()
-    # primer día hace 12 meses
-    if hoy.month == 12:
-        desde = date(hoy.year - 1, 1, 1)
-    else:
-        desde = date(hoy.year - 1, hoy.month + 1, 1)
+    # primer día hace exactamente 12 meses ### CAMBIO AQUÍ ### — bug: lógica anterior cubría 11 o 23 meses
+    mes_desde = hoy.month
+    anio_desde = hoy.year - 1
+    desde = date(anio_desde, mes_desde, 1)
     result = db.session.query(
         func.coalesce(func.sum(Factura.monto_ars), 0)
     ).filter(Factura.fecha >= desde).scalar()

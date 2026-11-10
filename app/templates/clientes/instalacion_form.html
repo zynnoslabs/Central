@@ -67,7 +67,7 @@
 
       <div class="flex gap-1" style="flex-wrap:wrap;">
         <button type="submit" class="btn btn-primary">Guardar instalación</button>
-        <a href="{{ url_for('clientes.detalle', cliente_id=cliente.id) }}" class="btn" style="background:var(--bg); border:1px solid var(--border);">Cancelar</a>
+        <a href="{{ url_for('clientes.detalle', cliente_id=cliente.id) }}" class="chip">Cancelar</a>  {# ### CAMBIO AQUÍ ### — era btn con inline styles #}
       </div>
     </form>
   </div>
