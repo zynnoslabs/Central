@@ -85,10 +85,11 @@
 {% if clientes %}
 {# ── Toolbar: búsqueda + filtros ── #}
 <div class="clientes-toolbar">
-  <div class="search-wrap">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input type="search" id="search-input" data-search placeholder="Buscar cliente…" autocomplete="off">
-  </div>
+  {# ### CAMBIO AQUÍ ### search-wrap como label flex con estilos inline — inmune a base.html #}
+  <label for="search-input" style="display:flex; align-items:center; gap:.5rem; flex:1; min-width:200px; max-width:320px; border:1px solid var(--border2); border-radius:var(--r); background:var(--bg2); padding:.4rem .75rem; box-sizing:border-box; cursor:text;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0; color:var(--fg3);"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="search" id="search-input" data-search placeholder="Buscar cliente…" autocomplete="off" style="flex:1; border:none; outline:none; background:transparent; color:var(--fg); font-size:.9375rem; min-width:0; padding:0;">
+  </label>
   <div class="filter-chips">
     <button class="chip active" data-filter="todos">Todos <span id="count-todos" class="text-muted" style="font-size:.75rem;"></span></button>
     <button class="chip" data-filter="activo">Activos</button>
@@ -154,7 +155,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <div class="empty-filter" id="empty-filter" style="display:none;">No hay clientes que coincidan con la búsqueda.</div>
+    <div class="empty-filter" id="empty-filter" style="display:none; text-align:center; padding:2rem 1.5rem; color:var(--fg2); font-size:.9375rem;"></div>
   </div>
 </div>
 
@@ -196,8 +197,21 @@
     } else {
       resultCount.textContent = '';
     }
-    // solo mostrar "sin resultados" si el usuario ya interactuó
-    emptyMsg.style.display = (userActed && visible === 0) ? 'block' : 'none';
+    // ### CAMBIO AQUÍ ### mensaje contextual según filtro activo
+    if (userActed && visible === 0) {
+      const labels = { activo:'activos', en_prueba:'en prueba', suspendido:'suspendidos', baja:'de baja' };
+      const filtroLabel = labels[activeFilter];
+      if (searchTerm && filtroLabel) {
+        emptyMsg.textContent = 'Sin clientes ' + filtroLabel + ' que coincidan con "' + searchTerm + '".';
+      } else if (searchTerm) {
+        emptyMsg.textContent = 'Sin clientes que coincidan con "' + searchTerm + '".';
+      } else if (filtroLabel) {
+        emptyMsg.textContent = 'No tenés clientes ' + filtroLabel + ' por ahora.';
+      }
+      emptyMsg.style.display = 'block';
+    } else {
+      emptyMsg.style.display = 'none';
+    }
   }
 
   searchInput.addEventListener('input', () => {
