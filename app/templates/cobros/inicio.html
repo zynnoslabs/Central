@@ -76,6 +76,20 @@
 {% endblock %}
 
 {% block content %}
+
+{# ### CAMBIO AQUÍ ### — Skeleton loader de cobros #}
+<div id="cobros-skeleton" aria-hidden="true" style="padding-top:1rem;">
+  <div class="skel skel-title" style="width:35%; margin-bottom:1.5rem;"></div>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem;">
+    <div class="skel skel-stat"></div>
+    <div class="skel skel-stat"></div>
+    <div class="skel skel-stat"></div>
+  </div>
+  <div class="skel skel-card" style="margin-bottom:.75rem;"></div>
+  <div class="skel skel-card"></div>
+</div>
+
+<div id="cobros-real" style="display:none;">
 <div class="page-header">
   <h1 class="page-title" style="margin-bottom:0;">Cobros
     <span class="text-muted" style="font-size:1rem; font-weight:400;">— {{ nombre_mes }} {{ anio }}</span>
@@ -212,4 +226,20 @@
     {% endif %}
   </div>
 </section>
+</div>{# /cobros-real #}
+
+<script>
+/* ### CAMBIO AQUÍ ### — skeleton cobros */
+(function() {
+  var sk   = document.getElementById('cobros-skeleton');
+  var real = document.getElementById('cobros-real');
+  function reveal() {
+    if (sk)   sk.style.display   = 'none';
+    if (real) real.style.display = 'block';
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', reveal);
+  } else { reveal(); }
+})();
+</script>
 {% endblock %}
