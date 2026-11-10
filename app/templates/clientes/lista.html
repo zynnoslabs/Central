@@ -14,32 +14,39 @@
     margin-bottom: 1.25rem;
   }
   .clientes-toolbar .filter-chips { margin-bottom: 0; }
-  /* search-wrap: contenedor relativo, el input ocupa todo el ancho */
+  /* search-wrap: label como flex row — SVG + input lado a lado SIN position:absolute */
   .search-wrap {
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0;
     flex: 1; min-width: 200px; max-width: 320px;
-  }
-  /* ### CAMBIO AQUÍ ### SVG con top+transform para centrarlo verticalmente */
-  .search-wrap > svg {
-    position: absolute;
-    left: .7rem;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-    color: var(--fg3);
-    z-index: 1;
-    display: block;
-  }
-  #search-input {
-    display: block;
-    width: 100%;
-    padding: .45rem .875rem .45rem 2.25rem;
-    border: 1px solid var(--border2); border-radius: var(--r);
-    background: var(--bg2); color: var(--fg); font-size: .9375rem;
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    background: var(--bg2);
+    padding: 0 .75rem 0 .625rem;
     box-sizing: border-box;
     transition: border-color var(--t), box-shadow var(--t);
   }
-  #search-input:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(52,201,148,.15); }
+  .search-wrap:focus-within {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(52,201,148,.15);
+  }
+  /* ### CAMBIO AQUÍ ### SVG inline dentro del flex, sin position:absolute */
+  .search-wrap > svg {
+    flex-shrink: 0;
+    color: var(--fg3);
+    pointer-events: none;
+  }
+  #search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--fg);
+    font-size: .9375rem;
+    padding: .45rem .25rem .45rem .5rem;
+    min-width: 0;
+  }
   .spacer { flex: 1; }
 
   .cliente-nombre a { font-weight:600; color:var(--teal); text-decoration:none; transition:color var(--t); }
@@ -179,7 +186,8 @@
       const matchSearch = !searchTerm || nombre.includes(searchTerm) || email.includes(searchTerm);
       const matchFilter = activeFilter === 'todos' || estado === activeFilter;
       const show = matchSearch && matchFilter;
-      row.classList.toggle('hidden-row', !show);
+      // ### CAMBIO AQUÍ ### style inline para evitar que base.html sobreescriba
+      row.style.display = show ? '' : 'none';
       if (show) visible++;
     });
     const total = rows.length;
