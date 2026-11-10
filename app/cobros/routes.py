@@ -556,6 +556,25 @@ def _auditar(accion, cliente_id, detalle_dict):
     db.session.add(log)
 
 
+# ─── Alertas automáticas por días sin pagar ──────────────────────────────────
+### CAMBIO AQUÍ ###
+
+@cobros_bp.route("/alertas/generar", methods=["POST"])
+@login_required
+def generar_alertas():
+    """Genera avisos automáticos para clientes sin pago reciente."""
+    from app.utils.alertas import generar_alertas_pago
+    resultado = generar_alertas_pago()
+    if resultado["creados"]:
+        flash(
+            f"✓ {resultado['creados']} alerta(s) creada(s): {', '.join(resultado['clientes'])}.",
+            "success"
+        )
+    else:
+        flash("Sin alertas nuevas: todos los clientes están al día o ya tienen aviso pendiente.", "info")
+    return redirect(request.referrer or url_for("cobros.inicio"))
+
+
 # ─── Exportación CSV ──────────────────────────────────────────────────────────
 
 @cobros_bp.route("/exportar/pagos")

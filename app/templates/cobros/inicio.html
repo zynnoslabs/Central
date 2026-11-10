@@ -86,6 +86,11 @@
     <a href="{{ url_for('cobros.exportar_pagos', anio=anio) }}" class="btn btn-ghost btn-sm" title="Descargar pagos del año como CSV">↓ CSV Pagos</a>
     <a href="{{ url_for('cobros.exportar_facturas', anio=anio) }}" class="btn btn-ghost btn-sm" title="Descargar facturas del año como CSV">↓ CSV Facturas</a>
     <a href="{{ url_for('cobros.exportar_resumen_mensual') }}" class="btn btn-ghost btn-sm" title="Resumen mensual histórico">↓ Resumen</a>
+    {# ### CAMBIO AQUÍ ### — botón generar alertas automáticas #}
+    <form method="POST" action="{{ url_for('cobros.generar_alertas') }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-ghost btn-sm" title="Crear avisos para clientes sin pago reciente (+35 días)">🔔 Alertas</button>
+    </form>
     <a href="{{ url_for('cobros.nueva_factura') }}" class="btn btn-primary btn-sm">+ Factura</a>
   </div>
 </div>
