@@ -498,13 +498,30 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 .badge-pago-pendiente { color: var(--warning); border-color: rgba(245,158,11,.3);  background: rgba(245,158,11,.08); }
 .badge-pago-atrasado  { color: var(--danger);  border-color: rgba(255,107,107,.3); background: rgba(255,107,107,.08); }
 
-/* Chips (tablero) */
+/* Chips (tablero) — íconos de estado con punto de color */
 .chip {
   display: inline-flex; align-items: center; gap: .35rem;
   font-size: .65rem; font-weight: 600;
   letter-spacing: .06em; text-transform: uppercase;
-  padding: .3rem .75rem; border-radius: 100px; border: 1px solid;
+  padding: .3rem .75rem; border-radius: var(--r); border: 1px solid;
   transition: opacity var(--t);
+}
+
+/* Chips de filtro (clientes/avisos/cobros) */
+.filter-chips .chip, button.chip, a.chip {
+  border-radius: var(--r);
+  border-color: rgba(255,255,255,.07);
+  background: #0e1a13;
+  color: #8a9e8f;
+  font-size: .8rem; font-weight: 500;
+  letter-spacing: .01em; text-transform: none;
+  cursor: pointer;
+}
+.filter-chips .chip:hover, button.chip:hover, a.chip:hover {
+  background: #172019; color: #f0ede6; border-color: rgba(255,255,255,.13);
+}
+.filter-chips .chip.active, button.chip.active, a.chip.active {
+  background: rgba(52,201,148,.08); border-color: rgba(52,201,148,.4); color: #34c994; font-weight: 600;
 }
 .chip-lime   { color: var(--lime);    border-color: rgba(200,241,53,.35);  background: rgba(200,241,53,.07); }
 .chip-teal   { color: var(--teal);    border-color: rgba(52,201,148,.35);  background: rgba(52,201,148,.07); }
