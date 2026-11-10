@@ -148,6 +148,49 @@
   cursor: pointer; padding: .15rem .3rem; border-radius: 4px; transition: color var(--t);
 }
 .recheck-btn:hover { color: var(--teal); }
+
+/* ── Widgets row (vencimientos + gráfico) ────────── */
+.widgets-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+@media (max-width: 700px) { .widgets-row { grid-template-columns: 1fr; } }
+.widget-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1.1rem 1.25rem;
+}
+.widget-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: .9rem;
+}
+.widget-link { font-size: .75rem; color: var(--teal); text-decoration: none; }
+.widget-link:hover { text-decoration: underline; }
+.widget-empty { font-size: .8rem; color: var(--fg3); padding: .5rem 0; }
+
+/* vencimientos */
+.venc-list { display: flex; flex-direction: column; gap: 0; }
+.venc-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .55rem 0; border-bottom: 1px solid var(--border);
+  gap: .5rem;
+}
+.venc-row:last-child { border-bottom: none; padding-bottom: 0; }
+.venc-info { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+.venc-nombre { font-size: .875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.venc-fecha  { font-size: .75rem; }
+.venc-right  { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+.venc-monto  { font-size: .875rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg); }
+
+/* gráfico */
+.chart-wrap { display: flex; flex-direction: column; gap: .5rem; }
+.cobros-svg  { width: 100%; height: auto; overflow: visible; }
+.chart-legend { display: flex; gap: 1rem; justify-content: flex-end; }
+.legend-item  { display: flex; align-items: center; gap: .3rem; font-size: .72rem; color: var(--fg3); }
+.legend-dot   { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 </style>
 {% endblock %}
 
@@ -218,6 +261,102 @@
     </div>
 
   </div>
+
+  {# ══ WIDGETS: VENCIMIENTOS + GRÁFICO ════════════════════════════════════════ #}
+  <div class="widgets-row dash-section">
+
+    {# — Próximos vencimientos — #}
+    <div class="widget-card">
+      <div class="widget-head">
+        <span class="sec-eyebrow" style="margin-bottom:0;">Próximos vencimientos</span>
+        <a href="{{ url_for('cobros.inicio') }}" class="widget-link">Ver cobros →</a>
+      </div>
+      {% if proximos_vencimientos %}
+      <div class="venc-list">
+        {% for v in proximos_vencimientos[:5] %}
+        <div class="venc-row">
+          <div class="venc-info">
+            <span class="venc-nombre">{{ v.pago.cliente.nombre }}</span>
+            <span class="venc-fecha text-muted text-small">{{ v.fecha_venc.strftime('%-d %b') }}</span>
+          </div>
+          <div class="venc-right">
+            <span class="venc-monto">$&nbsp;{{ "{:,.0f}".format(v.pago.monto_esperado) }}</span>
+            {% if v.dias_restantes < 0 %}
+              <span class="badge badge-danger" style="font-size:.7rem;">{{ v.dias_restantes|abs }}d atrás</span>
+            {% elif v.dias_restantes == 0 %}
+              <span class="badge badge-warn" style="font-size:.7rem;">Hoy</span>
+            {% elif v.dias_restantes <= 3 %}
+              <span class="badge badge-warn" style="font-size:.7rem;">{{ v.dias_restantes }}d</span>
+            {% else %}
+              <span class="text-muted text-small">{{ v.dias_restantes }}d</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="widget-empty">Sin vencimientos en los próximos 7 días</div>
+      {% endif %}
+    </div>
+
+    {# — Gráfico cobros 6 meses — #}
+    <div class="widget-card widget-chart">
+      <div class="widget-head">
+        <span class="sec-eyebrow" style="margin-bottom:0;">Cobros — últimos 6 meses</span>
+      </div>
+      <div class="chart-wrap">
+        {# SVG inline generado con Jinja — barras proporcionales al máximo #}
+        {% set max_val = cobros_6m | map(attribute='esperado') | max %}
+        {% set max_val = max_val if max_val > 0 else 1 %}
+        <svg viewBox="0 0 360 110" xmlns="http://www.w3.org/2000/svg" class="cobros-svg" aria-label="Gráfico de cobros últimos 6 meses">
+          {% set bar_w = 32 %}
+          {% set gap   = 28 %}
+          {% set total_w = (bar_w + gap) * 6 - gap %}
+          {% set offset_x = (360 - total_w) / 2 %}
+          {% set chart_h = 72 %}
+          {% set base_y  = 82 %}
+
+          {# Línea de base #}
+          <line x1="{{ offset_x - 4 }}" y1="{{ base_y }}" x2="{{ 360 - offset_x + 4 }}" y2="{{ base_y }}"
+                stroke="var(--border)" stroke-width="1"/>
+
+          {% for m in cobros_6m %}
+          {% set x = offset_x + loop.index0 * (bar_w + gap) %}
+          {% set h_esp = (m.esperado / max_val * chart_h) | int %}
+          {% set h_cob = (m.cobrado  / max_val * chart_h) | int %}
+          {% set h_esp = [h_esp, 2] | max %}
+
+          {# Barra esperado (fondo) #}
+          <rect x="{{ x }}" y="{{ base_y - h_esp }}" width="{{ bar_w }}" height="{{ h_esp }}"
+                rx="3" fill="{% if m.es_actual %}rgba(200,241,53,.18){% else %}rgba(52,201,148,.10){% endif %}"/>
+
+          {# Barra cobrado (encima) #}
+          {% if m.cobrado > 0 %}
+          <rect x="{{ x }}" y="{{ base_y - h_cob }}" width="{{ bar_w }}" height="{{ h_cob }}"
+                rx="3" fill="{% if m.es_actual %}var(--lime){% else %}var(--teal){% endif %}" opacity="0.85"/>
+          {% endif %}
+
+          {# Etiqueta mes #}
+          <text x="{{ x + bar_w / 2 }}" y="{{ base_y + 12 }}"
+                text-anchor="middle" font-size="9" fill="var(--fg3)"
+                font-family="system-ui,sans-serif">{{ m.mes }}</text>
+
+          {# Valor cobrado si > 0 #}
+          {% if m.cobrado > 0 and h_cob > 14 %}
+          <text x="{{ x + bar_w / 2 }}" y="{{ base_y - h_cob - 4 }}"
+                text-anchor="middle" font-size="8.5" fill="{% if m.es_actual %}var(--lime){% else %}var(--teal){% endif %}"
+                font-family="system-ui,sans-serif">{{ "{:,.0f}".format(m.cobrado) }}</text>
+          {% endif %}
+          {% endfor %}
+        </svg>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot" style="background:var(--teal);opacity:.85"></span>Cobrado</span>
+          <span class="legend-item"><span class="legend-dot" style="background:rgba(52,201,148,.20)"></span>Esperado</span>
+        </div>
+      </div>
+    </div>
+
+  </div>{# /widgets-row #}
 
   {# ══ ALERTA LENTITUD ═══════════════════════════════════════════════════════ #}
   {% if instalaciones_lentas %}

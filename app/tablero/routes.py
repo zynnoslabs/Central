@@ -11,6 +11,7 @@ from wtforms import StringField, BooleanField, DecimalField
 from wtforms.validators import DataRequired, Length, Optional, URL
 from wtforms import ValidationError
 from datetime import date
+import calendar
 from decimal import Decimal
 
 from app.models import db, Instalacion, EventoSalud, Cliente, Pago, Aviso, Factura
@@ -192,6 +193,45 @@ def inicio():
                     info["solucion"] = linea.replace("Solución recomendada:", "").strip()
         leads_parsed.append({"cliente": lead, "info": info})
 
+    ### CAMBIO AQUÍ ### — próximos vencimientos (cobros pendientes en los próximos 7 días)
+    # El "vencimiento" de un pago es el último día del mes al que corresponde
+    proximos_vencimientos = []
+    pagos_pendientes_mes = Pago.query.filter(
+        Pago.estado.in_(["pendiente", "atrasado"]),
+    ).all()
+    for p in pagos_pendientes_mes:
+        ultimo_dia = calendar.monthrange(p.anio, p.mes)[1]
+        fecha_venc = date(p.anio, p.mes, ultimo_dia)
+        dias_restantes = (fecha_venc - hoy).days
+        if -3 <= dias_restantes <= 7:  # vence en los próximos 7 días o venció hace ≤3 días
+            proximos_vencimientos.append({
+                "pago": p,
+                "fecha_venc": fecha_venc,
+                "dias_restantes": dias_restantes,
+            })
+    proximos_vencimientos.sort(key=lambda x: x["dias_restantes"])
+
+    ### CAMBIO AQUÍ ### — datos para gráfico SVG de cobros últimos 6 meses
+    cobros_6m = []
+    for i in range(5, -1, -1):
+        # retroceder i meses desde hoy
+        mes_offset = hoy.month - i
+        anio_offset = hoy.year
+        while mes_offset <= 0:
+            mes_offset += 12
+            anio_offset -= 1
+        pagos_m = Pago.query.filter_by(anio=anio_offset, mes=mes_offset).all()
+        cobrado = sum(float(p.monto_recibido or 0) for p in pagos_m if p.estado == "pagado")
+        esperado = sum(float(p.monto_esperado) for p in pagos_m)
+        nombre_mes_corto = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                            "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"][mes_offset]
+        cobros_6m.append({
+            "mes": nombre_mes_corto,
+            "cobrado": cobrado,
+            "esperado": esperado,
+            "es_actual": (anio_offset == hoy.year and mes_offset == hoy.month),
+        })
+
     return render_template(
         "tablero/inicio.html",
         resumen=resumen,
@@ -212,6 +252,8 @@ def inicio():
         avisos_alta=avisos_alta,
         leads_parsed=leads_parsed,
         hoy=hoy,
+        proximos_vencimientos=proximos_vencimientos,  ### CAMBIO AQUÍ ###
+        cobros_6m=cobros_6m,                          ### CAMBIO AQUÍ ###
     )
 
 
