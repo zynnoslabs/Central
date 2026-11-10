@@ -207,11 +207,8 @@
       </table>
     </div>
     {% else %}
-    {# ### CAMBIO AQUÍ ### empty state mejorado #}
-    <div class="cobros-empty">
-      <div class="cobros-empty-icon">📋</div>
-      <p style="font-weight:600; margin-bottom:.35rem; color:var(--fg);">Sin pagos en {{ nombre_mes }}</p>
-      <p class="text-small text-muted" style="margin-bottom:1.25rem;">Registrá el primer pago del mes para verlo acá.</p>
+    <div class="empty-state">
+      <p class="text-muted text-small mb-2">No hay pagos registrados en {{ nombre_mes }}.</p>
       <a href="{{ url_for('cobros.lista_pagos', anio=anio, mes=mes) }}" class="btn btn-ghost btn-sm">Ver historial completo</a>
     </div>
     {% endif %}
