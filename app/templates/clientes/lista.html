@@ -8,34 +8,39 @@
     display: flex; justify-content: space-between; align-items: center;
     flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;
   }
-  /* toolbar: search + chips en una sola fila, sin romper */
+  /* ### CAMBIO AQUÍ ### toolbar: search + chips, una sola fila */
   .clientes-toolbar {
     display: flex; align-items: center; flex-wrap: wrap; gap: .625rem;
     margin-bottom: 1.25rem;
   }
-  .clientes-toolbar .filter-chips { margin-bottom: 0; flex-shrink: 0; }
-  /* search-wrap: el SVG está DENTRO del input container, no flotando solo */
+  .clientes-toolbar .filter-chips { margin-bottom: 0; }
+  /* search-wrap: contenedor relativo, el input ocupa todo el ancho */
   .search-wrap {
     position: relative;
-    display: inline-flex; align-items: center;
     flex: 1; min-width: 200px; max-width: 320px;
   }
-  .search-wrap svg {
-    position: absolute; left: .7rem;
-    pointer-events: none; color: var(--fg3); z-index: 1;
-    /* sin top/transform — el flex centra verticalmente el SVG */
-    flex-shrink: 0;
+  /* ### CAMBIO AQUÍ ### SVG con top+transform para centrarlo verticalmente */
+  .search-wrap > svg {
+    position: absolute;
+    left: .7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--fg3);
+    z-index: 1;
+    display: block;
   }
   #search-input {
-    flex: 1; width: 100%;
-    padding: .45rem .875rem .45rem 2.1rem;
+    display: block;
+    width: 100%;
+    padding: .45rem .875rem .45rem 2.25rem;
     border: 1px solid var(--border2); border-radius: var(--r);
     background: var(--bg2); color: var(--fg); font-size: .9375rem;
-    box-sizing: border-box; transition: border-color var(--t), box-shadow var(--t);
-    line-height: 1.4;
+    box-sizing: border-box;
+    transition: border-color var(--t), box-shadow var(--t);
   }
   #search-input:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(52,201,148,.15); }
-  .spacer { flex:1; min-width: 0; }
+  .spacer { flex: 1; }
 
   .cliente-nombre a { font-weight:600; color:var(--teal); text-decoration:none; transition:color var(--t); }
   .cliente-nombre a:hover { color:var(--teal); text-decoration:underline; }
@@ -52,7 +57,7 @@
 
   .empty-filter {
     text-align:center; padding:2.5rem 1.5rem; color:var(--fg2);
-    font-size:.9375rem; display:none;
+    font-size:.9375rem;
   }
 
 </style>
@@ -142,7 +147,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <div class="empty-filter" id="empty-filter">No hay clientes que coincidan con la búsqueda.</div>
+    <div class="empty-filter" id="empty-filter" style="display:none;">No hay clientes que coincidan con la búsqueda.</div>
   </div>
 </div>
 
