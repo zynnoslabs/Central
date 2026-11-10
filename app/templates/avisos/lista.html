@@ -19,12 +19,6 @@
     font-weight: 700;
     letter-spacing: -.02em;
   }
-  .filtros {
-    display: flex;
-    gap: .4rem;
-    flex-wrap: wrap;
-    margin-bottom: 1.25rem;
-  }
   .aviso-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -106,7 +100,7 @@
 </div>
 
 {# ── Filtros ### CAMBIO AQUÍ ### — chips en lugar de botones ── #}
-<div class="filtros" style="gap:.375rem;">
+<div class="filter-chips">
   {% set opciones = [('pendiente','Pendientes'), ('resuelto','Resueltos'), ('todos','Todos')] %}
   {% for val, label in opciones %}
   <a href="{{ url_for('avisos.lista', estado=val) }}"

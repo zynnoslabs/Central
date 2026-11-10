@@ -12,6 +12,8 @@
     display: flex; align-items: center; flex-wrap: wrap; gap: .625rem;
     margin-bottom: 1.25rem;
   }
+  /* ### CAMBIO AQUÍ ### — chips dentro del toolbar no duplican margen */
+  .clientes-toolbar .filter-chips { margin-bottom: 0; }
   .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
   .search-wrap svg { position:absolute; left:.7rem; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--fg3); }
   #search-input {

@@ -251,7 +251,10 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
   transition: box-shadow var(--t);
 }
 .card:hover, .metric-card:hover, .aviso-card:hover { box-shadow: var(--shadow); }
-.card + .card { margin-top: .875rem; }
+.card + .card { margin-top: 1rem; }
+.filter-chips + .card,
+.filter-chips + .tabla-wrap,
+.filter-chips + div > .card { margin-top: 0; }
 
 .card-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -508,7 +511,7 @@ p  { font-size: 1rem;     color: var(--fg2); line-height: 1.65; }
 }
 
 /* Chips de filtro (clientes/avisos/cobros) */
-.filter-chips { display: flex; gap: .375rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.filter-chips { display: flex; gap: .375rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
 .filter-chips .chip, button.chip, a.chip {
   border-radius: var(--r);
   border-color: rgba(255,255,255,.07);

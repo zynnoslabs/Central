@@ -97,17 +97,13 @@
 </form>
 
 {# chips de estado — linkean con estado= param #}
-<div class="pagos-toolbar" style="margin-top:-.5rem; margin-bottom:1rem;">
-  <div class="filter-chips">
+<div class="filter-chips" style="margin-bottom:1rem;">
     {% set estados = [("todos","Todos"), ("pendiente","Pendientes"), ("atrasado","Atrasados"), ("pagado","Pagados"), ("perdonado","Perdonados")] %}
     {% for val, label in estados %}
     <a href="{{ url_for('cobros.lista_pagos', anio=anio, mes=mes, estado=val) }}"
        class="chip {% if estado_filtro == val %}active{% endif %}">{{ label }}</a>
     {% endfor %}
   </div>
-  <div class="spacer"></div>
-  <span class="text-muted text-small">{{ pagos|length }} pago{{ 's' if pagos|length != 1 else '' }}</span>
-</div>
 
 {# ── Métricas mini ── #}
 <div class="pagos-metrics">
