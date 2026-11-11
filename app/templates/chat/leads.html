@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Leads — Zynnos Central{% endblock %}
+
+{% block extra_head %}
+<style>
+.leads-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  margin-bottom: 1.25rem; flex-wrap: wrap;
+}
+
+.lead-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .9rem 1.25rem; border-bottom: 1px solid var(--border);
+  transition: background .15s;
+}
+.lead-row:last-child { border-bottom: none; }
+.lead-row:hover      { background: var(--raised); }
+.lead-row.contactado { opacity: .55; }
+
+.lead-avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .88rem; font-weight: 700;
+  background: linear-gradient(135deg, #f5a623, #e8821a); color: #fff;
+}
+.lead-row.contactado .lead-avatar { background: var(--raised); color: var(--fg3); border: 1px solid var(--border2); }
+
+.lead-body    { flex: 1; min-width: 0; }
+.lead-name    { font-size: .9rem; font-weight: 600; color: var(--fg); }
+.lead-row.contactado .lead-name { text-decoration: line-through; color: var(--fg3); }
+.lead-wa      { font-size: .8rem; color: var(--fg3); margin-top: .15rem; }
+.lead-page    { font-size: .72rem; color: var(--fg3); margin-top: .1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+
+.lead-time    { font-size: .7rem; color: var(--fg3); flex-shrink: 0; }
+
+.lead-actions { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+
+.btn-wa {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .78rem; font-weight: 600; padding: .3rem .8rem;
+  border-radius: 8px; background: #25D366; color: #fff; text-decoration: none;
+  transition: opacity .15s;
+}
+.btn-wa:hover { opacity: .85; }
+
+.btn-check {
+  font-size: .78rem; padding: .3rem .75rem; border-radius: 8px;
+  border: 1px solid var(--border2); background: none; color: var(--fg2);
+  cursor: pointer; transition: all .15s;
+}
+.btn-check:hover         { background: var(--raised); }
+.btn-check.checked       { background: rgba(52,201,148,.1); color: var(--teal-d); border-color: rgba(52,201,148,.3); }
+
+.stat-pill {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .8rem; font-weight: 600; padding: .3rem .8rem;
+  border-radius: 100px;
+}
+.stat-pill.total   { background: var(--raised); color: var(--fg2); border: 1px solid var(--border2); }
+.stat-pill.pending { background: rgba(245,166,35,.1); color: #c97a10; border: 1px solid rgba(245,166,35,.3); }
+
+.empty-state { padding: 4rem 2rem; text-align: center; }
+.empty-state-icon  { font-size: 2.2rem; display: block; margin-bottom: .6rem; opacity: .4; }
+.empty-state-title { font-size: .95rem; font-weight: 600; color: var(--fg2); }
+.empty-state-sub   { font-size: .82rem; color: var(--fg3); margin-top: .3rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% set pending_count = leads | rejectattr('contactado') | list | length %}
+
+<div class="leads-header">
+  <div>
+    <h1 class="page-title">Leads capturados</h1>
+    <p class="page-sub">Visitantes que dejaron sus datos en modo fallback</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+    <span class="stat-pill total">{{ leads | length }} total</span>
+    {% if pending_count > 0 %}
+    <span class="stat-pill pending">⚠️ {{ pending_count }} sin contactar</span>
+    {% endif %}
+    <a href="{{ url_for('chat.panel') }}" class="btn btn-sm" style="font-size:.8rem;">
+      ← Volver al chat
+    </a>
+  </div>
+</div>
+
+<div class="card card-table" style="padding:0;overflow:hidden;">
+  {% if leads %}
+    {% for lead in leads %}
+    <div class="lead-row {% if lead.contactado %}contactado{% endif %}" id="lead-{{ lead.id }}">
+      <div class="lead-avatar">{{ lead.nombre[0].upper() }}</div>
+      <div class="lead-body">
+        <div class="lead-name">{{ lead.nombre }}</div>
+        <div class="lead-wa">📱 {{ lead.whatsapp }}</div>
+        {% if lead.pagina %}
+        <div class="lead-page">🔗 {{ lead.pagina }}</div>
+        {% endif %}
+      </div>
+      <div class="lead-time">{{ lead.creado_en.strftime('%d/%m %H:%M') }}</div>
+      <div class="lead-actions">
+        {% set wa_msg = "Hola " + lead.nombre + "! Te escribo de Zynnos Labs. Vi que estuviste en nuestro sitio, ¿puedo ayudarte?" %}
+        <a href="https://wa.me/{{ lead.whatsapp | replace('+','') | replace(' ','') }}?text={{ wa_msg | urlencode }}"
+           target="_blank" rel="noopener" class="btn-wa">
+          💬 WhatsApp
+        </a>
+        <button class="btn-check {% if lead.contactado %}checked{% endif %}"
+                onclick="toggleContactado({{ lead.id }}, this)"
+                title="{{ 'Marcar como no contactado' if lead.contactado else 'Marcar como contactado' }}">
+          {% if lead.contactado %}✓ Contactado{% else %}Marcar{% endif %}
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <span class="empty-state-icon">📋</span>
+      <div class="empty-state-title">Sin leads todavía</div>
+      <p class="empty-state-sub">Los leads aparecen acá cuando el widget entra en modo fallback</p>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const socket = io({ transports: ['websocket'] });
+socket.emit('join_operators');
+
+// ── Toggle contactado ─────────────────────────────────────────────────────────
+function toggleContactado(leadId, btn) {
+  fetch('/chat/api/lead/contactado', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id: leadId })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!data.ok) return;
+    const row = document.getElementById('lead-' + leadId);
+    if (data.contactado) {
+      row.classList.add('contactado');
+      row.querySelector('.lead-avatar').classList.add('contactado');
+      btn.classList.add('checked');
+      btn.textContent = '✓ Contactado';
+      btn.title = 'Marcar como no contactado';
+    } else {
+      row.classList.remove('contactado');
+      btn.classList.remove('checked');
+      btn.textContent = 'Marcar';
+      btn.title = 'Marcar como contactado';
+    }
+  })
+  .catch(console.error);
+}
+
+// ── Nuevo lead en tiempo real ─────────────────────────────────────────────────
+socket.on('new_lead', (data) => {
+  const list = document.querySelector('.card-table');
+  list.querySelector('.empty-state')?.remove();
+
+  const initials = data.nombre ? data.nombre[0].toUpperCase() : '?';
+  const waMsg = encodeURIComponent(`Hola ${data.nombre}! Te escribo de Zynnos Labs. Vi que estuviste en nuestro sitio, ¿puedo ayudarte?`);
+  const waNum = data.whatsapp.replace(/\D/g, '');
+
+  const row = document.createElement('div');
+  row.id = `lead-${data.id}`;
+  row.className = 'lead-row';
+  row.innerHTML = `
+    <div class="lead-avatar">${initials}</div>
+    <div class="lead-body">
+      <div class="lead-name">${data.nombre}</div>
+      <div class="lead-wa">📱 ${data.whatsapp}</div>
+    </div>
+    <div class="lead-time">ahora</div>
+    <div class="lead-actions">
+      <a href="https://wa.me/${waNum}?text=${waMsg}" target="_blank" rel="noopener" class="btn-wa">💬 WhatsApp</a>
+      <button class="btn-check" onclick="toggleContactado(${data.id}, this)" title="Marcar como contactado">Marcar</button>
+    </div>`;
+  list.prepend(row);
+});
+</script>
+{% endblock %}

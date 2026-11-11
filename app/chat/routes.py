@@ -500,6 +500,27 @@ def api_close():
     return jsonify({"ok": True})
 
 
+@chat_bp.route("/leads")
+@login_required
+def leads():
+    """Vista de leads capturados en modo fallback."""
+    all_leads = ChatLead.query.order_by(ChatLead.creado_en.desc()).all()
+    return render_template("chat/leads.html", leads=all_leads)
+
+
+@chat_bp.route("/api/lead/contactado", methods=["POST"])
+@login_required
+def api_lead_contactado():
+    """Marca un lead como contactado."""
+    lead_id = (request.json or {}).get("id")
+    lead = ChatLead.query.get(lead_id)
+    if not lead:
+        return jsonify({"ok": False}), 404
+    lead.contactado = not lead.contactado  # toggle
+    db.session.commit()
+    return jsonify({"ok": True, "contactado": lead.contactado})
+
+
 @chat_bp.route("/api/lead", methods=["POST"])       # ### CAMBIO AQUÍ ###
 def api_lead():
     """Guarda un lead capturado en modo fallback del widget."""
