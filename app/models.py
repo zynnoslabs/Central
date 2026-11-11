@@ -414,3 +414,21 @@ class ChatLead(db.Model):                          # ### CAMBIO AQUÍ ###
 
     def __repr__(self):
         return f"<ChatLead {self.nombre} {self.whatsapp}>"
+
+
+class ChatKB(db.Model):                              # ### CAMBIO AQUÍ ###
+    """
+    Base de conocimiento editable para el agente de chat.
+    Una sola fila por clave (key). El agente la lee en cada conversación.
+    """
+    __tablename__ = "chat_kb"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    clave      = db.Column(db.String(64), unique=True, nullable=False)   # ej: "servicios"
+    titulo     = db.Column(db.String(128), nullable=False)                # label en UI
+    contenido  = db.Column(db.Text, nullable=False, default="")          # texto libre
+    orden      = db.Column(db.Integer, default=0)
+    updated_at = db.Column(db.DateTime(timezone=True), default=ahora, onupdate=ahora)
+
+    def __repr__(self):
+        return f"<ChatKB {self.clave}>"

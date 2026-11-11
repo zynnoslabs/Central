@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Base de conocimiento — Zynnos Chat{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:.2rem;">Base de conocimiento</h1>
+    <p class="page-sub">Lo que la IA sabe sobre Zynnos — editá para cambiar cómo vende</p>
+  </div>
+  <a href="{{ url_for('chat.panel') }}" class="btn btn-sm" style="font-size:.8rem;display:inline-flex;align-items:center;gap:.35rem;">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Chat
+  </a>
+</div>
+
+<div id="kb-save-toast" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;background:var(--teal);color:#fff;padding:.6rem 1.1rem;border-radius:8px;font-size:.82rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.18);">
+  ✓ Guardado
+</div>
+
+{% for s in secciones %}
+<div class="card kb-card" style="margin-bottom:1rem;" data-clave="{{ s.clave }}">
+  <div class="kb-header">
+    <div>
+      <div class="kb-titulo">{{ s.titulo }}</div>
+      <div class="kb-clave">clave: <code>{{ s.clave }}</code></div>
+    </div>
+    <button class="btn btn-sm btn-primary kb-save-btn" data-clave="{{ s.clave }}">Guardar</button>
+  </div>
+  <textarea class="kb-textarea" id="kb-{{ s.clave }}" rows="5" placeholder="Contenido…">{{ s.contenido }}</textarea>
+  <div class="kb-updated">Última actualización: {{ s.updated_at.strftime('%d/%m/%Y %H:%M') if s.updated_at else '—' }}</div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ### CAMBIO AQUÍ ### — guardar KB sin recargar
+async function saveKB(clave) {
+  const contenido = document.getElementById('kb-' + clave)?.value ?? '';
+  const btn = document.querySelector(`.kb-save-btn[data-clave="${clave}"]`);
+  if (btn) { btn.textContent = 'Guardando…'; btn.disabled = true; }
+
+  try {
+    const r = await fetch('/chat/api/kb/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clave, contenido })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      // toast
+      const toast = document.getElementById('kb-save-toast');
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 2000);
+    }
+  } catch(e) { alert('Error al guardar'); }
+  finally {
+    if (btn) { btn.textContent = 'Guardar'; btn.disabled = false; }
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.kb-save-btn');
+  if (btn) saveKB(btn.dataset.clave);
+});
+
+// Ctrl+Enter en cualquier textarea guarda esa sección
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && e.target.classList.contains('kb-textarea')) {
+    const card = e.target.closest('.kb-card');
+    if (card) saveKB(card.dataset.clave);
+  }
+});
+</script>
+{% endblock %}

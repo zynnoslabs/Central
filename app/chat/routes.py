@@ -23,7 +23,7 @@ from flask_login import login_required
 from flask_socketio import emit, join_room
 
 from app.chat import chat_bp
-from app.models import db, ChatConversacion, ChatMensaje, ChatHint, ChatLead
+from app.models import db, ChatConversacion, ChatMensaje, ChatHint, ChatLead, ChatKB
 
 # ── CORS para la API pública del widget ──────────────────────────────────────  ### CAMBIO AQUÍ ###
 _CORS_ORIGINS = {
@@ -131,6 +131,82 @@ def web_search(query: str, max_results: int = 3) -> list[dict]:
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+# ── KB — base de conocimiento editable ───────────────────────────────────────
+
+_KB_DEFAULTS = [
+    {"clave": "empresa",       "titulo": "Quiénes somos",        "orden": 1, "contenido":
+        "Zynnos Labs es una agencia argentina de automatización con IA para pymes. "
+        "Ayudamos a negocios locales a ahorrar tiempo y vender más usando tecnología simple y práctica."},
+    {"clave": "servicios",     "titulo": "Servicios",             "orden": 2, "contenido":
+        "1. Chatbot IA para atención al cliente (WhatsApp o web) — responde 24/7, califica leads\n"
+        "2. Automatización de WhatsApp — seguimientos, recordatorios, confirmaciones automáticas\n"
+        "3. Sistema de cobros y recordatorios — avisa a clientes con cuotas vencidas\n"
+        "4. CRM simple — organiza contactos, seguimiento de ventas\n"
+        "5. Automatización de redes sociales — programación y respuestas automáticas"},
+    {"clave": "casos_exito",   "titulo": "Casos de éxito",        "orden": 3, "contenido":
+        "- Veterinaria en Palermo: automatizamos los turnos por WhatsApp, bajaron un 80% los llamados al mostrador\n"
+        "- Estudio contable en Rosario: sistema de cobros automático, recuperaron $400.000 en cuotas atrasadas en 2 meses\n"
+        "- Gimnasio en CABA: chatbot que responde consultas y agenda turnos, el dueño dejó de responder WhatsApp de noche"},
+    {"clave": "buen_cliente",  "titulo": "Perfil de buen cliente", "orden": 4, "contenido":
+        "- Pyme de 1 a 20 personas\n"
+        "- Tiene al menos un proceso repetitivo que hace a mano (responder mensajes, cobrar, agendar)\n"
+        "- Usa WhatsApp para comunicarse con clientes\n"
+        "- El dueño toma las decisiones directamente\n"
+        "- Tiene presupuesto de $80.000 a $600.000 pesos"},
+    {"clave": "objeciones",    "titulo": "Cómo manejar objeciones", "orden": 5, "contenido":
+        "- 'Es caro': 'Entiendo. ¿Cuánto te cuesta por mes el tiempo que dedicás a hacer eso a mano?'\n"
+        "- 'No sé si lo necesito': 'Hagamos el diagnóstico gratuito y vemos juntos si tiene sentido'\n"
+        "- 'Ya lo intenté con otro': 'Qué pasó? Muchos vienen después de malas experiencias, nosotros trabajamos diferente'\n"
+        "- 'No tengo tiempo para implementarlo': 'Nosotros nos encargamos de todo, vos no tenés que hacer nada técnico'"},
+    {"clave": "objetivo_chat", "titulo": "Objetivo del chat",      "orden": 6, "contenido":
+        "Conseguir que el visitante agende una videollamada de diagnóstico gratuito de 30 minutos. "
+        "El diagnóstico es sin costo y sin compromiso. "
+        "Si el visitante prefiere que lo llamen, conseguir su teléfono. "
+        "No cerrar precios por chat — siempre derivar a la llamada."},
+    {"clave": "tono",          "titulo": "Tono y estilo",          "orden": 7, "contenido":
+        "Amigable, directo, sin tecnicismos. Español rioplatense informal. "
+        "El asesor se llama Matías. Nunca sonar a robot ni a telemarketing. "
+        "Máximo 3 oraciones por mensaje. Una sola pregunta a la vez."},
+]
+
+
+def _get_kb() -> dict:
+    """
+    ### CAMBIO AQUÍ ###
+    Carga la KB desde la BD. Si una clave no existe, la crea con el valor default.
+    Retorna dict {clave: contenido}.
+    """
+    existentes = {r.clave: r for r in ChatKB.query.all()}
+    result = {}
+    for d in _KB_DEFAULTS:
+        if d["clave"] not in existentes:
+            # sembrar el default
+            row = ChatKB(clave=d["clave"], titulo=d["titulo"],
+                         orden=d["orden"], contenido=d["contenido"])
+            db.session.add(row)
+            result[d["clave"]] = d["contenido"]
+        else:
+            result[d["clave"]] = existentes[d["clave"]].contenido
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return result
+
+
+def _kb_to_system_context(kb: dict) -> str:
+    """Convierte la KB en texto para el system prompt."""
+    return (
+        f"=== QUIÉNES SOMOS ===\n{kb.get('empresa','')}\n\n"
+        f"=== SERVICIOS QUE OFRECEMOS ===\n{kb.get('servicios','')}\n\n"
+        f"=== CASOS DE ÉXITO REALES ===\n{kb.get('casos_exito','')}\n\n"
+        f"=== PERFIL DE BUEN CLIENTE ===\n{kb.get('buen_cliente','')}\n\n"
+        f"=== CÓMO MANEJAR OBJECIONES ===\n{kb.get('objeciones','')}\n\n"
+        f"=== OBJETIVO DEL CHAT ===\n{kb.get('objetivo_chat','')}\n\n"
+        f"=== TONO Y ESTILO ===\n{kb.get('tono','')}"
+    )
+
 
 def _detectar_etapa_venta(history: list, conv) -> dict:
     """
@@ -250,6 +326,67 @@ def _resumir_datos_conocidos(conv, history_text: str) -> str:
 
 
 # ── Análisis paralelo ─────────────────────────────────────────────────────────
+
+def _verificar_objetivo(app, conv_id: str, history_text: str, msg_count: int):
+    """
+    ### CAMBIO AQUÍ ###
+    Corre cada 3 mensajes del cliente. Evalúa si la IA está cumpliendo el objetivo
+    de venta o se desvió. Emite 'coach_alert' al panel si detecta un problema.
+    """
+    with app.app_context():
+        groq = get_groq()
+        if not groq:
+            return
+        from app import socketio
+
+        # Cargar objetivo desde KB
+        kb_objetivo = ""
+        try:
+            kb_obj = ChatKB.query.filter_by(clave="objetivo_chat").first()
+            if kb_obj:
+                kb_objetivo = kb_obj.contenido
+        except Exception:
+            pass
+
+        try:
+            resp = groq.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": (
+                        "Sos el supervisor de ventas de Zynnos Labs. Analizás conversaciones del chatbot.\n"
+                        "Objetivo del chat: " + (kb_objetivo or "Que el visitante agende una videollamada de diagnóstico gratuito o deje su teléfono.") + "\n\n"
+                        "Evaluá la conversación y respondé SOLO JSON:\n"
+                        "{\n"
+                        '  "en_camino": true/false,\n'
+                        '  "etapa_actual": "1-5 o descripción breve",\n'
+                        '  "problema_detectado": "null o descripción del desvío",\n'
+                        '  "accion_sugerida": "qué debería hacer la IA ahora para retomar el camino",\n'
+                        '  "nivel_alerta": "ok|advertencia|critico"\n'
+                        "}\n"
+                        "nivel_alerta:\n"
+                        "- ok: la IA va por buen camino\n"
+                        "- advertencia: se está tardando demasiado en avanzar de etapa\n"
+                        "- critico: la IA se desvió del objetivo, está dando info innecesaria, o el cliente se está yendo"
+                    )},
+                    {"role": "user", "content": f"Conversación (mensaje {msg_count}):\n{history_text}"}
+                ],
+                temperature=0.1,
+                max_tokens=250,
+                response_format={"type": "json_object"}
+            )
+            evaluacion = json.loads(resp.choices[0].message.content)
+
+            # Solo emitir si hay algo relevante para el operador
+            if evaluacion.get("nivel_alerta") in ("advertencia", "critico"):
+                socketio.emit("coach_alert", {
+                    "conv_id": conv_id,
+                    "evaluacion": evaluacion,
+                    "msg_count": msg_count
+                }, room="operators")
+
+        except Exception as e:
+            current_app.logger.warning(f"[Verificador] {e}")
+
 
 def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count: int):
     """
@@ -550,50 +687,55 @@ def api_message():
     )
     t.start()
 
+    # ── Verificador de objetivo (cada 3 mensajes del cliente) ──────────────
+    if user_count % 3 == 0 and user_count > 0:
+        t_ver = threading.Thread(
+            target=_verificar_objetivo,
+            args=(app, conv_id, history_text, user_count),
+            daemon=True
+        )
+        t_ver.start()
+
     # ── Hints del operador pendientes ────────────────────────────────────────
     pending = ChatHint.query.filter_by(conversation_id=conv_id, applied=False).order_by(ChatHint.id).all()
     hint_text = ""
     if pending:
-        hint_text = "\n\nINSTRUCCIONES ESPECIALES DEL EQUIPO (incorporalas naturalmente):\n"
+        hint_text = "\n\nINSTRUCCIONES ESPECIALES DEL EQUIPO (incorporalas naturalmente, son prioritarias):\n"
         hint_text += "\n".join(f"- {h.hint}" for h in pending)
 
-    # ### CAMBIO AQUÍ ### — inyectar datos ya recopilados + etapa de venta detectada
+    # ### CAMBIO AQUÍ ### — cargar KB + datos del visitante + etapa de venta
+    kb = _get_kb()
+    kb_context = _kb_to_system_context(kb)
     datos_conocidos = _resumir_datos_conocidos(conv, history_text)
     etapa_venta = _detectar_etapa_venta(history, conv)
 
     system_prompt = (
-        "Sos Matías, asesor de Zynnos Labs — agencia argentina que automatiza pymes con IA.\n"
-        "Hablás como alguien real: amigable, directo, sin exagerar. Nunca sonás a robot ni a vendedor de telemarketing.\n\n"
+        "Sos Matías, asesor de ventas de Zynnos Labs.\n"
+        "Hablás como una persona real: amigable, directo, sin exagerar. Nunca sonás a robot ni a telemarketing.\n\n"
+
+        "BASE DE CONOCIMIENTO DE ZYNNOS:\n"
+        + kb_context + "\n\n"
 
         "DATOS YA CONOCIDOS DEL VISITANTE:\n"
         + datos_conocidos + "\n\n"
 
-        "ETAPA ACTUAL DE LA CONVERSACIÓN: " + etapa_venta["nombre"] + "\n"
+        "ETAPA ACTUAL: " + etapa_venta["nombre"] + "\n"
         "Instrucción para esta etapa: " + etapa_venta["instruccion"] + "\n\n"
 
-        "FLUJO GENERAL (seguí el orden, no saltés etapas):\n"
-        "ETAPA 1 — RAPPORT: Saludá, preguntá el nombre y el negocio de forma natural. No vendas nada todavía.\n"
-        "ETAPA 2 — DOLOR: Preguntá qué tarea les consume más tiempo o qué problema se repite. "
-        "Cuando el cliente lo describa, reflejalo con empatía ('eso suena agotador', 'eso les debe costar plata'). "
-        "Hacé que sienta que entendés su problema.\n"
-        "ETAPA 3 — CONSECUENCIA: Ayudalo a ver el costo real del problema. "
-        "Preguntá algo como '¿Y eso cuánto tiempo te lleva por semana?' o '¿Cuántos clientes perdés por eso?'. "
-        "El objetivo es que EL MISMO diga que necesita resolverlo.\n"
-        "ETAPA 4 — SOLUCIÓN: Recién acá mencionás que Zynnos puede ayudarlos. "
-        "Sé específico: 'Para un negocio como el tuyo, nosotros armamos un sistema que [X]'. "
-        "No des precios, ofrecé el diagnóstico gratuito.\n"
-        "ETAPA 5 — CIERRE: Pedí el teléfono o email para coordinar la llamada de diagnóstico. "
-        "Si pide hablar por teléfono ahora, respondé: 'Perfecto, te llama nuestro equipo a la brevedad. "
-        "¿Cuál es tu número?' y usá la etiqueta [SOLICITUD_LLAMADA] al final de tu respuesta.\n\n"
+        "FLUJO DE VENTA (seguí el orden, no saltés etapas):\n"
+        "ETAPA 1 — RAPPORT: Saludá, preguntá el nombre y el negocio. Nada de ventas todavía.\n"
+        "ETAPA 2 — DOLOR: Preguntá qué tarea les consume más tiempo. Cuando lo describa, reflejalo con empatía.\n"
+        "ETAPA 3 — CONSECUENCIA: Ayudalo a ver el costo real. '¿Y eso cuánto tiempo te lleva por semana?'\n"
+        "ETAPA 4 — SOLUCIÓN: Presentá la solución concreta de Zynnos para ese problema. Ofrecé el diagnóstico.\n"
+        "ETAPA 5 — CIERRE: Pedí contacto. Si pide llamada, decí que lo contactan pronto y usá [SOLICITUD_LLAMADA].\n\n"
 
-        "REGLAS IRROMPIBLES:\n"
+        "REGLAS:\n"
         "- UNA sola pregunta por mensaje\n"
         "- Si ya sabés un dato, no lo volvás a preguntar\n"
-        "- Nunca des precios hasta que pregunten; si preguntan, decí 'depende del proyecto, pero arrancamos desde $80.000'\n"
-        "- Español rioplatense informal (vos, tenés, hacés)\n"
-        "- Máximo 3 oraciones por respuesta\n"
-        "- Si el cliente dice que quiere hablar, está apurado, o dice 'llamame', activá etapa 5 directo\n"
-        "- Nunca uses signos de exclamación múltiples ni emojis de más de 1 por mensaje"
+        "- Nunca des precios hasta que pregunten\n"
+        "- Español rioplatense informal\n"
+        "- Máximo 3 oraciones\n"
+        "- Si el cliente dice 'llamame' o quiere hablar, activá etapa 5 directo"
         + hint_text
     )
 
@@ -823,4 +965,41 @@ def api_lead():
     except Exception:
         pass
 
+    return jsonify({"ok": True})
+
+
+# ── Base de conocimiento — panel de edición ──────────────────────────────────
+
+@chat_bp.route("/kb")
+@login_required
+def kb_panel():
+    """Vista de edición de la base de conocimiento del agente."""
+    with current_app.app_context():
+        kb_rows = _get_kb()  # siembra defaults si no existen
+    secciones = ChatKB.query.order_by(ChatKB.orden).all()
+    return render_template("chat/kb.html", secciones=secciones)
+
+
+@chat_bp.route("/api/kb/save", methods=["POST"])
+@login_required
+def api_kb_save():
+    """Guarda una sección de la KB."""  ### CAMBIO AQUÍ ###
+    data     = request.json or {}
+    clave    = data.get("clave", "").strip()
+    contenido = data.get("contenido", "").strip()
+
+    if not clave:
+        return jsonify({"ok": False, "error": "Falta clave"}), 400
+
+    row = ChatKB.query.filter_by(clave=clave).first()
+    if row:
+        row.contenido = contenido
+    else:
+        # clave nueva (el operador puede agregar secciones custom)
+        titulo = data.get("titulo", clave).strip()
+        orden  = data.get("orden", 99)
+        row = ChatKB(clave=clave, titulo=titulo, contenido=contenido, orden=orden)
+        db.session.add(row)
+
+    db.session.commit()
     return jsonify({"ok": True})

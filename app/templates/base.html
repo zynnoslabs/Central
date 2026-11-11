@@ -1023,6 +1023,27 @@ nav {
 .cd-call-body span { font-size:.8rem;color:var(--fg2); }
 .cd-call-close { background:transparent;border:none;color:var(--fg3);cursor:pointer;font-size:1rem;padding:.2rem .4rem;border-radius:4px;flex-shrink:0; }
 .cd-call-close:hover { background:var(--overlay);color:var(--fg); }
+
+/* ### CAMBIO AQUÍ ### — KB editor styles */
+.kb-card { padding:1rem 1.2rem 1rem; }
+.kb-header { display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.75rem; }
+.kb-titulo { font-size:.93rem;font-weight:600;color:var(--fg);margin-bottom:.1rem; }
+.kb-clave  { font-size:.77rem;color:var(--fg3); }
+.kb-clave code { background:var(--surface);padding:.05rem .3rem;border-radius:4px;font-size:.75rem; }
+.kb-textarea { width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--fg);font-size:.83rem;line-height:1.6;padding:.7rem .9rem;resize:vertical;font-family:inherit;transition:border-color .15s; }
+.kb-textarea:focus { outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(52,201,148,.12); }
+.kb-updated { font-size:.74rem;color:var(--fg3);margin-top:.5rem; }
+
+/* ### CAMBIO AQUÍ ### — coach alert banner */
+.cd-coach-alert { display:flex;align-items:flex-start;gap:.75rem;background:linear-gradient(135deg,rgba(255,160,50,.13),rgba(255,160,50,.06));border:1.5px solid #f5a623;border-radius:10px;padding:.8rem 1rem;margin:.6rem 0;animation:callPulse 1.5s ease-in-out 2; }
+.cd-coach-icon { font-size:1.3rem;flex-shrink:0;margin-top:.05rem; }
+.cd-coach-body { flex:1;min-width:0; }
+.cd-coach-body strong { display:block;font-size:.85rem;color:#f5a623;font-weight:700;margin-bottom:.2rem; }
+.cd-coach-body p { font-size:.8rem;color:var(--fg2);margin-bottom:.15rem; }
+.cd-coach-body .cd-coach-action { font-size:.79rem;color:var(--fg);background:var(--overlay);padding:.25rem .6rem;border-radius:5px;display:inline-block;margin-top:.3rem; }
+.cd-coach-close { background:transparent;border:none;color:var(--fg3);cursor:pointer;font-size:1rem;padding:.2rem .4rem;border-radius:4px;flex-shrink:0; }
+.cd-coach-close:hover { background:var(--overlay);color:var(--fg); }
+
 .cd-web-result { padding:.6rem 0;border-bottom:1px solid var(--border); }
 .cd-web-result:last-child { border-bottom:none; }
 .cd-web-title   { font-size:.8rem;font-weight:600;color:var(--fg);margin-bottom:.2rem; }

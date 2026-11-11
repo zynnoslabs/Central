@@ -372,6 +372,35 @@ socket.on('hint_added', (data) => {
   appendHintToList(data.hint);
 });
 
+// ### CAMBIO AQUÍ ### — alerta del verificador de objetivo (coach_alert)
+socket.on('coach_alert', (data) => {
+  if (data.conv_id !== CONV_ID) return;
+
+  const nivel = data.nivel_alerta || 'advertencia';
+  const etapa = data.etapa_actual  || '';
+  const problema = data.problema_detectado || '';
+  const accion  = data.accion_sugerida || '';
+
+  const alertId = 'coach-alert-' + Date.now();
+  const banner = document.createElement('div');
+  banner.id = alertId;
+  banner.className = 'cd-coach-alert';
+  banner.innerHTML = `
+    <div class="cd-coach-icon">${nivel === 'critico' ? '🚨' : '⚠️'}</div>
+    <div class="cd-coach-body">
+      <strong>${nivel === 'critico' ? 'ALERTA CRÍTICA' : 'Advertencia'} · Etapa: ${etapa || '—'}</strong>
+      <p>${problema || 'La IA se desvió del objetivo.'}</p>
+      ${accion ? `<span class="cd-coach-action">💡 ${accion}</span>` : ''}
+    </div>
+    <button class="cd-coach-close" onclick="document.getElementById('${alertId}').remove()">✕</button>
+  `;
+
+  // insertar antes del campo de hint (zona de operador)
+  const hintCard = document.getElementById('hint-sent-card');
+  const parent   = hintCard ? hintCard.parentNode : document.querySelector('.chat-col-right');
+  if (parent) parent.insertBefore(banner, hintCard || parent.firstChild);
+});
+
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'hint-input') {
     document.getElementById('hint-btn')?.click();

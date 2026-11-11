@@ -14,6 +14,10 @@
       <span class="live-dot"></span>
       <span id="active-count">{{ conversations | selectattr('status','eq','active') | list | length }}</span> activos
     </div>
+    <a href="{{ url_for('chat.kb_panel') }}" class="btn btn-sm" style="font-size:.8rem;display:inline-flex;align-items:center;gap:.35rem;">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 2h12v1.5H2V2zm0 3.5h8V7H2V5.5zm0 3.5h12V10.5H2V9zm0 3.5h8V14H2v-1.5z" fill="currentColor"/></svg>
+      KB
+    </a>
     <a href="{{ url_for('chat.leads') }}" class="btn btn-sm" style="font-size:.8rem;display:inline-flex;align-items:center;gap:.35rem;">
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM8 12a5.25 5.25 0 0 1-4-1.857C4.016 8.92 6.667 8 8 8c1.334 0 3.985.921 4 2.143A5.25 5.25 0 0 1 8 12z" fill="currentColor"/></svg>
       Leads
