@@ -399,19 +399,30 @@ def api_message():
     for m in history:
         messages_for_groq.append({"role": m.role, "content": m.content})
 
-    ai_response = "Contame más sobre tu negocio, ¿a qué te dedicás?"
+    ai_response = None
     groq = get_groq()
-    if groq:
+    if not groq:
+        current_app.logger.error("[Groq] cliente no inicializado — verificá GROQ_API_KEY en Render")
+    else:
         try:
             resp = groq.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama3-70b-8192",   ### CAMBIO AQUÍ ### modelo más capaz
                 messages=messages_for_groq,
                 temperature=0.7,
                 max_tokens=200
             )
             ai_response = resp.choices[0].message.content.strip()
         except Exception as e:
-            current_app.logger.warning(f"[Groq chat] {e}")
+            current_app.logger.error(f"[Groq chat ERROR] {type(e).__name__}: {e}")
+
+    if not ai_response:
+        # Fallback dinámico según cuántos mensajes hay
+        fallbacks = [
+            "Contame más sobre tu negocio, ¿a qué te dedicás?",
+            "¿Y cuál sería el principal problema que querés resolver?",
+            "¿Ya usás alguna herramienta digital para gestionar esto?",
+        ]
+        ai_response = fallbacks[min(user_count - 1, len(fallbacks) - 1)]
 
     # Marcar hints como aplicados
     for h in pending:
