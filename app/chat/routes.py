@@ -395,34 +395,36 @@ def api_message():
         + hint_text
     )
 
+    # ### CAMBIO AQUÍ ### — solo los últimos 10 mensajes para evitar tokens excesivos
+    history_trimmed = history[-10:] if len(history) > 10 else history
     messages_for_groq = [{"role": "system", "content": system_prompt}]
-    for m in history:
+    for m in history_trimmed:
         messages_for_groq.append({"role": m.role, "content": m.content})
 
     ai_response = None
     groq = get_groq()
+    print(f"[Groq] cliente={'OK' if groq else 'NONE'} mensajes={len(messages_for_groq)}", flush=True)
     if not groq:
-        current_app.logger.error("[Groq] cliente no inicializado — verificá GROQ_API_KEY en Render")
+        current_app.logger.error("[Groq] GROQ_API_KEY no configurada en Render")
+        print("[Groq] ERROR: GROQ_API_KEY no configurada", flush=True)
     else:
-        try:
-            resp = groq.chat.completions.create(
-                model="llama3-70b-8192",   ### CAMBIO AQUÍ ### modelo más capaz
-                messages=messages_for_groq,
-                temperature=0.7,
-                max_tokens=200
-            )
-            ai_response = resp.choices[0].message.content.strip()
-        except Exception as e:
-            current_app.logger.error(f"[Groq chat ERROR] {type(e).__name__}: {e}")
+        for modelo in ["llama3-8b-8192", "mixtral-8x7b-32768"]:  ### CAMBIO AQUÍ ### fallback de modelos
+            try:
+                resp = groq.chat.completions.create(
+                    model=modelo,
+                    messages=messages_for_groq,
+                    temperature=0.7,
+                    max_tokens=200
+                )
+                ai_response = resp.choices[0].message.content.strip()
+                print(f"[Groq] OK con {modelo}: {ai_response[:80]}", flush=True)
+                break
+            except Exception as e:
+                print(f"[Groq] FALLO {modelo}: {type(e).__name__}: {e}", flush=True)
+                current_app.logger.error(f"[Groq {modelo}] {type(e).__name__}: {e}")
 
     if not ai_response:
-        # Fallback dinámico según cuántos mensajes hay
-        fallbacks = [
-            "Contame más sobre tu negocio, ¿a qué te dedicás?",
-            "¿Y cuál sería el principal problema que querés resolver?",
-            "¿Ya usás alguna herramienta digital para gestionar esto?",
-        ]
-        ai_response = fallbacks[min(user_count - 1, len(fallbacks) - 1)]
+        ai_response = "Gracias por la info. ¿Querés que te prepare un diagnóstico gratuito de lo que podríamos automatizar en tu negocio?"
 
     # Marcar hints como aplicados
     for h in pending:
