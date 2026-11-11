@@ -286,7 +286,8 @@ socket.on('proposal_update', (data) => {
   switchTab('propuesta');
 });
 
-document.getElementById('hint-btn')?.addEventListener('click', async () => {
+document.addEventListener('click', async (e) => {
+  if (!e.target.closest('#hint-btn')) return;
   const inp = document.getElementById('hint-input');
   const hint = inp.value.trim();
   if (!hint) return;
@@ -299,27 +300,32 @@ document.getElementById('hint-btn')?.addEventListener('click', async () => {
   inp.focus();
 });
 
-document.getElementById('hint-input')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('hint-btn').click();
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'hint-input') {
+    document.getElementById('hint-btn')?.click();
+  }
 });
 
-document.getElementById('close-btn')?.addEventListener('click', () => {
-  document.getElementById('close-confirm').style.display = 'block';
-  document.getElementById('close-btn').style.display = 'none';
-});
-document.getElementById('close-no')?.addEventListener('click', () => {
-  document.getElementById('close-confirm').style.display = 'none';
-  document.getElementById('close-btn').style.display = 'block';
-});
-document.getElementById('close-yes')?.addEventListener('click', async () => {
-  document.getElementById('close-yes').textContent = 'Cerrando…';
-  document.getElementById('close-yes').disabled = true;
-  await fetch('/chat/api/close', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ conv_id: CONV_ID })
-  });
-  location.reload();
+document.addEventListener('click', async (e) => {
+  if (e.target.closest('#close-btn')) {
+    document.getElementById('close-confirm').style.display = 'block';
+    document.getElementById('close-btn').style.display = 'none';
+  }
+  if (e.target.closest('#close-no')) {
+    document.getElementById('close-confirm').style.display = 'none';
+    document.getElementById('close-btn').style.display = 'block';
+  }
+  if (e.target.closest('#close-yes')) {
+    const btn = document.getElementById('close-yes');
+    btn.textContent = 'Cerrando…';
+    btn.disabled = true;
+    await fetch('/chat/api/close', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ conv_id: CONV_ID })
+    });
+    location.reload();
+  }
 });
 
 function esc(s) {
