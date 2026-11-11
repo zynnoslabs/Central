@@ -408,12 +408,11 @@ def api_message():
         current_app.logger.error("[Groq] GROQ_API_KEY no configurada en Render")
         print("[Groq] ERROR: GROQ_API_KEY no configurada", flush=True)
     else:
-        for modelo in [   ### CAMBIO AQUÍ ### lista amplia de modelos Groq activos
-            "gemma2-9b-it",
+        for modelo in [   ### CAMBIO AQUÍ ### modelos activos Groq nov-2026
             "llama-3.3-70b-versatile",
-            "llama-3.1-70b-versatile",
             "llama-3.1-8b-instant",
-            "mixtral-8x7b-32768",
+            "openai/gpt-oss-20b",
+            "openai/gpt-oss-120b",
         ]:
             try:
                 resp = groq.chat.completions.create(
@@ -553,7 +552,7 @@ def api_diagnostico():
         result["groq_importado"] = True
         if key:
             client = groq_lib.Groq(api_key=key)
-            modelos = ["gemma2-9b-it","llama-3.3-70b-versatile","llama-3.1-70b-versatile","llama-3.1-8b-instant","mixtral-8x7b-32768"]
+            modelos = ["llama-3.3-70b-versatile","llama-3.1-8b-instant","openai/gpt-oss-20b","openai/gpt-oss-120b"]
             result["modelos_probados"] = {}
             for m in modelos:
                 try:
