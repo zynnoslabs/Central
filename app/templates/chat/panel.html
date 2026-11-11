@@ -40,7 +40,8 @@
     <a href="{{ url_for('chat.detalle', conv_id=c.id) }}"
        id="conv-{{ c.id }}"
        class="cp-row"
-       data-status="{{ c.status }}">
+       data-status="{{ c.status }}"
+       hx-boost="false">
 
       <div class="cp-avatar {{ c.status }}">{{ (c.nombre or 'V')[0].upper() }}</div>
 
@@ -103,6 +104,7 @@ socket.on('new_conversation', (data) => {
   a.id = `conv-${data.id}`;
   a.className = 'cp-row new';
   a.dataset.status = 'active';
+  a.setAttribute('hx-boost', 'false');
   a.innerHTML = `
     <div class="cp-avatar active">V</div>
     <div class="cp-body">
