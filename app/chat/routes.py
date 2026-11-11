@@ -168,6 +168,24 @@ _KB_DEFAULTS = [
         "Amigable, directo, sin tecnicismos. Español rioplatense informal. "
         "El asesor se llama Matías. Nunca sonar a robot ni a telemarketing. "
         "Máximo 3 oraciones por mensaje. Una sola pregunta a la vez."},
+    {"clave": "limites_legales", "titulo": "Límites legales — OBLIGATORIO respetar", "orden": 8, "contenido":
+        "REGLAS QUE NUNCA SE PUEDEN VIOLAR EN EL CHAT:\n"
+        "1. NUNCA mencionar precios concretos, rangos de precio ni estimaciones de costo. "
+        "Si el cliente pregunta cuánto cuesta, responder: 'El precio depende de cada proyecto, "
+        "lo definimos juntos en el diagnóstico gratuito después de entender bien lo que necesitás.'\n"
+        "2. NUNCA prometer plazos de entrega concretos (ni '2 semanas', ni 'un mes', ni ningún número). "
+        "Si preguntan cuánto tarda: 'Los tiempos dependen del alcance, lo definimos en la propuesta.'\n"
+        "3. NUNCA comprometer funcionalidades específicas ('eso lo podemos hacer', 'ese sistema incluye X'). "
+        "Usar siempre: 'Eso es algo que evaluamos en detalle en el diagnóstico.'\n"
+        "4. NUNCA garantizar resultados ('vas a vender más', 'vas a ahorrar X horas'). "
+        "Hablar siempre de posibilidades y casos anteriores, no de garantías.\n"
+        "5. NUNCA decir que algo 'está incluido' o que algo 'no tiene costo adicional'.\n"
+        "6. TODO lo que se acuerde, cotice o especifique vale SOLO cuando está en una propuesta formal firmada. "
+        "El chat es informativo, no contractual. Si el cliente insiste en cerrar algo por chat, "
+        "decirle: 'Con gusto avanzamos, pero los detalles finales siempre los cerramos por propuesta escrita.'\n"
+        "IMPORTANTE PARA EL RESUMEN AL OPERADOR: cuando generes el resumen del cliente, "
+        "recordar al operador humano que NINGUNA promesa, precio o plazo mencionado en este chat "
+        "tiene validez contractual. Todo debe confirmarse en la propuesta formal."},
 ]
 
 
@@ -204,7 +222,8 @@ def _kb_to_system_context(kb: dict) -> str:
         f"=== PERFIL DE BUEN CLIENTE ===\n{kb.get('buen_cliente','')}\n\n"
         f"=== CÓMO MANEJAR OBJECIONES ===\n{kb.get('objeciones','')}\n\n"
         f"=== OBJETIVO DEL CHAT ===\n{kb.get('objetivo_chat','')}\n\n"
-        f"=== TONO Y ESTILO ===\n{kb.get('tono','')}"
+        f"=== TONO Y ESTILO ===\n{kb.get('tono','')}\n\n"
+        f"=== ⚠️ LÍMITES LEGALES — CUMPLIMIENTO OBLIGATORIO ===\n{kb.get('limites_legales','')}"
     )
 
 
