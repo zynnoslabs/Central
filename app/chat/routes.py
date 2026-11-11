@@ -563,7 +563,7 @@ def api_diagnostico():
                         result["test_ok"] = True
                         result["modelo_activo"] = m
                 except Exception as e:
-                    result["modelos_probados"][m] = f"FALLO: {type(e).__name__}"
+                    result["modelos_probados"][m] = f"FALLO: {type(e).__name__}: {str(e)[:150]}"
         else:
             result["test_ok"] = False
             result["test_error"] = "key vacía"
