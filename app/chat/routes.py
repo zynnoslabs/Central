@@ -538,27 +538,28 @@ def api_lead_contactado():
 def api_diagnostico():
     """Endpoint temporal para verificar estado de Groq."""  ### CAMBIO AQUÍ ###
     key = os.environ.get("GROQ_API_KEY", "")
-    groq = get_groq()
     result = {
         "key_presente": bool(key),
         "key_prefix": key[:8] + "..." if len(key) > 8 else "(vacia)",
-        "groq_cliente": groq is not None,
     }
-    if groq:
-        try:
-            resp = groq.chat.completions.create(
+    try:
+        import groq as groq_lib
+        result["groq_importado"] = True
+        if key:
+            client = groq_lib.Groq(api_key=key)
+            resp = client.chat.completions.create(
                 model="llama3-8b-8192",
-                messages=[
-                    {"role": "system", "content": "Respondé solo: OK"},
-                    {"role": "user", "content": "test"}
-                ],
+                messages=[{"role": "user", "content": "di OK"}],
                 max_tokens=5
             )
             result["test_ok"] = True
             result["test_resp"] = resp.choices[0].message.content
-        except Exception as e:
+        else:
             result["test_ok"] = False
-            result["test_error"] = f"{type(e).__name__}: {e}"
+            result["test_error"] = "key vacía"
+    except Exception as e:
+        result["test_ok"] = False
+        result["test_error"] = f"{type(e).__name__}: {str(e)[:200]}"
     return jsonify(result)
 
 
