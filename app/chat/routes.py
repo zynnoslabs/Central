@@ -534,6 +534,35 @@ def api_lead_contactado():
     return jsonify({"ok": True, "contactado": lead.contactado})
 
 
+@chat_bp.route("/api/diagnostico")
+def api_diagnostico():
+    """Endpoint temporal para verificar estado de Groq."""  ### CAMBIO AQUÍ ###
+    import os
+    key = os.environ.get("GROQ_API_KEY", "")
+    groq = get_groq()
+    result = {
+        "key_presente": bool(key),
+        "key_prefix": key[:8] + "..." if len(key) > 8 else "(vacia)",
+        "groq_cliente": groq is not None,
+    }
+    if groq:
+        try:
+            resp = groq.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[
+                    {"role": "system", "content": "Respondé solo: OK"},
+                    {"role": "user", "content": "test"}
+                ],
+                max_tokens=5
+            )
+            result["test_ok"] = True
+            result["test_resp"] = resp.choices[0].message.content
+        except Exception as e:
+            result["test_ok"] = False
+            result["test_error"] = f"{type(e).__name__}: {e}"
+    return jsonify(result)
+
+
 @chat_bp.route("/api/lead", methods=["POST"])       # ### CAMBIO AQUÍ ###
 def api_lead():
     """Guarda un lead capturado en modo fallback del widget."""
