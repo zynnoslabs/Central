@@ -1,62 +1,78 @@
 {% extends "base.html" %}
 {% block title %}Chat en vivo — Zynnos Central{% endblock %}
-
 {% block extra_head %}{% endblock %}
 
 {% block content %}
 
-<div class="chat-panel-header">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
   <div>
-    <h1 class="page-title">Chat en vivo</h1>
-    <p class="page-sub">Conversaciones entrantes desde el widget</p>
+    <h1 class="page-title" style="margin-bottom:.2rem;">Chat en vivo</h1>
+    <p class="page-sub">Conversaciones entrantes desde el widget de Zynnos</p>
   </div>
-  <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
     <div class="counter-pill" id="active-badge">
       <span class="live-dot"></span>
       <span id="active-count">{{ conversations | selectattr('status','eq','active') | list | length }}</span> activos
     </div>
-    <a href="{{ url_for('chat.leads') }}" class="btn btn-sm" style="font-size:.8rem;">
-      📋 Ver leads
+    <a href="{{ url_for('chat.leads') }}" class="btn btn-sm" style="font-size:.8rem;display:inline-flex;align-items:center;gap:.35rem;">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM8 12a5.25 5.25 0 0 1-4-1.857C4.016 8.92 6.667 8 8 8c1.334 0 3.985.921 4 2.143A5.25 5.25 0 0 1 8 12z" fill="currentColor"/></svg>
+      Leads
     </a>
   </div>
 </div>
 
 <!-- Filtros -->
-<div class="filter-tabs" style="margin-bottom:.75rem;">
-  <button class="filter-tab active" onclick="filterConvs('all',this)">Todos</button>
-  <button class="filter-tab" onclick="filterConvs('active',this)">Activos</button>
-  <button class="filter-tab" onclick="filterConvs('closed',this)">Cerrados</button>
+<div style="display:flex;gap:.3rem;margin-bottom:1rem;">
+  <button class="cp-filter active" onclick="filterConvs('all',this)" data-count="{{ conversations|length }}">
+    Todos <span class="cp-filter-count">{{ conversations|length }}</span>
+  </button>
+  <button class="cp-filter" onclick="filterConvs('active',this)" data-count="{{ conversations|selectattr('status','eq','active')|list|length }}">
+    Activos <span class="cp-filter-count">{{ conversations|selectattr('status','eq','active')|list|length }}</span>
+  </button>
+  <button class="cp-filter" onclick="filterConvs('closed',this)" data-count="{{ conversations|selectattr('status','eq','closed')|list|length }}">
+    Cerrados <span class="cp-filter-count">{{ conversations|selectattr('status','eq','closed')|list|length }}</span>
+  </button>
 </div>
 
-<div class="card card-table" id="conv-list" style="padding:0;overflow:hidden;">
+<div class="card" id="conv-list" style="padding:0;overflow:hidden;">
   {% if conversations %}
     {% for c in conversations %}
     <a href="{{ url_for('chat.detalle', conv_id=c.id) }}"
        id="conv-{{ c.id }}"
-       class="conv-row"
+       class="cp-row"
        data-status="{{ c.status }}">
-      <div class="conv-avatar {{ c.status }}">{{ (c.nombre or 'V')[0].upper() }}</div>
-      <div class="conv-body">
-        <div class="conv-name">{{ c.nombre or 'Visitante' }}
-          {% if c.rubro %}<span style="font-weight:400;color:var(--fg3);font-size:.8rem;"> · {{ c.rubro }}</span>{% endif %}
+
+      <div class="cp-avatar {{ c.status }}">{{ (c.nombre or 'V')[0].upper() }}</div>
+
+      <div class="cp-body">
+        <div class="cp-top">
+          <span class="cp-name">{{ c.nombre or 'Visitante' }}</span>
+          {% if c.rubro %}<span class="cp-rubro">{{ c.rubro }}</span>{% endif %}
         </div>
-        <div class="conv-sub">{{ c.source_url or 'zynnos.com' }}</div>
+        <div class="cp-sub">{{ c.source_url or 'zynnos.com' }}</div>
       </div>
-      <div class="conv-right">
+
+      <div class="cp-right">
         {% if c.status == 'active' %}
-          <span class="badge-active"><span class="live-dot"></span>En línea</span>
+          <span class="cp-badge-active"><span class="live-dot"></span>En línea</span>
         {% else %}
-          <span class="badge-closed">Cerrado</span>
+          <span class="cp-badge-closed">Cerrado</span>
         {% endif %}
-        <div class="conv-time">{{ c.started_at.strftime('%d/%m %H:%M') }}</div>
+        <div class="cp-time">{{ c.started_at.strftime('%d/%m %H:%M') }}</div>
+      </div>
+
+      <div class="cp-arrow">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
     </a>
     {% endfor %}
   {% else %}
-    <div class="empty-state" id="empty-state">
-      <span class="empty-state-icon">💬</span>
-      <div class="empty-state-title">Sin conversaciones todavía</div>
-      <p class="empty-state-sub">El widget está esperando visitas desde el sitio</p>
+    <div class="cp-empty" id="empty-state">
+      <div class="cp-empty-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="cp-empty-title">Sin conversaciones todavía</div>
+      <p class="cp-empty-sub">El widget está esperando visitas desde el sitio</p>
     </div>
   {% endif %}
 </div>
@@ -69,67 +85,62 @@
 const socket = io({ transports: ['websocket'] });
 socket.emit('join_operators');
 
-// ── Filtro ─────────────────────────────────────────────────────────────────
 function filterConvs(status, btn) {
-  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.cp-filter').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  document.querySelectorAll('.conv-row').forEach(row => {
-    const match = status === 'all' || row.dataset.status === status;
-    row.style.display = match ? 'flex' : 'none';
+  document.querySelectorAll('.cp-row').forEach(row => {
+    row.style.display = (status === 'all' || row.dataset.status === status) ? 'flex' : 'none';
   });
 }
 
-// ── Conversación nueva en tiempo real ──────────────────────────────────────
 socket.on('new_conversation', (data) => {
-  // Actualizar contador
   const countEl = document.getElementById('active-count');
   countEl.textContent = parseInt(countEl.textContent || '0') + 1;
-
-  // Quitar empty state si existe
   document.getElementById('empty-state')?.remove();
-
   const list = document.getElementById('conv-list');
   const a = document.createElement('a');
-  a.href  = `/chat/${data.id}`;
-  a.id    = `conv-${data.id}`;
-  a.className = 'conv-row new';
+  a.href = `/chat/${data.id}`;
+  a.id = `conv-${data.id}`;
+  a.className = 'cp-row new';
   a.dataset.status = 'active';
   a.innerHTML = `
-    <div class="conv-avatar active">V</div>
-    <div class="conv-body">
-      <div class="conv-name">Visitante nuevo</div>
-      <div class="conv-sub">${data.source || 'zynnos.com'}</div>
+    <div class="cp-avatar active">V</div>
+    <div class="cp-body">
+      <div class="cp-top"><span class="cp-name">Visitante nuevo</span></div>
+      <div class="cp-sub">${data.source || 'zynnos.com'}</div>
     </div>
-    <div class="conv-right">
-      <span class="badge-active"><span class="live-dot"></span>En línea</span>
-      <div class="conv-time">ahora</div>
-    </div>`;
+    <div class="cp-right">
+      <span class="cp-badge-active"><span class="live-dot"></span>En línea</span>
+      <div class="cp-time">ahora</div>
+    </div>
+    <div class="cp-arrow"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
   list.prepend(a);
   setTimeout(() => a.classList.remove('new'), 3000);
 });
 
-// ── Nombre actualizado ─────────────────────────────────────────────────────
 socket.on('conversation_updated', (data) => {
   const row = document.getElementById(`conv-${data.conv_id}`);
   if (!row) return;
   if (data.nombre) {
-    row.querySelector('.conv-name').innerHTML =
-      data.nombre + (data.rubro ? `<span style="font-weight:400;color:var(--fg3);font-size:.8rem;"> · ${data.rubro}</span>` : '');
-    row.querySelector('.conv-avatar').textContent = data.nombre[0].toUpperCase();
+    row.querySelector('.cp-name').textContent = data.nombre;
+    row.querySelector('.cp-avatar').textContent = data.nombre[0].toUpperCase();
+    if (data.rubro) {
+      let r = row.querySelector('.cp-rubro');
+      if (!r) { r = document.createElement('span'); r.className = 'cp-rubro'; row.querySelector('.cp-top').appendChild(r); }
+      r.textContent = data.rubro;
+    }
   }
 });
 
-// ── Conversación cerrada ───────────────────────────────────────────────────
 socket.on('conversation_closed', (data) => {
   const row = document.getElementById(`conv-${data.conv_id}`);
   if (!row) return;
   row.dataset.status = 'closed';
-  row.querySelector('.conv-avatar').className = 'conv-avatar closed';
-  const badge = row.querySelector('.badge-active');
-  if (badge) { badge.className = 'badge-closed'; badge.textContent = 'Cerrado'; }
+  row.querySelector('.cp-avatar').className = 'cp-avatar closed';
+  const badge = row.querySelector('.cp-badge-active');
+  if (badge) { badge.className = 'cp-badge-closed'; badge.innerHTML = 'Cerrado'; }
   const countEl = document.getElementById('active-count');
-  const n = Math.max(0, parseInt(countEl.textContent || '0') - 1);
-  countEl.textContent = n;
+  countEl.textContent = Math.max(0, parseInt(countEl.textContent || '0') - 1);
 });
 </script>
 {% endblock %}

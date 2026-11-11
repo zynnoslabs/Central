@@ -1,52 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Chat {{ conv.id }} — Zynnos Central{% endblock %}
-
+{% block title %}{{ conv.nombre or 'Visitante' }} — Chat{% endblock %}
 {% block extra_head %}{% endblock %}
 
 {% block content %}
 
-<!-- ── Page header ────────────────────────────────────────────────────────── -->
-<div class="page-header">
-  <div>
-    <h1 class="page-title">Conversación en vivo</h1>
-    <p class="page-sub">ID: <code style="font-size:.8rem;">{{ conv.id }}</code></p>
-  </div>
+<!-- Breadcrumb -->
+<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;font-size:.8rem;color:var(--fg3);">
+  <a href="{{ url_for('chat.panel') }}" style="color:var(--fg3);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;" onmouseover="this.style.color='var(--fg)'" onmouseout="this.style.color='var(--fg3)'">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Chat en vivo
+  </a>
+  <span style="opacity:.4;">/</span>
+  <span style="color:var(--fg2);">{{ conv.nombre or 'Visitante' }}</span>
 </div>
 
-<div class="chat-layout">
+<div class="cd-layout">
 
-  <!-- ── Columna izquierda: chat ────────────────────────────────────────── -->
-  <div class="card" style="padding:0;overflow:hidden;">
+  <!-- ══ Columna izquierda: chat ══════════════════════════════════════════ -->
+  <div class="cd-chat-col">
 
     <!-- Cabecera del cliente -->
-    <div class="client-header">
-      <div class="client-avatar" id="avatar-initials">
+    <div class="cd-client-bar">
+      <div class="cd-client-avatar {{ conv.status }}" id="avatar-initials">
         {{ (conv.nombre or 'V')[0].upper() }}
       </div>
-      <div>
-        <div class="client-name" id="ph-nombre">{{ conv.nombre or 'Visitante' }}
-          {% if conv.rubro %}<span id="ph-rubro" style="font-weight:400;color:var(--fg3);font-size:.88rem;margin-left:.4rem;">· {{ conv.rubro }}</span>{% endif %}
+      <div style="flex:1;min-width:0;">
+        <div class="cd-client-name" id="ph-nombre">
+          {{ conv.nombre or 'Visitante' }}
+          {% if conv.rubro %}<span id="ph-rubro" class="cd-client-rubro">· {{ conv.rubro }}</span>{% endif %}
         </div>
-        <div class="client-meta" id="ph-contacto">
+        <div class="cd-client-meta" id="ph-contacto">
           {% if conv.telefono %}{{ conv.telefono }}{% endif %}
           {% if conv.email %}{% if conv.telefono %} · {% endif %}{{ conv.email }}{% endif %}
-          {% if conv.source_url %}<span style="opacity:.6;"> · {{ conv.source_url }}</span>{% endif %}
+          {% if conv.source_url %}<span style="opacity:.55;"> · {{ conv.source_url }}</span>{% endif %}
         </div>
       </div>
-      <div class="client-badge {% if conv.status == 'active' %}badge-active{% else %}badge-closed{% endif %}">
+      <div class="cd-status-badge {% if conv.status == 'active' %}active{% else %}closed{% endif %}">
         {% if conv.status == 'active' %}<span class="live-dot"></span>{% endif %}
         {{ 'En línea' if conv.status == 'active' else 'Cerrado' }}
       </div>
     </div>
 
-    <!-- Mensajes -->
-    <div class="chat-box" id="chat-box">
+    <!-- Área de mensajes -->
+    <div class="cd-messages" id="chat-box">
       {% for m in messages %}
-      <div class="msg msg-{{ m.role }}">
-        <div class="msg-bubble">{{ m.content }}</div>
-        <div class="msg-meta">
-          <span class="msg-role-dot"></span>
-          {{ 'Cliente' if m.role == 'user' else 'IA' }} · {{ m.sent_at.strftime('%H:%M') }}
+      <div class="cd-msg {% if m.role == 'user' %}cd-msg-user{% else %}cd-msg-ai{% endif %}">
+        <div class="cd-msg-wrap">
+          <div class="cd-bubble">{{ m.content }}</div>
+          <div class="cd-msg-meta">
+            {{ 'Cliente' if m.role == 'user' else '🤖 IA' }} · {{ m.sent_at.strftime('%H:%M') }}
+          </div>
         </div>
       </div>
       {% endfor %}
@@ -54,81 +57,82 @@
 
     <!-- Instrucción secreta -->
     {% if conv.status == 'active' %}
-    <div class="hint-box">
-      <div class="hint-label">Instrucción secreta — solo la ve la IA</div>
+    <div class="cd-hint-bar">
+      <div class="cd-hint-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-4H7V4h2v4z" fill="currentColor"/></svg>
+        Instrucción secreta — solo la ve la IA
+      </div>
       <div style="display:flex;gap:.5rem;">
-        <input type="text" id="hint-input" placeholder="Ej: Ofrecele 15% de descuento si cierra hoy" style="flex:1;">
-        <button class="btn btn-warning btn-sm" id="hint-btn" style="flex-shrink:0;white-space:nowrap;">Enviar</button>
+        <input type="text" id="hint-input" placeholder="Ej: Ofrecele 15% de descuento si cierra hoy">
+        <button class="btn btn-sm" id="hint-btn" style="flex-shrink:0;white-space:nowrap;background:var(--warn);border-color:var(--warn);color:#000;font-weight:600;">Enviar</button>
       </div>
     </div>
     {% endif %}
+
   </div>
 
-  <!-- ── Columna derecha: inteligencia + acciones ────────────────────────── -->
-  <div style="display:flex;flex-direction:column;gap:1rem;">
+  <!-- ══ Columna derecha: inteligencia ═══════════════════════════════════ -->
+  <div class="cd-side-col">
 
-    <!-- Panel de inteligencia -->
+    <!-- Tabs de inteligencia -->
     <div class="card" style="padding:0;overflow:hidden;">
-      <div class="intel-tabs">
-        <button class="intel-tab active" onclick="switchTab('propuesta')">📋 Propuesta</button>
-        <button class="intel-tab"        onclick="switchTab('estilo')">🧠 Perfil</button>
-        <button class="intel-tab"        onclick="switchTab('web')">🌐 Web</button>
+      <div class="cd-intel-tabs">
+        <button class="cd-intel-tab active" onclick="switchTab('propuesta')">Propuesta</button>
+        <button class="cd-intel-tab"        onclick="switchTab('estilo')">Perfil</button>
+        <button class="cd-intel-tab"        onclick="switchTab('web')">Web</button>
       </div>
 
-      <!-- Propuesta -->
-      <div class="intel-panel active" id="tab-propuesta">
+      <div class="cd-intel-panel active" id="tab-propuesta">
         <div id="propuesta-body">
           {% if conv.budget_est %}
             {% set p = conv.budget_est | from_json %}
-            <p style="font-weight:600;margin-bottom:.2rem;">{{ p.get('perfil_cliente','') }}</p>
-            <p style="font-size:.82rem;color:var(--fg3);margin-bottom:.75rem;line-height:1.45;">{{ p.get('problema_detectado','') }}</p>
-            <div class="kv-row"><span class="kv-key">Solución</span><span class="kv-val">{{ p.get('solucion_recomendada','—') }}</span></div>
-            <div class="kv-row"><span class="kv-key">Precio</span><span class="kv-val">${{ "{:,.0f}".format(p.get('precio_sugerido_min',0)) }} – ${{ "{:,.0f}".format(p.get('precio_sugerido_max',0)) }}</span></div>
-            <div class="kv-row"><span class="kv-key">Entrega</span><span class="kv-val">{{ p.get('tiempo_entrega','—') }}</span></div>
+            <p class="cd-prop-perfil">{{ p.get('perfil_cliente','') }}</p>
+            <p class="cd-prop-problema">{{ p.get('problema_detectado','') }}</p>
+            <div class="cd-kv"><span class="cd-kv-k">Solución</span><span class="cd-kv-v">{{ p.get('solucion_recomendada','—') }}</span></div>
+            <div class="cd-kv"><span class="cd-kv-k">Precio</span><span class="cd-kv-v">${{ "{:,.0f}".format(p.get('precio_sugerido_min',0)) }} – ${{ "{:,.0f}".format(p.get('precio_sugerido_max',0)) }}</span></div>
+            <div class="cd-kv"><span class="cd-kv-k">Entrega</span><span class="cd-kv-v">{{ p.get('tiempo_entrega','—') }}</span></div>
             {% set prob = p.get('probabilidad_cierre', 0) %}
-            <div class="prob-wrap">
-              <div class="prob-label"><span>Probabilidad de cierre</span><span style="font-weight:600;">{{ prob }}%</span></div>
-              <div class="prob-bar"><div class="prob-fill" style="width:{{ prob }}%"></div></div>
+            <div class="cd-prob">
+              <div class="cd-prob-label"><span>Cierre</span><span style="font-weight:700;color:{% if prob>=60 %}var(--teal-d){% elif prob>=30 %}var(--warn){% else %}var(--fg3){% endif %};">{{ prob }}%</span></div>
+              <div class="cd-prob-track"><div class="cd-prob-fill" style="width:{{ prob }}%;background:{% if prob>=60 %}var(--teal){% elif prob>=30 %}var(--warn){% else %}var(--fg3){% endif %};"></div></div>
             </div>
             {% if p.get('proximo_paso') %}
-            <div class="next-step">
-              <div class="next-step-label">Próximo paso</div>
-              <p class="next-step-text">{{ p.get('proximo_paso') }}</p>
+            <div class="cd-next">
+              <div class="cd-next-label">Próximo paso</div>
+              <p class="cd-next-text">{{ p.get('proximo_paso') }}</p>
             </div>
             {% endif %}
             {% if p.get('senales_compra') %}
-            <span class="chip-section">Señales de compra</span>
-            <div class="chips-row">{% for s in p.get('senales_compra',[]) %}<span class="chip-green">{{ s }}</span>{% endfor %}</div>
+            <div class="cd-chip-section">Señales de compra</div>
+            <div class="cd-chips">{% for s in p.get('senales_compra',[]) %}<span class="cd-chip green">{{ s }}</span>{% endfor %}</div>
             {% endif %}
             {% if p.get('objeciones_posibles') %}
-            <span class="chip-section">Posibles objeciones</span>
-            <div class="chips-row">{% for o in p.get('objeciones_posibles',[]) %}<span class="chip-red">{{ o }}</span>{% endfor %}</div>
+            <div class="cd-chip-section">Objeciones posibles</div>
+            <div class="cd-chips">{% for o in p.get('objeciones_posibles',[]) %}<span class="cd-chip red">{{ o }}</span>{% endfor %}</div>
             {% endif %}
           {% else %}
-            <div class="empty-state">
-              <span class="empty-state-icon">📊</span>
-              <p class="empty-state-text">La propuesta se genera a partir del 2° mensaje del cliente.</p>
+            <div class="cd-panel-empty">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="opacity:.3;"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <p>La propuesta se genera a partir del 2° mensaje del cliente.</p>
             </div>
           {% endif %}
         </div>
       </div>
 
-      <!-- Perfil estilométrico -->
-      <div class="intel-panel" id="tab-estilo">
+      <div class="cd-intel-panel" id="tab-estilo">
         <div id="estilo-body">
-          <div class="empty-state">
-            <span class="empty-state-icon">🧠</span>
-            <p class="empty-state-text">El perfil se construye desde el primer mensaje.</p>
+          <div class="cd-panel-empty">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="opacity:.3;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <p>El perfil se construye desde el primer mensaje.</p>
           </div>
         </div>
       </div>
 
-      <!-- Investigación web -->
-      <div class="intel-panel" id="tab-web">
+      <div class="cd-intel-panel" id="tab-web">
         <div id="web-body">
-          <div class="empty-state">
-            <span class="empty-state-icon">🌐</span>
-            <p class="empty-state-text">La búsqueda se dispara cuando el cliente menciona su nombre o negocio.</p>
+          <div class="cd-panel-empty">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="opacity:.3;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.3"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <p>La búsqueda se dispara cuando el cliente menciona su nombre o negocio.</p>
           </div>
         </div>
       </div>
@@ -137,13 +141,11 @@
     <!-- Instrucciones enviadas -->
     {% if hints %}
     <div class="card" style="padding:0;overflow:hidden;">
-      <div class="card-header" style="padding:.65rem 1.1rem;margin-bottom:0;">
-        <span class="card-title" style="font-size:.82rem;">Instrucciones enviadas</span>
-      </div>
+      <div style="padding:.7rem 1rem;border-bottom:1px solid var(--border);font-size:.75rem;font-weight:600;color:var(--fg3);letter-spacing:.04em;text-transform:uppercase;">Instrucciones enviadas</div>
       {% for h in hints %}
-      <div class="hint-sent">
-        <span class="hint-sent-text {% if h.applied %}applied{% endif %}">{{ h.hint }}</span>
-        {% if h.applied %}<span class="badge badge-teal" style="font-size:.68rem;">aplicada</span>{% endif %}
+      <div class="cd-hint-sent {% if h.applied %}applied{% endif %}">
+        <span>{{ h.hint }}</span>
+        {% if h.applied %}<span class="badge badge-teal" style="font-size:.65rem;flex-shrink:0;">aplicada</span>{% endif %}
       </div>
       {% endfor %}
     </div>
@@ -156,6 +158,7 @@
 
   </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -169,43 +172,32 @@ socket.emit('join_conversation', { conv_id: CONV_ID });
 const box = document.getElementById('chat-box');
 box.scrollTop = box.scrollHeight;
 
-// ── Tabs ──────────────────────────────────────────────────────────────────
 function switchTab(name) {
   const names = ['propuesta','estilo','web'];
-  document.querySelectorAll('.intel-tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
-  document.querySelectorAll('.intel-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.cd-intel-tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
+  document.querySelectorAll('.cd-intel-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
 }
 
-// ── Mensaje nuevo ──────────────────────────────────────────────────────────
 socket.on('new_message', (data) => {
   if (data.conv_id !== CONV_ID) return;
   const wrap = document.createElement('div');
-  wrap.className = `msg msg-${data.role}`;
-  const label = data.role === 'user' ? 'Cliente' : 'IA';
-  wrap.innerHTML = `<div class="msg-bubble">${esc(data.content)}</div>
-                    <div class="msg-meta"><span class="msg-role-dot"></span>${label} · ahora</div>`;
+  wrap.className = `cd-msg ${data.role === 'user' ? 'cd-msg-user' : 'cd-msg-ai'}`;
+  const label = data.role === 'user' ? 'Cliente' : '🤖 IA';
+  wrap.innerHTML = `<div class="cd-msg-wrap"><div class="cd-bubble">${esc(data.content)}</div><div class="cd-msg-meta">${label} · ahora</div></div>`;
   box.appendChild(wrap);
   box.scrollTop = box.scrollHeight;
 });
 
-// ── Datos del cliente actualizados ────────────────────────────────────────
 socket.on('conversation_updated', (data) => {
   if (data.conv_id !== CONV_ID) return;
   if (data.nombre) {
-    const el = document.getElementById('ph-nombre');
-    el.childNodes[0].textContent = data.nombre;
-    // avatar inicial
+    document.getElementById('ph-nombre').childNodes[0].textContent = data.nombre;
     document.getElementById('avatar-initials').textContent = data.nombre[0].toUpperCase();
   }
   if (data.rubro) {
     let el = document.getElementById('ph-rubro');
-    if (!el) {
-      el = document.createElement('span');
-      el.id = 'ph-rubro';
-      el.style.cssText = 'font-weight:400;color:var(--fg3);font-size:.88rem;margin-left:.4rem;';
-      document.getElementById('ph-nombre').appendChild(el);
-    }
+    if (!el) { el = document.createElement('span'); el.id='ph-rubro'; el.className='cd-client-rubro'; document.getElementById('ph-nombre').appendChild(el); }
     el.textContent = '· ' + data.rubro;
   }
   const parts = [];
@@ -213,26 +205,24 @@ socket.on('conversation_updated', (data) => {
   if (data.email)    parts.push(data.email);
   if (parts.length) {
     const el = document.getElementById('ph-contacto');
-    if (el) el.firstChild && (el.firstChild.textContent = parts.join(' · '));
+    if (el && el.firstChild) el.firstChild.textContent = parts.join(' · ');
   }
 });
 
-// ── Estilometría ──────────────────────────────────────────────────────────
 socket.on('stilometry_update', (data) => {
   if (data.conv_id !== CONV_ID) return;
   const e = data.estilo;
-  const nivelCls = { alto:'nivel-alto', medio:'nivel-medio', bajo:'nivel-bajo' }[e.nivel_educativo] || '';
-  const urgCls   = e.urgencia_percibida === 'alta' ? 'urgencia-alta' : '';
+  const nivelCls = { alto:'cd-kv-v-green', medio:'', bajo:'cd-kv-v-red' }[e.nivel_educativo] || '';
+  const urgCls   = e.urgencia_percibida === 'alta' ? 'cd-kv-v-red' : '';
   document.getElementById('estilo-body').innerHTML = `
-    <div class="kv-row"><span class="kv-key">Nivel educativo</span><span class="kv-val ${nivelCls}">${esc(e.nivel_educativo||'—')}</span></div>
-    <div class="kv-row"><span class="kv-key">Perfil</span><span class="kv-val">${esc(e.perfil||'—')}</span></div>
-    <div class="kv-row"><span class="kv-key">Tono</span><span class="kv-val">${esc(e.tono||'—')}</span></div>
-    <div class="kv-row"><span class="kv-key">Urgencia</span><span class="kv-val ${urgCls}">${esc(e.urgencia_percibida||'—')}</span></div>
-    <div class="kv-row"><span class="kv-key">Decisión</span><span class="kv-val">${esc(e.capacidad_decision||'—')}</span></div>
-    ${e.resumen_estilo ? `<div class="estilo-resumen">"${esc(e.resumen_estilo)}"</div>` : ''}`;
+    <div class="cd-kv"><span class="cd-kv-k">Nivel educativo</span><span class="cd-kv-v ${nivelCls}">${esc(e.nivel_educativo||'—')}</span></div>
+    <div class="cd-kv"><span class="cd-kv-k">Perfil</span><span class="cd-kv-v">${esc(e.perfil||'—')}</span></div>
+    <div class="cd-kv"><span class="cd-kv-k">Tono</span><span class="cd-kv-v">${esc(e.tono||'—')}</span></div>
+    <div class="cd-kv"><span class="cd-kv-k">Urgencia</span><span class="cd-kv-v ${urgCls}">${esc(e.urgencia_percibida||'—')}</span></div>
+    <div class="cd-kv"><span class="cd-kv-k">Decisión</span><span class="cd-kv-v">${esc(e.capacidad_decision||'—')}</span></div>
+    ${e.resumen_estilo ? `<div class="cd-estilo-quote">"${esc(e.resumen_estilo)}"</div>` : ''}`;
 });
 
-// ── Investigación web ─────────────────────────────────────────────────────
 socket.on('web_research', (data) => {
   if (data.conv_id !== CONV_ID) return;
   const { entidades, busquedas } = data;
@@ -240,70 +230,55 @@ socket.on('web_research', (data) => {
   const ents = Object.entries(entidades).filter(([,v]) => v);
   if (ents.length) {
     const icons = { nombre_persona:'👤', nombre_negocio:'🏪', rubro:'🔧', ciudad:'📍' };
-    html += '<div class="chips-row" style="margin-bottom:.8rem;">';
-    ents.forEach(([k,v]) => { html += `<span class="chip-green">${icons[k]||''} ${esc(v)}</span>`; });
+    html += '<div class="cd-chips" style="margin-bottom:.8rem;">';
+    ents.forEach(([k,v]) => { html += `<span class="cd-chip green">${icons[k]||''} ${esc(v)}</span>`; });
     html += '</div>';
   }
   const catLabels = { persona:'Persona', negocio:'Negocio', rubro:'Rubro / sector' };
   Object.entries(busquedas).forEach(([cat, info]) => {
-    html += `<span class="web-section-label">${catLabels[cat]||cat} — "${esc(info.query)}"</span>`;
+    html += `<div class="cd-chip-section">${catLabels[cat]||cat} — "${esc(info.query)}"</div>`;
     info.resultados.forEach(r => {
-      html += `<div class="web-result">
-        <div class="web-result-title">${esc(r.title)}</div>
-        <div class="web-result-snippet">${esc(r.snippet)}</div>
-        ${r.url ? `<a href="${esc(r.url)}" target="_blank" class="web-result-url">${esc(r.url.substring(0,55))}…</a>` : ''}
+      html += `<div class="cd-web-result">
+        <div class="cd-web-title">${esc(r.title)}</div>
+        <div class="cd-web-snippet">${esc(r.snippet)}</div>
+        ${r.url ? `<a href="${esc(r.url)}" target="_blank" class="cd-web-url">${esc(r.url.substring(0,55))}…</a>` : ''}
       </div>`;
     });
   });
-  if (!html) html = '<div class="empty-state"><span class="empty-state-icon">🌐</span><p class="empty-state-text">Sin resultados.</p></div>';
+  if (!html) html = '<div class="cd-panel-empty"><p>Sin resultados.</p></div>';
   document.getElementById('web-body').innerHTML = html;
 });
 
-// ── Propuesta ─────────────────────────────────────────────────────────────
 socket.on('proposal_update', (data) => {
   if (data.conv_id !== CONV_ID) return;
   const p = data.plan;
   const pMin = (p.precio_sugerido_min||0).toLocaleString('es-AR');
   const pMax = (p.precio_sugerido_max||0).toLocaleString('es-AR');
   const prob = p.probabilidad_cierre || 0;
+  const probColor = prob>=60 ? 'var(--teal)' : prob>=30 ? 'var(--warn)' : 'var(--fg3)';
+  const probColorD = prob>=60 ? 'var(--teal-d)' : prob>=30 ? 'var(--warn)' : 'var(--fg3)';
 
-  let args = '';
-  if (p.argumentos_venta?.length) {
-    args = `<span class="chip-section">Argumentos de venta</span><ul style="margin:.3rem 0 0 1.1rem;padding:0;font-size:.82rem;color:var(--fg2);">`;
-    p.argumentos_venta.forEach(a => { args += `<li style="margin-bottom:.2rem;">${esc(a)}</li>`; });
-    args += '</ul>';
-  }
-  let senales = '';
-  if (p.senales_compra?.length) {
-    senales = `<span class="chip-section">Señales de compra</span><div class="chips-row">`;
-    p.senales_compra.forEach(s => { senales += `<span class="chip-green">${esc(s)}</span>`; });
-    senales += '</div>';
-  }
-  let objs = '';
-  if (p.objeciones_posibles?.length) {
-    objs = `<span class="chip-section">Posibles objeciones</span><div class="chips-row">`;
-    p.objeciones_posibles.forEach(o => { objs += `<span class="chip-red">${esc(o)}</span>`; });
-    objs += '</div>';
-  }
+  let senales = p.senales_compra?.length ? `<div class="cd-chip-section">Señales de compra</div><div class="cd-chips">${p.senales_compra.map(s=>`<span class="cd-chip green">${esc(s)}</span>`).join('')}</div>` : '';
+  let objs = p.objeciones_posibles?.length ? `<div class="cd-chip-section">Objeciones posibles</div><div class="cd-chips">${p.objeciones_posibles.map(o=>`<span class="cd-chip red">${esc(o)}</span>`).join('')}</div>` : '';
+  let args = p.argumentos_venta?.length ? `<div class="cd-chip-section">Argumentos de venta</div><ul class="cd-args">${p.argumentos_venta.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>` : '';
 
   document.getElementById('propuesta-body').innerHTML = `
-    <p style="font-weight:600;margin-bottom:.2rem;">${esc(p.perfil_cliente||'')}</p>
-    <p style="font-size:.82rem;color:var(--fg3);margin-bottom:.75rem;line-height:1.45;">${esc(p.problema_detectado||'')}</p>
-    <div class="kv-row"><span class="kv-key">Solución</span><span class="kv-val">${esc(p.solucion_recomendada||'—')}</span></div>
-    <div class="kv-row"><span class="kv-key">Precio</span><span class="kv-val">$${pMin} – $${pMax}</span></div>
-    <div class="kv-row"><span class="kv-key">Entrega</span><span class="kv-val">${esc(p.tiempo_entrega||'—')}</span></div>
-    <div class="prob-wrap">
-      <div class="prob-label"><span>Probabilidad de cierre</span><span style="font-weight:600;color:${prob>=60?'var(--teal-d)':prob>=30?'var(--warn)':'var(--fg3)'};">${prob}%</span></div>
-      <div class="prob-bar"><div class="prob-fill" style="width:${prob}%"></div></div>
+    <p class="cd-prop-perfil">${esc(p.perfil_cliente||'')}</p>
+    <p class="cd-prop-problema">${esc(p.problema_detectado||'')}</p>
+    <div class="cd-kv"><span class="cd-kv-k">Solución</span><span class="cd-kv-v">${esc(p.solucion_recomendada||'—')}</span></div>
+    <div class="cd-kv"><span class="cd-kv-k">Precio</span><span class="cd-kv-v">$${pMin} – $${pMax}</span></div>
+    <div class="cd-kv"><span class="cd-kv-k">Entrega</span><span class="cd-kv-v">${esc(p.tiempo_entrega||'—')}</span></div>
+    <div class="cd-prob">
+      <div class="cd-prob-label"><span>Cierre</span><span style="font-weight:700;color:${probColorD};">${prob}%</span></div>
+      <div class="cd-prob-track"><div class="cd-prob-fill" style="width:${prob}%;background:${probColor};"></div></div>
     </div>
-    ${p.proximo_paso ? `<div class="next-step"><div class="next-step-label">Próximo paso</div><p class="next-step-text">${esc(p.proximo_paso)}</p></div>` : ''}
+    ${p.proximo_paso ? `<div class="cd-next"><div class="cd-next-label">Próximo paso</div><p class="cd-next-text">${esc(p.proximo_paso)}</p></div>` : ''}
     ${args}${senales}${objs}`;
   switchTab('propuesta');
 });
 
-// ── Hint ──────────────────────────────────────────────────────────────────
 document.getElementById('hint-btn')?.addEventListener('click', async () => {
-  const inp  = document.getElementById('hint-input');
+  const inp = document.getElementById('hint-input');
   const hint = inp.value.trim();
   if (!hint) return;
   await fetch('/chat/api/hint', {
@@ -319,7 +294,6 @@ document.getElementById('hint-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('hint-btn').click();
 });
 
-// ── Cerrar ────────────────────────────────────────────────────────────────
 document.getElementById('close-btn')?.addEventListener('click', async () => {
   if (!confirm('¿Cerrar esta conversación?')) return;
   await fetch('/chat/api/close', {

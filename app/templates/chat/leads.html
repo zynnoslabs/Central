@@ -1,60 +1,77 @@
 {% extends "base.html" %}
 {% block title %}Leads — Zynnos Central{% endblock %}
-
 {% block extra_head %}{% endblock %}
 
 {% block content %}
 
 {% set pending_count = leads | rejectattr('contactado') | list | length %}
 
-<div class="leads-header">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
   <div>
-    <h1 class="page-title">Leads capturados</h1>
+    <h1 class="page-title" style="margin-bottom:.2rem;">Leads capturados</h1>
     <p class="page-sub">Visitantes que dejaron sus datos en modo fallback</p>
   </div>
   <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
-    <span class="stat-pill total">{{ leads | length }} total</span>
+    <span class="ld-pill total">{{ leads|length }} total</span>
     {% if pending_count > 0 %}
-    <span class="stat-pill pending">⚠️ {{ pending_count }} sin contactar</span>
+    <span class="ld-pill pending">{{ pending_count }} sin contactar</span>
     {% endif %}
-    <a href="{{ url_for('chat.panel') }}" class="btn btn-sm" style="font-size:.8rem;">
-      ← Volver al chat
+    <a href="{{ url_for('chat.panel') }}" class="btn btn-sm" style="font-size:.8rem;display:inline-flex;align-items:center;gap:.35rem;">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Chat
     </a>
   </div>
 </div>
 
-<div class="card card-table" style="padding:0;overflow:hidden;">
+<div class="card" style="padding:0;overflow:hidden;">
   {% if leads %}
+    <!-- Cabecera columnas -->
+    <div class="ld-thead">
+      <span style="flex:1;">Contacto</span>
+      <span style="width:120px;">Recibido</span>
+      <span style="width:200px;text-align:right;">Acciones</span>
+    </div>
     {% for lead in leads %}
-    <div class="lead-row {% if lead.contactado %}contactado{% endif %}" id="lead-{{ lead.id }}">
-      <div class="lead-avatar">{{ lead.nombre[0].upper() }}</div>
-      <div class="lead-body">
-        <div class="lead-name">{{ lead.nombre }}</div>
-        <div class="lead-wa">📱 {{ lead.whatsapp }}</div>
-        {% if lead.pagina %}
-        <div class="lead-page">🔗 {{ lead.pagina }}</div>
-        {% endif %}
+    <div class="ld-row {% if lead.contactado %}contactado{% endif %}" id="lead-{{ lead.id }}">
+
+      <div class="ld-avatar">{{ lead.nombre[0].upper() }}</div>
+
+      <div class="ld-body">
+        <div class="ld-name">{{ lead.nombre }}</div>
+        <div class="ld-meta">
+          <span>📱 {{ lead.whatsapp }}</span>
+          {% if lead.pagina %}<span class="ld-sep">·</span><span class="ld-url">{{ lead.pagina }}</span>{% endif %}
+        </div>
       </div>
-      <div class="lead-time">{{ lead.creado_en.strftime('%d/%m %H:%M') }}</div>
-      <div class="lead-actions">
+
+      <div class="ld-time">{{ lead.creado_en.strftime('%d/%m %H:%M') }}</div>
+
+      <div class="ld-actions">
         {% set wa_msg = "Hola " + lead.nombre + "! Te escribo de Zynnos Labs. Vi que estuviste en nuestro sitio, ¿puedo ayudarte?" %}
-        <a href="https://wa.me/{{ lead.whatsapp | replace('+','') | replace(' ','') }}?text={{ wa_msg | urlencode }}"
+        <a href="https://wa.me/{{ lead.whatsapp|replace('+','')|replace(' ','') }}?text={{ wa_msg|urlencode }}"
            target="_blank" rel="noopener" class="btn-wa">
-          💬 WhatsApp
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+          Escribir
         </a>
-        <button class="btn-check {% if lead.contactado %}checked{% endif %}"
-                onclick="toggleContactado({{ lead.id }}, this)"
-                title="{{ 'Marcar como no contactado' if lead.contactado else 'Marcar como contactado' }}">
-          {% if lead.contactado %}✓ Contactado{% else %}Marcar{% endif %}
+        <button class="ld-check {% if lead.contactado %}checked{% endif %}"
+                onclick="toggleContactado({{ lead.id }}, this)">
+          {% if lead.contactado %}
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Contactado
+          {% else %}
+            Marcar
+          {% endif %}
         </button>
       </div>
     </div>
     {% endfor %}
   {% else %}
-    <div class="empty-state">
-      <span class="empty-state-icon">📋</span>
-      <div class="empty-state-title">Sin leads todavía</div>
-      <p class="empty-state-sub">Los leads aparecen acá cuando el widget entra en modo fallback</p>
+    <div class="cp-empty">
+      <div class="cp-empty-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="cp-empty-title">Sin leads todavía</div>
+      <p class="cp-empty-sub">Los leads aparecen acá cuando el widget entra en modo fallback</p>
     </div>
   {% endif %}
 </div>
@@ -67,11 +84,10 @@
 const socket = io({ transports: ['websocket'] });
 socket.emit('join_operators');
 
-// ── Toggle contactado ─────────────────────────────────────────────────────────
 function toggleContactado(leadId, btn) {
   fetch('/chat/api/lead/contactado', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ id: leadId })
   })
   .then(r => r.json())
@@ -80,42 +96,39 @@ function toggleContactado(leadId, btn) {
     const row = document.getElementById('lead-' + leadId);
     if (data.contactado) {
       row.classList.add('contactado');
-      row.querySelector('.lead-avatar').classList.add('contactado');
       btn.classList.add('checked');
-      btn.textContent = '✓ Contactado';
-      btn.title = 'Marcar como no contactado';
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Contactado`;
     } else {
       row.classList.remove('contactado');
       btn.classList.remove('checked');
       btn.textContent = 'Marcar';
-      btn.title = 'Marcar como contactado';
     }
   })
   .catch(console.error);
 }
 
-// ── Nuevo lead en tiempo real ─────────────────────────────────────────────────
 socket.on('new_lead', (data) => {
-  const list = document.querySelector('.card-table');
-  list.querySelector('.empty-state')?.remove();
-
+  const list = document.querySelector('.card');
+  list.querySelector('.cp-empty')?.remove();
   const initials = data.nombre ? data.nombre[0].toUpperCase() : '?';
   const waMsg = encodeURIComponent(`Hola ${data.nombre}! Te escribo de Zynnos Labs. Vi que estuviste en nuestro sitio, ¿puedo ayudarte?`);
   const waNum = data.whatsapp.replace(/\D/g, '');
-
   const row = document.createElement('div');
   row.id = `lead-${data.id}`;
-  row.className = 'lead-row';
+  row.className = 'ld-row';
   row.innerHTML = `
-    <div class="lead-avatar">${initials}</div>
-    <div class="lead-body">
-      <div class="lead-name">${data.nombre}</div>
-      <div class="lead-wa">📱 ${data.whatsapp}</div>
+    <div class="ld-avatar">${initials}</div>
+    <div class="ld-body">
+      <div class="ld-name">${data.nombre}</div>
+      <div class="ld-meta"><span>📱 ${data.whatsapp}</span></div>
     </div>
-    <div class="lead-time">ahora</div>
-    <div class="lead-actions">
-      <a href="https://wa.me/${waNum}?text=${waMsg}" target="_blank" rel="noopener" class="btn-wa">💬 WhatsApp</a>
-      <button class="btn-check" onclick="toggleContactado(${data.id}, this)" title="Marcar como contactado">Marcar</button>
+    <div class="ld-time">ahora</div>
+    <div class="ld-actions">
+      <a href="https://wa.me/${waNum}?text=${waMsg}" target="_blank" rel="noopener" class="btn-wa">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+        Escribir
+      </a>
+      <button class="ld-check" onclick="toggleContactado(${data.id}, this)">Marcar</button>
     </div>`;
   list.prepend(row);
 });
