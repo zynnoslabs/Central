@@ -1771,10 +1771,17 @@ small.text-muted { font-size: .8125rem; color: var(--fg2); margin-top: .2rem; }
     htmx.config.defaultSettleDelay = 60;
     htmx.config.historyCacheSize = 10;
     // Scroll suave al tope en cada navegación
+    // Re-ejecutar scripts inyectados por HTMX (hx-boost no los ejecuta por defecto)
     document.addEventListener('htmx:afterSwap', function(e) {
-      if (e.detail.target.id === 'main-content') {
-        window.scrollTo({ top: 0, behavior: 'instant' });
-      }
+      if (e.detail.target.id !== 'main-content') return;
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      e.detail.target.querySelectorAll('script').forEach(function(oldScript) {
+        const newScript = document.createElement('script');
+        // Copiar atributos (src, type, etc.)
+        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+        newScript.textContent = oldScript.textContent;
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      });
     });
   </script>
 </head>
@@ -1848,10 +1855,10 @@ small.text-muted { font-size: .8125rem; color: var(--fg2); margin-top: .2rem; }
   {% endwith %}
 
   {% block content %}{% endblock %}
-</main>
 
-{% block extra_scripts %}{% endblock %}
-{% block scripts %}{% endblock %}
+  {% block extra_scripts %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</main>
 
 <!-- ### CAMBIO AQUÍ ### Sistema de toasts global + atajos de teclado -->
 <div id="toast-container" style="
