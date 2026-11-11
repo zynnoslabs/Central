@@ -139,17 +139,22 @@
     </div>
 
     <!-- Instrucciones enviadas -->
-    {% if hints %}
-    <div class="card" style="padding:0;overflow:hidden;">
+    <!-- ### CAMBIO AQUÍ ### — id en el contenedor para que JS pueda agregar hints sin recargar -->
+    <div class="card" id="hint-sent-card" style="padding:0;overflow:hidden;{% if not hints %}display:none;{% endif %}">
       <div style="padding:.7rem 1rem;border-bottom:1px solid var(--border);font-size:.75rem;font-weight:600;color:var(--fg3);letter-spacing:.04em;text-transform:uppercase;">Instrucciones enviadas</div>
-      {% for h in hints %}
-      <div class="cd-hint-sent {% if h.applied %}applied{% endif %}">
-        <span>{{ h.hint }}</span>
-        {% if h.applied %}<span class="badge badge-teal" style="font-size:.65rem;flex-shrink:0;">aplicada</span>{% endif %}
+      <div id="hint-sent-list">
+        {% for h in hints %}
+        <div class="cd-hint-sent {% if h.applied %}applied{% endif %}">
+          <span>{{ h.hint }}</span>
+          {% if h.applied %}
+            <span class="badge badge-teal" style="font-size:.65rem;flex-shrink:0;">aplicada</span>
+          {% else %}
+            <span class="badge" style="font-size:.65rem;flex-shrink:0;background:var(--warn);color:#000;">pendiente</span>
+          {% endif %}
+        </div>
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
-    {% endif %}
 
     <!-- Cerrar conversación -->
     {% if conv.status == 'active' %}
@@ -198,6 +203,18 @@ socket.on('new_message', (data) => {
   wrap.innerHTML = `<div class="cd-msg-wrap"><div class="cd-bubble">${esc(data.content)}</div><div class="cd-msg-meta">${label} · ahora</div></div>`;
   box.appendChild(wrap);
   box.scrollTop = box.scrollHeight;
+
+  // ### CAMBIO AQUÍ ### — marcar hints pendientes como "aplicados" cuando la IA responde
+  if (data.role === 'assistant') {
+    document.querySelectorAll('#hint-sent-list .badge').forEach(badge => {
+      if (badge.textContent === 'pendiente') {
+        badge.textContent = 'aplicada';
+        badge.style.background = 'var(--teal)';
+        badge.style.color = '#fff';
+        badge.closest('.cd-hint-sent')?.classList.add('applied');
+      }
+    });
+  }
 });
 
 socket.on('conversation_updated', (data) => {
@@ -320,18 +337,39 @@ socket.on('proposal_update', (data) => {
   switchTab('propuesta');
 });
 
+// ### CAMBIO AQUÍ ### — agregar hint a la lista visible sin recargar
+function appendHintToList(hintText) {
+  // mostrar el card si estaba oculto (primera instrucción enviada en esta sesión)
+  const card = document.getElementById('hint-sent-card');
+  if (card) card.style.display = '';
+
+  const container = document.getElementById('hint-sent-list');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'cd-hint-sent';
+  row.innerHTML = `<span>${esc(hintText)}</span><span class="badge" style="font-size:.65rem;flex-shrink:0;background:var(--warn);color:#000;">pendiente</span>`;
+  container.prepend(row);
+}
+
 document.addEventListener('click', async (e) => {
   if (!e.target.closest('#hint-btn')) return;
   const inp = document.getElementById('hint-input');
   const hint = inp.value.trim();
   if (!hint) return;
+  inp.value = '';
+  inp.focus();
+  appendHintToList(hint);  // mostrar al instante
   await fetch('/chat/api/hint', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ conv_id: CONV_ID, hint })
   });
-  inp.value = '';
-  inp.focus();
+});
+
+// escuchar hints enviados desde otro panel (ej: otro operador)
+socket.on('hint_added', (data) => {
+  if (data.conv_id !== CONV_ID) return;
+  appendHintToList(data.hint);
 });
 
 document.addEventListener('keydown', e => {
