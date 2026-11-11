@@ -173,8 +173,10 @@
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <script>
+if (window._chatSocket) { window._chatSocket.disconnect(); }
 const CONV_ID = "{{ conv.id }}";
 const socket  = io({ transports: ['websocket'] });
+window._chatSocket = socket;
 socket.emit('join_operators');
 socket.emit('join_conversation', { conv_id: CONV_ID });
 
