@@ -130,6 +130,54 @@ def web_search(query: str, max_results: int = 3) -> list[dict]:
         return []
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _resumir_datos_conocidos(conv, history_text: str) -> str:
+    """
+    ### CAMBIO AQUÍ ###
+    Genera un resumen de lo que ya se sabe del visitante para inyectarlo
+    en el system prompt del agente conversacional.
+    """
+    lineas = []
+
+    # Datos guardados en la BD (ya confirmados)
+    if conv.nombre:
+        lineas.append(f"- Nombre: {conv.nombre}")
+    if conv.rubro:
+        lineas.append(f"- Rubro/negocio: {conv.rubro}")
+    if conv.telefono:
+        lineas.append(f"- Teléfono: {conv.telefono}")
+    if conv.email:
+        lineas.append(f"- Email: {conv.email}")
+
+    # Extraer datos mencionados en la conversación aunque no estén en BD
+    # Búsqueda simple por patrones en el historial del cliente
+    user_lines = [l.replace("USER: ", "").strip()
+                  for l in history_text.split("\n") if l.startswith("USER:")]
+    combined = " ".join(user_lines).lower()
+
+    if not conv.nombre and any(w in combined for w in ["me llamo", "soy ", "mi nombre"]):
+        lineas.append("- Nombre: (mencionado en la conversación, extraer)")
+    if not conv.rubro and any(w in combined for w in ["negocio", "empresa", "local", "tienda", "trabajo"]):
+        lineas.append("- Negocio: (mencionado en la conversación, extraer)")
+
+    # Info del budget_est si existe
+    if conv.budget_est:
+        try:
+            plan = json.loads(conv.budget_est)
+            if plan.get("problema_detectado") and not any("Problema" in l for l in lineas):
+                lineas.append(f"- Problema detectado: {plan['problema_detectado']}")
+            if plan.get("perfil_cliente") and not any("Perfil" in l for l in lineas):
+                lineas.append(f"- Perfil: {plan['perfil_cliente']}")
+        except Exception:
+            pass
+
+    if not lineas:
+        return "- Ninguno todavía (primer contacto o conversación muy inicial)"
+
+    return "\n".join(lineas)
+
+
 # ── Análisis paralelo ─────────────────────────────────────────────────────────
 
 def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count: int):
@@ -149,23 +197,59 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
         from app import socketio
 
         # ── Paso 1: extraer entidades ────────────────────────────────────────
+        # ### CAMBIO AQUÍ ### — modelo más capaz + prompt más preciso + actualizar BD
         try:
             extraccion = groq.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": (
-                        "Extraé del texto las entidades mencionadas. "
-                        "Respondé SOLO JSON: "
-                        '{"nombre_persona": "...", "nombre_negocio": "...", "rubro": "...", "ciudad": "..."} '
-                        "Si no se menciona algo, usá null."
+                        "Analizá esta conversación de ventas y extraé la información del CLIENTE (mensajes USER).\n"
+                        "Respondé SOLO JSON con este formato exacto:\n"
+                        "{\n"
+                        '  "nombre_persona": "nombre y apellido si se mencionó, si no null",\n'
+                        '  "nombre_negocio": "nombre del negocio si se mencionó, si no null",\n'
+                        '  "rubro": "tipo de negocio en 2-3 palabras (ej: veterinaria, restaurante, estudio contable), si no null",\n'
+                        '  "ciudad": "ciudad o provincia si se mencionó, si no null",\n'
+                        '  "telefono": "número de teléfono con código de área si se mencionó, si no null",\n'
+                        '  "email": "email si se mencionó, si no null",\n'
+                        '  "problema_principal": "problema o necesidad principal en 1 oración, si no null",\n'
+                        '  "herramientas_actuales": "qué herramientas/sistemas usan hoy, si no null",\n'
+                        '  "empleados": "cantidad aproximada de empleados si se mencionó, si no null"\n'
+                        "}\n"
+                        "IMPORTANTE: extraé solo lo que el cliente dijo explícitamente. No inventes ni inferras."
                     )},
-                    {"role": "user", "content": history_text}
+                    {"role": "user", "content": f"Conversación:\n{history_text}"}
                 ],
-                temperature=0.1,
-                max_tokens=150,
+                temperature=0.0,
+                max_tokens=300,
                 response_format={"type": "json_object"}
             )
             entidades = json.loads(extraccion.choices[0].message.content)
+
+            # ### CAMBIO AQUÍ ### — actualizar BD con datos extraídos si no los teníamos
+            conv_upd = ChatConversacion.query.get(conv_id)
+            if conv_upd:
+                changed = False
+                if entidades.get("nombre_persona") and not conv_upd.nombre:
+                    conv_upd.nombre = entidades["nombre_persona"]
+                    changed = True
+                if entidades.get("rubro") and not conv_upd.rubro:
+                    conv_upd.rubro = entidades["rubro"]
+                    changed = True
+                if entidades.get("telefono") and not conv_upd.telefono:
+                    conv_upd.telefono = entidades["telefono"]
+                    changed = True
+                if entidades.get("email") and not conv_upd.email:
+                    conv_upd.email = entidades["email"]
+                    changed = True
+                if changed:
+                    db.session.commit()
+                    socketio.emit("conversation_updated", {
+                        "conv_id": conv_id,
+                        **{f: getattr(conv_upd, f) for f in ["nombre", "telefono", "email", "rubro"]
+                           if getattr(conv_upd, f)}
+                    }, room="operators")
+
         except Exception as e:
             current_app.logger.warning(f"[Análisis entidades] {e}")
             entidades = {}
@@ -237,40 +321,61 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
             }, room="operators")
 
         # ── Paso 4: plan de propuesta (cada 2 mensajes) ──────────────────────
+        # ### CAMBIO AQUÍ ### — modelo 70b + más campos de contexto
         if msg_count % 2 == 0:
             contexto_web = ""
             if busquedas.get("negocio"):
                 snippets = " | ".join(r["snippet"] for r in busquedas["negocio"]["resultados"][:2])
                 contexto_web = f"\nInfo web del negocio: {snippets[:400]}"
 
+            # Incluir datos estructurados extraídos en el contexto
+            contexto_entidades = ""
+            if entidades:
+                campos = {
+                    "nombre_persona": "Cliente",
+                    "nombre_negocio": "Negocio",
+                    "rubro": "Rubro",
+                    "ciudad": "Ciudad",
+                    "problema_principal": "Problema",
+                    "herramientas_actuales": "Herramientas actuales",
+                    "empleados": "Empleados"
+                }
+                items = [f"{label}: {entidades[k]}" for k, label in campos.items() if entidades.get(k)]
+                if items:
+                    contexto_entidades = "\nDatos del cliente:\n" + "\n".join(f"  - {i}" for i in items)
+
             try:
                 plan_resp = groq.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model="llama-3.3-70b-versatile",
                     messages=[
                         {"role": "system", "content": (
                             "Sos el estratega de ventas de Zynnos Labs, agencia de automatización IA para pymes argentinas.\n"
-                            "Basándote en la conversación y la info web disponible, armá un plan de propuesta.\n"
+                            "Basándote en la conversación, los datos del cliente y la info web, armá un plan de propuesta.\n"
                             "Respondé SOLO JSON:\n"
                             "{\n"
-                            '  "perfil_cliente": "descripción breve en 1 oración",\n'
-                            '  "problema_detectado": "problema principal identificado",\n'
-                            '  "solucion_recomendada": "nombre de la solución Zynnos más adecuada",\n'
-                            '  "argumentos_venta": ["arg1", "arg2", "arg3"],\n'
+                            '  "perfil_cliente": "descripción del perfil en 1 oración",\n'
+                            '  "problema_detectado": "problema principal identificado con precisión",\n'
+                            '  "solucion_recomendada": "solución Zynnos más adecuada (chatbot IA / automatización WhatsApp / sistema de cobros / etc.)",\n'
+                            '  "argumentos_venta": ["argumento específico para este cliente", "arg2", "arg3"],\n'
                             '  "precio_sugerido_min": 150000,\n'
                             '  "precio_sugerido_max": 350000,\n'
-                            '  "tiempo_entrega": "2-3 semanas",\n'
+                            '  "tiempo_entrega": "X semanas",\n'
                             '  "probabilidad_cierre": 65,\n'
-                            '  "proximo_paso": "qué preguntarle o decirle ahora",\n'
-                            '  "senales_compra": ["señal1"],\n'
-                            '  "objeciones_posibles": ["objeción1"]\n'
+                            '  "proximo_paso": "acción concreta a tomar ahora con este cliente",\n'
+                            '  "senales_compra": ["señal específica observada en la conversación"],\n'
+                            '  "objeciones_posibles": ["objeción probable basada en el perfil"],\n'
+                            '  "info_faltante": ["dato que aún no tenemos y sería útil para la propuesta"]\n'
                             "}\n"
-                            "Precios en pesos argentinos. Zynnos cobra $80.000–$600.000 según complejidad."
+                            "Precios en pesos argentinos. Zynnos cobra $80.000–$600.000 según complejidad.\n"
+                            "Soluciones disponibles: chatbot IA para atención, automatización de WhatsApp, "
+                            "sistema de cobros/recordatorios, CRM simple, automatización de redes sociales."
+                            + contexto_entidades
                             + contexto_web
                         )},
                         {"role": "user", "content": f"Conversación:\n{history_text}"}
                     ],
                     temperature=0.3,
-                    max_tokens=500,
+                    max_tokens=600,
                     response_format={"type": "json_object"}
                 )
                 plan = json.loads(plan_resp.choices[0].message.content)
@@ -381,17 +486,28 @@ def api_message():
         hint_text = "\n\nINSTRUCCIONES ESPECIALES DEL EQUIPO (incorporalas naturalmente):\n"
         hint_text += "\n".join(f"- {h.hint}" for h in pending)
 
+    # ### CAMBIO AQUÍ ### — inyectar datos ya recopilados al agente
+    datos_conocidos = _resumir_datos_conocidos(conv, history_text)
+
     system_prompt = (
         "Sos el asesor de Zynnos Labs, agencia argentina de automatización con IA para negocios locales.\n"
-        "Tu objetivo: entender qué necesita el negocio del cliente y guiarlo a agendar una consulta.\n\n"
+        "Tu objetivo: entender qué necesita el negocio del cliente y guiarlo a agendar una consulta gratuita.\n\n"
+        "DATOS YA RECOPILADOS DEL VISITANTE:\n"
+        + datos_conocidos + "\n\n"
+        "ESTRATEGIA DE RECOPILACIÓN (seguí este orden, solo preguntá lo que falta):\n"
+        "1. Nombre → si no lo sabés, preguntalo primero de forma natural\n"
+        "2. Tipo de negocio / rubro → qué hace, cuántas personas trabajan ahí\n"
+        "3. Problema principal → qué tarea les consume más tiempo o qué no están pudiendo hacer\n"
+        "4. Herramientas actuales → qué usan hoy (WhatsApp, planillas, nada, etc.)\n"
+        "5. Contacto → cuando tengas los puntos 1-4, ofrecé el diagnóstico gratuito y pedí teléfono o email\n\n"
         "Reglas:\n"
         "- Hacé UNA sola pregunta a la vez\n"
         "- Sé amigable, natural, como un asesor humano\n"
-        "- Recopilá: nombre, tipo de negocio, principal problema, si ya usa herramientas digitales\n"
-        "- Cuando tengas suficiente info, ofrecé un diagnóstico gratuito y pedí el teléfono/email\n"
+        "- Si ya tenés un dato, NO lo volvás a preguntar\n"
         "- Nunca menciones precios hasta que pregunten\n"
         "- Hablá en español rioplatense informal (vos, tenés, etc.)\n"
-        "- Respuestas cortas: máximo 3 oraciones"
+        "- Respuestas cortas: máximo 3 oraciones\n"
+        "- Si el visitante menciona su nombre, negocio o problema, confirmalo brevemente antes de seguir"
         + hint_text
     )
 
