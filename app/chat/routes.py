@@ -23,7 +23,7 @@ from flask_login import login_required
 from flask_socketio import emit, join_room
 
 from app.chat import chat_bp
-from app.models import db, ChatConversacion, ChatMensaje, ChatHint
+from app.models import db, ChatConversacion, ChatMensaje, ChatHint, ChatLead
 
 # ── CORS para la API pública del widget ──────────────────────────────────────  ### CAMBIO AQUÍ ###
 _CORS_ORIGINS = {
@@ -497,4 +497,34 @@ def api_close():
         db.session.commit()
     from app import socketio
     socketio.emit("conversation_closed", {"conv_id": conv_id}, room="operators")
+    return jsonify({"ok": True})
+
+
+@chat_bp.route("/api/lead", methods=["POST"])       # ### CAMBIO AQUÍ ###
+def api_lead():
+    """Guarda un lead capturado en modo fallback del widget."""
+    data     = request.get_json(silent=True) or {}
+    nombre   = (data.get("nombre") or "").strip()
+    whatsapp = (data.get("whatsapp") or "").strip()
+    pagina   = (data.get("pagina") or "")[:500]
+
+    if not nombre or not whatsapp:
+        return jsonify({"ok": False, "error": "nombre y whatsapp requeridos"}), 400
+
+    lead = ChatLead(nombre=nombre, whatsapp=whatsapp, pagina=pagina)
+    db.session.add(lead)
+    db.session.commit()
+
+    # Notificar a los operadores en tiempo real
+    try:
+        from app import socketio
+        socketio.emit("new_lead", {
+            "id": lead.id,
+            "nombre": nombre,
+            "whatsapp": whatsapp,
+            "creado_en": lead.creado_en.isoformat()
+        }, room="operators")
+    except Exception:
+        pass
+
     return jsonify({"ok": True})

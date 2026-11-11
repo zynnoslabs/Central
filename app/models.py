@@ -399,3 +399,18 @@ class ChatHint(db.Model):
 
     def __repr__(self):
         return f"<ChatHint conv={self.conversation_id} applied={self.applied}>"
+
+
+class ChatLead(db.Model):                          # ### CAMBIO AQUÍ ###
+    """Lead capturado por el widget cuando el backend falla (modo fallback)."""
+    __tablename__ = "chat_leads"
+
+    id          = db.Column(db.Integer, primary_key=True)
+    nombre      = db.Column(db.String(255), nullable=False)
+    whatsapp    = db.Column(db.String(100), nullable=False)
+    pagina      = db.Column(db.String(500), nullable=True)
+    contactado  = db.Column(db.Boolean, default=False)
+    creado_en   = db.Column(db.DateTime(timezone=True), default=ahora)
+
+    def __repr__(self):
+        return f"<ChatLead {self.nombre} {self.whatsapp}>"
