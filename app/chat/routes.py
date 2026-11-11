@@ -132,6 +132,77 @@ def web_search(query: str, max_results: int = 3) -> list[dict]:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _detectar_etapa_venta(history: list, conv) -> dict:
+    """
+    ### CAMBIO AQUÍ ###
+    Detecta en qué etapa del proceso de venta estamos y devuelve
+    la instrucción específica para esa etapa.
+    """
+    user_msgs = [m.content.lower() for m in history if m.role == "user"]
+    user_count = len(user_msgs)
+    combined = " ".join(user_msgs)
+
+    # Señales de cierre inminente
+    señales_cierre = ["llamame", "llamá", "quiero hablar", "podemos hablar", "cuánto sale",
+                      "cuanto sale", "precio", "cuánto cuesta", "cuanto cuesta",
+                      "me interesa", "quiero empezar", "cómo arrancamos", "como arrancamos"]
+    # Señales de dolor/problema
+    señales_dolor = ["no puedo", "no tengo tiempo", "me cuesta", "problema", "difícil",
+                     "pierdo", "no llego", "tarde", "manual", "todo a mano", "mucho trabajo"]
+
+    tiene_nombre = bool(conv.nombre)
+    tiene_negocio = bool(conv.rubro)
+    tiene_contacto = bool(conv.telefono or conv.email)
+    expreso_dolor = any(s in combined for s in señales_dolor)
+    quiere_cerrar = any(s in combined for s in señales_cierre)
+
+    if quiere_cerrar or tiene_contacto:
+        return {
+            "nombre": "ETAPA 5 — CIERRE",
+            "instruccion": (
+                "El cliente mostró interés o quiere hablar. "
+                "Pedí su teléfono o email para coordinar el diagnóstico gratuito. "
+                "Si ya lo tenés, confirmá que lo van a contactar pronto. "
+                "Si pide llamada, usá [SOLICITUD_LLAMADA] al final de tu respuesta."
+            )
+        }
+    elif expreso_dolor and tiene_negocio:
+        return {
+            "nombre": "ETAPA 3-4 — CONSECUENCIA Y SOLUCIÓN",
+            "instruccion": (
+                "El cliente ya describió su problema. Ayudalo a ver el costo real: "
+                "preguntá cuánto tiempo le lleva por semana o cuánto le afecta. "
+                "Luego, en el próximo mensaje, presentá la solución de Zynnos de forma concreta."
+            )
+        }
+    elif tiene_nombre and tiene_negocio:
+        return {
+            "nombre": "ETAPA 2 — DOLOR",
+            "instruccion": (
+                "Ya sabés quién es y qué negocio tiene. "
+                "Ahora preguntá cuál es el mayor problema o la tarea que más tiempo les consume. "
+                "Sé empático, no interrogues."
+            )
+        }
+    elif tiene_nombre or user_count >= 2:
+        return {
+            "nombre": "ETAPA 1-2 — RAPPORT/NEGOCIO",
+            "instruccion": (
+                "Conseguiste el nombre o hay interacción inicial. "
+                "Preguntá sobre el tipo de negocio de forma casual si no lo sabés. "
+                "Mostrá curiosidad genuina, no es un formulario."
+            )
+        }
+    else:
+        return {
+            "nombre": "ETAPA 1 — PRIMER CONTACTO",
+            "instruccion": (
+                "Primer mensaje del visitante. Saludá calurosamente, presentate como Matías de Zynnos, "
+                "y preguntá el nombre de forma natural. Nada de ventas todavía."
+            )
+        }
+
+
 def _resumir_datos_conocidos(conv, history_text: str) -> str:
     """
     ### CAMBIO AQUÍ ###
@@ -486,28 +557,43 @@ def api_message():
         hint_text = "\n\nINSTRUCCIONES ESPECIALES DEL EQUIPO (incorporalas naturalmente):\n"
         hint_text += "\n".join(f"- {h.hint}" for h in pending)
 
-    # ### CAMBIO AQUÍ ### — inyectar datos ya recopilados al agente
+    # ### CAMBIO AQUÍ ### — inyectar datos ya recopilados + etapa de venta detectada
     datos_conocidos = _resumir_datos_conocidos(conv, history_text)
+    etapa_venta = _detectar_etapa_venta(history, conv)
 
     system_prompt = (
-        "Sos el asesor de Zynnos Labs, agencia argentina de automatización con IA para negocios locales.\n"
-        "Tu objetivo: entender qué necesita el negocio del cliente y guiarlo a agendar una consulta gratuita.\n\n"
-        "DATOS YA RECOPILADOS DEL VISITANTE:\n"
+        "Sos Matías, asesor de Zynnos Labs — agencia argentina que automatiza pymes con IA.\n"
+        "Hablás como alguien real: amigable, directo, sin exagerar. Nunca sonás a robot ni a vendedor de telemarketing.\n\n"
+
+        "DATOS YA CONOCIDOS DEL VISITANTE:\n"
         + datos_conocidos + "\n\n"
-        "ESTRATEGIA DE RECOPILACIÓN (seguí este orden, solo preguntá lo que falta):\n"
-        "1. Nombre → si no lo sabés, preguntalo primero de forma natural\n"
-        "2. Tipo de negocio / rubro → qué hace, cuántas personas trabajan ahí\n"
-        "3. Problema principal → qué tarea les consume más tiempo o qué no están pudiendo hacer\n"
-        "4. Herramientas actuales → qué usan hoy (WhatsApp, planillas, nada, etc.)\n"
-        "5. Contacto → cuando tengas los puntos 1-4, ofrecé el diagnóstico gratuito y pedí teléfono o email\n\n"
-        "Reglas:\n"
-        "- Hacé UNA sola pregunta a la vez\n"
-        "- Sé amigable, natural, como un asesor humano\n"
-        "- Si ya tenés un dato, NO lo volvás a preguntar\n"
-        "- Nunca menciones precios hasta que pregunten\n"
-        "- Hablá en español rioplatense informal (vos, tenés, etc.)\n"
-        "- Respuestas cortas: máximo 3 oraciones\n"
-        "- Si el visitante menciona su nombre, negocio o problema, confirmalo brevemente antes de seguir"
+
+        "ETAPA ACTUAL DE LA CONVERSACIÓN: " + etapa_venta["nombre"] + "\n"
+        "Instrucción para esta etapa: " + etapa_venta["instruccion"] + "\n\n"
+
+        "FLUJO GENERAL (seguí el orden, no saltés etapas):\n"
+        "ETAPA 1 — RAPPORT: Saludá, preguntá el nombre y el negocio de forma natural. No vendas nada todavía.\n"
+        "ETAPA 2 — DOLOR: Preguntá qué tarea les consume más tiempo o qué problema se repite. "
+        "Cuando el cliente lo describa, reflejalo con empatía ('eso suena agotador', 'eso les debe costar plata'). "
+        "Hacé que sienta que entendés su problema.\n"
+        "ETAPA 3 — CONSECUENCIA: Ayudalo a ver el costo real del problema. "
+        "Preguntá algo como '¿Y eso cuánto tiempo te lleva por semana?' o '¿Cuántos clientes perdés por eso?'. "
+        "El objetivo es que EL MISMO diga que necesita resolverlo.\n"
+        "ETAPA 4 — SOLUCIÓN: Recién acá mencionás que Zynnos puede ayudarlos. "
+        "Sé específico: 'Para un negocio como el tuyo, nosotros armamos un sistema que [X]'. "
+        "No des precios, ofrecé el diagnóstico gratuito.\n"
+        "ETAPA 5 — CIERRE: Pedí el teléfono o email para coordinar la llamada de diagnóstico. "
+        "Si pide hablar por teléfono ahora, respondé: 'Perfecto, te llama nuestro equipo a la brevedad. "
+        "¿Cuál es tu número?' y usá la etiqueta [SOLICITUD_LLAMADA] al final de tu respuesta.\n\n"
+
+        "REGLAS IRROMPIBLES:\n"
+        "- UNA sola pregunta por mensaje\n"
+        "- Si ya sabés un dato, no lo volvás a preguntar\n"
+        "- Nunca des precios hasta que pregunten; si preguntan, decí 'depende del proyecto, pero arrancamos desde $80.000'\n"
+        "- Español rioplatense informal (vos, tenés, hacés)\n"
+        "- Máximo 3 oraciones por respuesta\n"
+        "- Si el cliente dice que quiere hablar, está apurado, o dice 'llamame', activá etapa 5 directo\n"
+        "- Nunca uses signos de exclamación múltiples ni emojis de más de 1 por mensaje"
         + hint_text
     )
 
@@ -547,24 +633,46 @@ def api_message():
     if not ai_response:
         ai_response = "Gracias por la info. ¿Querés que te prepare un diagnóstico gratuito de lo que podríamos automatizar en tu negocio?"
 
+    # ### CAMBIO AQUÍ ### — detectar solicitud de llamada en la respuesta IA
+    solicito_llamada = "[SOLICITUD_LLAMADA]" in ai_response
+    ai_response_limpia = ai_response.replace("[SOLICITUD_LLAMADA]", "").strip()
+
     # Marcar hints como aplicados
     for h in pending:
         h.applied = True
     db.session.commit()
 
-    # Guardar respuesta IA
-    msg_ai = ChatMensaje(conversation_id=conv_id, role="assistant", content=ai_response)
+    # Guardar respuesta IA (sin la etiqueta interna)
+    msg_ai = ChatMensaje(conversation_id=conv_id, role="assistant", content=ai_response_limpia)
     db.session.add(msg_ai)
     db.session.commit()
 
     socketio.emit("new_message", {
         "conv_id": conv_id,
         "role": "assistant",
-        "content": ai_response,
+        "content": ai_response_limpia,
         "sent_at": now_iso()
     }, room="operators")
 
-    return jsonify({"ok": True, "response": ai_response})
+    # ### CAMBIO AQUÍ ### — alerta de llamada al operador (SocketIO + WhatsApp)
+    if solicito_llamada:
+        nombre_cliente = conv.nombre or "el visitante"
+        tel_cliente = conv.telefono or "(sin teléfono aún)"
+        socketio.emit("call_requested", {
+            "conv_id": conv_id,
+            "nombre": nombre_cliente,
+            "telefono": tel_cliente,
+            "source": conv.source_url or "sitio web"
+        }, room="operators")
+        send_whatsapp(
+            f"📞 *Solicitud de llamada*\n"
+            f"Cliente: {nombre_cliente}\n"
+            f"Teléfono: {tel_cliente}\n"
+            f"Desde: {conv.source_url or 'sitio web'}\n"
+            f"ID: {conv_id}"
+        )
+
+    return jsonify({"ok": True, "response": ai_response_limpia, "call_requested": solicito_llamada})
 
 
 @chat_bp.route("/api/update", methods=["POST"])

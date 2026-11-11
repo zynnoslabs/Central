@@ -260,6 +260,38 @@ socket.on('web_research', (data) => {
   document.getElementById('web-body').innerHTML = html;
 });
 
+// ### CAMBIO AQUÍ ### — alerta visual de solicitud de llamada
+socket.on('call_requested', (data) => {
+  if (data.conv_id !== CONV_ID) return;
+
+  // Reproducir sonido de alerta (beep del sistema)
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880; gain.gain.value = 0.3;
+    osc.start(); osc.stop(ctx.currentTime + 0.18);
+    setTimeout(() => { osc.frequency.value = 1100; osc.start(); osc.stop(ctx.currentTime + 0.18); }, 220);
+  } catch(_) {}
+
+  // Banner de llamada (si no existe ya)
+  if (!document.getElementById('call-alert')) {
+    const banner = document.createElement('div');
+    banner.id = 'call-alert';
+    banner.innerHTML = `
+      <div class="cd-call-alert">
+        <span class="cd-call-icon">📞</span>
+        <div class="cd-call-body">
+          <strong>¡${esc(data.nombre)} quiere que lo llamen!</strong>
+          <span>${data.telefono !== '(sin teléfono aún)' ? data.telefono : 'Sin número todavía — pedíselo'}</span>
+        </div>
+        <button onclick="this.closest('#call-alert').remove()" class="cd-call-close">✕</button>
+      </div>`;
+    document.querySelector('.cd-header')?.after(banner);
+  }
+});
+
 socket.on('proposal_update', (data) => {
   if (data.conv_id !== CONV_ID) return;
   const p = data.plan;
