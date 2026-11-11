@@ -94,9 +94,11 @@
 
 <script>
 /* ### CAMBIO AQUÍ ### — búsqueda + filtro en tiempo real */
-(function() {
+function initClientesList() {
   const searchInput = document.getElementById('search-input');
   const tbody = document.getElementById('clientes-tbody');
+  if (!searchInput || !tbody) return;
+
   const rows = [...tbody.querySelectorAll('tr')];
   const chips = document.querySelectorAll('.chip[data-filter]');
   const countTodos = document.getElementById('count-todos');
@@ -107,8 +109,6 @@
 
   let activeFilter = 'todos';
   let searchTerm = '';
-
-  // ### CAMBIO AQUÍ ### — userActed evita mostrar "sin resultados" en carga inicial
   let userActed = false;
 
   function applyFilters() {
@@ -120,17 +120,14 @@
       const matchSearch = !searchTerm || nombre.includes(searchTerm) || email.includes(searchTerm);
       const matchFilter = activeFilter === 'todos' || estado === activeFilter;
       const show = matchSearch && matchFilter;
-      // ### CAMBIO AQUÍ ### style inline para evitar que base.html sobreescriba
       row.style.display = show ? '' : 'none';
       if (show) visible++;
     });
-    const total = rows.length;
     if (searchTerm || activeFilter !== 'todos') {
-      resultCount.textContent = visible + ' de ' + total;
+      resultCount.textContent = visible + ' de ' + rows.length;
     } else {
       resultCount.textContent = '';
     }
-    // ### CAMBIO AQUÍ ### mensaje contextual según filtro activo
     if (userActed && visible === 0) {
       const labels = { activo:'activos', en_prueba:'en prueba', suspendido:'suspendidos', baja:'de baja' };
       const filtroLabel = labels[activeFilter];
@@ -147,22 +144,30 @@
     }
   }
 
-  searchInput.addEventListener('input', () => {
+  // Limpiar listeners anteriores clonando el nodo
+  const newInput = searchInput.cloneNode(true);
+  searchInput.parentNode.replaceChild(newInput, searchInput);
+  newInput.addEventListener('input', () => {
     userActed = true;
-    searchTerm = searchInput.value.toLowerCase().trim();
+    searchTerm = newInput.value.toLowerCase().trim();
     applyFilters();
   });
 
   chips.forEach(chip => {
-    chip.addEventListener('click', () => {
+    const newChip = chip.cloneNode(true);
+    chip.parentNode.replaceChild(newChip, chip);
+    newChip.addEventListener('click', () => {
       userActed = true;
-      chips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeFilter = chip.dataset.filter;
+      document.querySelectorAll('.chip[data-filter]').forEach(c => c.classList.remove('active'));
+      newChip.classList.add('active');
+      activeFilter = newChip.dataset.filter;
       applyFilters();
     });
   });
-})();
+}
+
+initClientesList();
+document.addEventListener('htmx:afterSwap', initClientesList);
 </script>
 
 {% else %}

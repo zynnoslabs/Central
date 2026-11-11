@@ -128,13 +128,14 @@
 </div>
 
 <script>
-/* ### CAMBIO AQUÍ ### — lógica acciones masivas */
-const checkAll  = document.getElementById('check-all');
-const bulkBar   = document.getElementById('bulk-bar');
-const bulkCount = document.getElementById('bulk-count');
-const cbs       = () => [...document.querySelectorAll('.pago-cb')];
+/* ### CAMBIO AQUÍ ### — lógica acciones masivas con delegación */
+const cbs = () => [...document.querySelectorAll('.pago-cb')];
 
 function actualizarBulk() {
+  const checkAll = document.getElementById('check-all');
+  const bulkBar  = document.getElementById('bulk-bar');
+  const bulkCount = document.getElementById('bulk-count');
+  if (!checkAll || !bulkBar) return;
   const sel = cbs().filter(c => c.checked);
   bulkCount.textContent = sel.length;
   bulkBar.classList.toggle('visible', sel.length > 0);
@@ -142,13 +143,15 @@ function actualizarBulk() {
   checkAll.checked = sel.length === cbs().length && cbs().length > 0;
 }
 
-checkAll.addEventListener('change', () => {
-  cbs().forEach(c => c.checked = checkAll.checked);
-  actualizarBulk();
-});
-
-document.querySelectorAll('.pago-cb').forEach(cb => {
-  cb.addEventListener('change', actualizarBulk);
+// Delegación — funciona tras navegación HTMX
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'check-all') {
+    cbs().forEach(c => c.checked = e.target.checked);
+    actualizarBulk();
+  }
+  if (e.target.classList.contains('pago-cb')) {
+    actualizarBulk();
+  }
 });
 
 function deseleccionarTodo() {

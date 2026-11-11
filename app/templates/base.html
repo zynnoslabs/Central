@@ -1880,29 +1880,35 @@ small.text-muted { font-size: .8125rem; color: var(--fg2); margin-top: .2rem; }
 
 <script>
 /* ── Tablas ordenables ────────────────────────── */
-document.querySelectorAll('table.sortable, table[data-sortable]').forEach(tbl => {
-  tbl.querySelectorAll('thead th[data-col]').forEach((th, i) => {
-    th.style.cursor = 'pointer';
-    th.style.userSelect = 'none';
-    th._sortDir = 1;
-    th.addEventListener('click', () => {
-      const tbody = tbl.querySelector('tbody');
-      const rows = [...tbody.querySelectorAll('tr')];
-      const col = parseInt(th.dataset.col ?? i);
-      const dir = th._sortDir;
-      rows.sort((a, b) => {
-        const av = a.cells[col]?.innerText.trim() || '';
-        const bv = b.cells[col]?.innerText.trim() || '';
-        const an = parseFloat(av.replace(/[^0-9.-]/g,'')), bn = parseFloat(bv.replace(/[^0-9.-]/g,''));
-        return dir * (isNaN(an)||isNaN(bn) ? av.localeCompare(bv,'es') : an - bn);
+function initSortableTables() {
+  document.querySelectorAll('table.sortable, table[data-sortable]').forEach(tbl => {
+    if (tbl._sortInit) return; // ya inicializada
+    tbl._sortInit = true;
+    tbl.querySelectorAll('thead th[data-col]').forEach((th, i) => {
+      th.style.cursor = 'pointer';
+      th.style.userSelect = 'none';
+      th._sortDir = 1;
+      th.addEventListener('click', () => {
+        const tbody = tbl.querySelector('tbody');
+        const rows = [...tbody.querySelectorAll('tr')];
+        const col = parseInt(th.dataset.col ?? i);
+        const dir = th._sortDir;
+        rows.sort((a, b) => {
+          const av = a.cells[col]?.innerText.trim() || '';
+          const bv = b.cells[col]?.innerText.trim() || '';
+          const an = parseFloat(av.replace(/[^0-9.-]/g,'')), bn = parseFloat(bv.replace(/[^0-9.-]/g,''));
+          return dir * (isNaN(an)||isNaN(bn) ? av.localeCompare(bv,'es') : an - bn);
+        });
+        rows.forEach(r => tbody.appendChild(r));
+        tbl.querySelectorAll('thead th').forEach(h => h.removeAttribute('data-sorted'));
+        th.setAttribute('data-sorted', dir > 0 ? 'asc' : 'desc');
+        th._sortDir = -dir;
       });
-      rows.forEach(r => tbody.appendChild(r));
-      tbl.querySelectorAll('thead th').forEach(h => h.removeAttribute('data-sorted'));
-      th.setAttribute('data-sorted', dir > 0 ? 'asc' : 'desc');
-      th._sortDir = -dir;
     });
   });
-});
+}
+initSortableTables();
+document.addEventListener('htmx:afterSwap', initSortableTables);
 
 /* ── Toast API global ─────────────────────────── */
 window.toast = function(msg, type='success', duration=3000) {
@@ -1918,14 +1924,14 @@ window.toast = function(msg, type='success', duration=3000) {
   }, duration);
 };
 
-/* Interceptar forms con data-toast para mostrar toast en redirect */
-document.querySelectorAll('form[data-toast]').forEach(form => {
-  form.addEventListener('submit', () => {
-    sessionStorage.setItem('_toast', JSON.stringify({
-      msg: form.dataset.toast,
-      type: form.dataset.toastType || 'success'
-    }));
-  });
+/* Interceptar forms con data-toast — delegado para funcionar tras HTMX */
+document.addEventListener('submit', (e) => {
+  const form = e.target.closest('form[data-toast]');
+  if (!form) return;
+  sessionStorage.setItem('_toast', JSON.stringify({
+    msg: form.dataset.toast,
+    type: form.dataset.toastType || 'success'
+  }));
 });
 const _t = sessionStorage.getItem('_toast');
 if (_t) { const d = JSON.parse(_t); sessionStorage.removeItem('_toast'); setTimeout(() => toast(d.msg, d.type), 100); }
