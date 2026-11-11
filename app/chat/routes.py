@@ -9,12 +9,43 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
-from flask import request, jsonify, render_template, current_app
+from flask import request, jsonify, render_template, current_app, make_response
 from flask_login import login_required
 from flask_socketio import emit, join_room
 
 from app.chat import chat_bp
 from app.models import db, ChatConversacion, ChatMensaje, ChatHint
+
+# ── CORS para la API pública del widget ────────────────────────────────────── ### CAMBIO AQUÍ ###
+_CORS_ORIGINS = {
+    "https://zynnos.com",
+    "https://www.zynnos.com",
+    "https://zynnos-site.vercel.app",
+    "http://localhost:5500",   # live server dev
+    "http://127.0.0.1:5500",
+}
+
+@chat_bp.after_request
+def _add_cors(response):
+    origin = request.headers.get("Origin", "")
+    if origin in _CORS_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Vary"] = "Origin"
+    return response
+
+@chat_bp.route("/api/<path:_>", methods=["OPTIONS"])
+def _cors_preflight(_):
+    """Responde preflight OPTIONS para cualquier ruta /chat/api/*."""
+    origin = request.headers.get("Origin", "")
+    resp = make_response("", 204)
+    if origin in _CORS_ORIGINS:
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        resp.headers["Access-Control-Max-Age"] = "3600"
+    return resp
 
 # ── Groq client (lazy) ────────────────────────────────────────────────────────
 _groq_client = None
