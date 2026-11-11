@@ -537,7 +537,6 @@ def api_lead_contactado():
 @chat_bp.route("/api/diagnostico")
 def api_diagnostico():
     """Endpoint temporal para verificar estado de Groq."""  ### CAMBIO AQUÍ ###
-    import os
     key = os.environ.get("GROQ_API_KEY", "")
     groq = get_groq()
     result = {
