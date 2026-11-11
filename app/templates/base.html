@@ -1770,19 +1770,27 @@ small.text-muted { font-size: .8125rem; color: var(--fg2); margin-top: .2rem; }
     htmx.config.defaultSwapDelay = 0;
     htmx.config.defaultSettleDelay = 60;
     htmx.config.historyCacheSize = 10;
-    // Scroll suave al tope en cada navegación
-    // Re-ejecutar scripts inyectados por HTMX (hx-boost no los ejecuta por defecto)
+    // Scroll suave al tope + re-ejecutar scripts tras swap HTMX
     document.addEventListener('htmx:afterSwap', function(e) {
       if (e.detail.target.id !== 'main-content') return;
       window.scrollTo({ top: 0, behavior: 'instant' });
       e.detail.target.querySelectorAll('script').forEach(function(oldScript) {
         const newScript = document.createElement('script');
-        // Copiar atributos (src, type, etc.)
         Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
         newScript.textContent = oldScript.textContent;
         oldScript.parentNode.replaceChild(newScript, oldScript);
       });
+      // Marcar links al chat para que siempre hagan recarga completa
+      applyHxBoostFalse();
     });
+
+    // Links a /chat/* siempre hacen full page load (tienen SocketIO)
+    function applyHxBoostFalse() {
+      document.querySelectorAll('a[href*="/chat/"]').forEach(function(a) {
+        if (!a.getAttribute('hx-boost')) a.setAttribute('hx-boost', 'false');
+      });
+    }
+    applyHxBoostFalse();
   </script>
 </head>
 <body hx-boost="true" hx-indicator="#htmx-indicator">
