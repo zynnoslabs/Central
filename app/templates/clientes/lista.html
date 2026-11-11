@@ -1,75 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Clientes — Zynnos Central{% endblock %}
 
-{% block extra_head %}
-<style>
-  /* ### CAMBIO AQUÍ ### — header y toolbar unificados */
-  .clientes-header {
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;
-  }
-  /* ### CAMBIO AQUÍ ### toolbar: search + chips, una sola fila */
-  .clientes-toolbar {
-    display: flex; align-items: center; flex-wrap: wrap; gap: .625rem;
-    margin-top: 1rem;
-    margin-bottom: 1.25rem;
-  }
-  .clientes-toolbar .filter-chips { margin-bottom: 0; }
-  /* search-wrap: label como flex row — SVG + input lado a lado SIN position:absolute */
-  .search-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    flex: 1; min-width: 200px; max-width: 320px;
-    border: 1px solid var(--border2);
-    border-radius: var(--r);
-    background: var(--bg2);
-    padding: 0 .75rem 0 .625rem;
-    box-sizing: border-box;
-    transition: border-color var(--t), box-shadow var(--t);
-  }
-  .search-wrap:focus-within {
-    border-color: var(--teal);
-    box-shadow: 0 0 0 3px rgba(52,201,148,.15);
-  }
-  /* ### CAMBIO AQUÍ ### SVG inline dentro del flex, sin position:absolute */
-  .search-wrap > svg {
-    flex-shrink: 0;
-    color: var(--fg3);
-    pointer-events: none;
-  }
-  #search-input {
-    flex: 1;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: var(--fg);
-    font-size: .9375rem;
-    padding: .45rem .25rem .45rem .5rem;
-    min-width: 0;
-  }
-  .spacer { flex: 1; }
-
-  .cliente-nombre a { font-weight:600; color:var(--teal); text-decoration:none; transition:color var(--t); }
-  .cliente-nombre a:hover { color:var(--teal); text-decoration:underline; }
-  .instalaciones-count { font-variant-numeric:tabular-nums; }
-  .card-table { padding:0; overflow:hidden; }
-
-  /* días sin contacto — colores según urgencia */
-  .dias-ok     { color:var(--fg2); }
-  .dias-warn   { color:var(--warn); font-weight:500; }
-  .dias-danger { color:var(--danger); font-weight:600; }
-
-  /* fila oculta por filtro JS */
-  tr.hidden-row { display:none; }
-
-  .empty-filter {
-    text-align:center; padding:2.5rem 1.5rem; color:var(--fg2);
-    font-size:.9375rem;
-  }
-
-</style>
-{% endblock %}
+{% block extra_head %}{% endblock %}
 
 {% block content %}
 {# ── Header ── #}

@@ -1,48 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Ajustes{% endblock %}
 
-{% block extra_head %}
-<style>
-/* ### CAMBIO AQUÍ ### grid 3 columnas fijas, alineadas al top */
-.ajustes-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-}
-@media (max-width: 900px) {
-  .ajustes-grid { grid-template-columns: 1fr; }
-}
-.form-group { margin-bottom: 1.25rem; }
-.form-group label {
-  display: block; font-size: .875rem; font-weight: 500;
-  margin-bottom: .4rem; color: var(--fg);
-}
-.form-control {
-  width: 100%; padding: .5rem .875rem;
-  border: 1px solid var(--border2); border-radius: var(--r);
-  background: var(--bg2); color: var(--fg); font-size: .9375rem;
-  box-sizing: border-box; transition: border-color var(--t), box-shadow var(--t);
-}
-.form-control:focus {
-  outline: none; border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(52,201,148,.15);
-}
-.form-check { display: flex; align-items: flex-start; gap: .6rem; }
-.form-check-input {
-  margin-top: .2rem; flex-shrink: 0;
-  width: 1.0625rem; height: 1.0625rem; accent-color: var(--teal);
-}
-.form-check-label { font-size: .9375rem; line-height: 1.5; }
-.alert { padding: .75rem 1rem; border-radius: var(--r2); font-size: .875rem; }
-.alert-success { background:rgba(45,198,83,.12); color:var(--teal); border:1px solid rgba(45,198,83,.3); }
-.alert-danger  { background:rgba(214,40,57,.12);  color:var(--danger);  border:1px solid rgba(214,40,57,.3); }
-.alert-warning { background:rgba(244,162,97,.12); color:var(--warning); border:1px solid rgba(244,162,97,.3); }
-.alert-info    { background:rgba(67,97,238,.1);   color:var(--teal);  border:1px solid rgba(67,97,238,.25); }
-.d-block { display: block; }
-small.text-muted { font-size: .8125rem; color: var(--fg2); margin-top: .2rem; }
-</style>
-{% endblock %}
+{% block extra_head %}{% endblock %}
 
 {% block content %}
 <div class="page-header">

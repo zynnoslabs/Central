@@ -1,74 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Pagos — {{ nombre_mes }} {{ anio }}{% endblock %}
 
-{% block extra_head %}
-<style>
-  /* ### CAMBIO AQUÍ ### — layout completo pagos con acciones masivas */
-  .pagos-toolbar {
-    display: flex; align-items: center; flex-wrap: wrap; gap: .625rem;
-    margin-bottom: 1.25rem;
-  }
-  .pagos-toolbar select, .pagos-toolbar .btn {
-    height: 2.1rem;
-  }
-  select.form-control-sm {
-    padding: .3rem .6rem; font-size: .9375rem;
-    border: 1px solid var(--border2); border-radius: var(--r);
-    background: var(--bg2); color: var(--fg);
-    appearance: none; -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right .6rem center;
-    padding-right: 1.75rem; cursor: pointer;
-  }
-  select.form-control-sm:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(52,201,148,.15); }
-
-  .spacer { flex: 1; }
-
-  /* métricas mini */
-  .pagos-metrics {
-    display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;
-  }
-  .pmet {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--r2); padding: .6rem 1rem;
-    display: flex; flex-direction: column; gap: .15rem; min-width: 130px;
-  }
-  .pmet-label { font-size: .6875rem; font-weight: 600; color: var(--fg3); text-transform: uppercase; letter-spacing: .07em; }
-  .pmet-value { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-
-  /* acciones masivas */
-  .bulk-bar {
-    display: none; align-items: center; gap: .75rem; flex-wrap: wrap;
-    background: rgba(52,201,148,.08); border: 1px solid rgba(52,201,148,.25);
-    border-radius: var(--r2); padding: .6rem 1rem; margin-bottom: 1rem;
-    font-size: .875rem;
-  }
-  .bulk-bar.visible { display: flex; }
-  .bulk-count { font-weight: 600; color: var(--teal); }
-
-  /* checkbox columna */
-  .cb-col { width: 2rem; }
-  input[type="checkbox"] { accent-color: var(--teal); width: 15px; height: 15px; cursor: pointer; }
-
-  /* badges estado */
-  .badge-pago-pagado    { background: rgba(52,201,148,.10); color: var(--teal); }
-  .badge-pago-pendiente { background: rgba(245,158,11,.10);  color: var(--warn); }
-  .badge-pago-atrasado  { background: rgba(255,107,107,.10); color: var(--danger); }
-  .badge-pago-perdonado { background: var(--bg); color: var(--fg3); border: 1px solid var(--border); }
-
-  .monto { font-variant-numeric: tabular-nums; }
-  td a   { color: var(--teal); text-decoration: none; font-weight: 500; }
-  td a:hover { text-decoration: underline; }
-
-  .empty-pagos {
-    text-align: center; padding: 2.5rem 1.5rem; color: var(--fg2);
-    font-size: .9375rem;
-  }
-
-  /* chips de estado filtro */
-  /* chips heredados de base.html */
-</style>
-{% endblock %}
+{% block extra_head %}{% endblock %}
 
 {% block content %}
 
