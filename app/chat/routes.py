@@ -1,10 +1,19 @@
 """
-chat/routes.py — API del widget de chat + WebSocket para La Central
+chat/routes.py — API del widget de chat + análisis inteligente + WebSocket para La Central
+
+Por cada mensaje del visitante se disparan en paralelo (threads):
+  1. Respuesta conversacional de Groq (visible al visitante)
+  2. Análisis estilométrico del texto acumulado
+  3. Búsqueda web de nombre/negocio/rubro detectados
+  4. Plan de propuesta incremental (se actualiza cada 2 mensajes)
+
+Todo llega al panel Central via SocketIO en tiempo real.
 """
 
 import os
 import json
 import secrets
+import threading
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -16,12 +25,12 @@ from flask_socketio import emit, join_room
 from app.chat import chat_bp
 from app.models import db, ChatConversacion, ChatMensaje, ChatHint
 
-# ── CORS para la API pública del widget ────────────────────────────────────── ### CAMBIO AQUÍ ###
+# ── CORS para la API pública del widget ──────────────────────────────────────  ### CAMBIO AQUÍ ###
 _CORS_ORIGINS = {
     "https://zynnos.com",
     "https://www.zynnos.com",
     "https://zynnos-site.vercel.app",
-    "http://localhost:5500",   # live server dev
+    "http://localhost:5500",
     "http://127.0.0.1:5500",
 }
 
@@ -83,50 +92,203 @@ def send_whatsapp(text: str):
         current_app.logger.warning(f"[WhatsApp] {e}")
 
 
-def analyze_conversation(conv_id: str):
-    """Groq analiza el historial y devuelve perfil + presupuesto."""
-    groq = get_groq()
-    if not groq:
-        return None
+# ── Búsqueda web DDG ─────────────────────────────────────────────────────────
 
-    msgs = ChatMensaje.query.filter_by(conversation_id=conv_id, hidden=False).order_by(ChatMensaje.id).all()
-    if len(msgs) < 2:
-        return None
-
-    history = "\n".join(f"{m.role.upper()}: {m.content}" for m in msgs)
-
-    system = """Sos el analista interno de Zynnos Labs. Analizás conversaciones de prospectos.
-Devolvé SOLO un JSON con este formato exacto:
-{
-  "perfil": "descripción breve del cliente en 1 oración",
-  "urgencia": "alta|media|baja",
-  "capacidad_pago": "alta|media|baja",
-  "intencion": "descripción de lo que quiere en 1 oración",
-  "solucion_recomendada": "nombre de la solución Zynnos más adecuada",
-  "precio_min": 150000,
-  "precio_max": 300000,
-  "tiempo_entrega": "X semanas",
-  "probabilidad_cierre": 75,
-  "notas_vendedor": "consejo específico para cerrar esta venta"
-}
-Los precios son en pesos argentinos. Zynnos cobra entre $80.000 y $600.000 según complejidad.
-Tiempo de entrega: 1-4 semanas."""
-
+def web_search(query: str, max_results: int = 3) -> list[dict]:
+    """
+    Búsqueda web liviana usando DuckDuckGo Instant Answer API.
+    Retorna lista de {title, url, snippet}.
+    """
     try:
-        resp = groq.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": f"Conversación:\n{history}"}
-            ],
-            temperature=0.3,
-            max_tokens=400,
-            response_format={"type": "json_object"}
-        )
-        return json.loads(resp.choices[0].message.content)
+        encoded = urllib.parse.quote(query)
+        url = f"https://api.duckduckgo.com/?q={encoded}&format=json&no_html=1&skip_disambig=1"
+        req = urllib.request.Request(url, headers={"User-Agent": "Zynnos-Bot/1.0"})
+        with urllib.request.urlopen(req, timeout=6) as r:
+            data = json.loads(r.read().decode())
+
+        results = []
+        # AbstractText (Wikipedia-style)
+        if data.get("AbstractText"):
+            results.append({
+                "title": data.get("Heading", query),
+                "url": data.get("AbstractURL", ""),
+                "snippet": data["AbstractText"][:300]
+            })
+        # RelatedTopics
+        for t in data.get("RelatedTopics", [])[:max_results]:
+            if isinstance(t, dict) and t.get("Text") and t.get("FirstURL"):
+                results.append({
+                    "title": t.get("Text", "")[:80],
+                    "url": t["FirstURL"],
+                    "snippet": t["Text"][:200]
+                })
+            if len(results) >= max_results:
+                break
+        return results
     except Exception as e:
-        current_app.logger.warning(f"[Groq analyze] {e}")
-        return None
+        current_app.logger.warning(f"[WebSearch] {e}")
+        return []
+
+
+# ── Análisis paralelo ─────────────────────────────────────────────────────────
+
+def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count: int):
+    """
+    Se ejecuta en un thread separado. Hace:
+      1. Extrae entidades (nombre, negocio, rubro) del historial
+      2. Busca en web nombre + negocio/rubro
+      3. Análisis estilométrico
+      4. Plan de propuesta (cada 2 mensajes)
+    Emite todo por SocketIO al panel.
+    """
+    with app.app_context():
+        groq = get_groq()
+        if not groq:
+            return
+
+        from app import socketio
+
+        # ── Paso 1: extraer entidades ────────────────────────────────────────
+        try:
+            extraccion = groq.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[
+                    {"role": "system", "content": (
+                        "Extraé del texto las entidades mencionadas. "
+                        "Respondé SOLO JSON: "
+                        '{"nombre_persona": "...", "nombre_negocio": "...", "rubro": "...", "ciudad": "..."} '
+                        "Si no se menciona algo, usá null."
+                    )},
+                    {"role": "user", "content": history_text}
+                ],
+                temperature=0.1,
+                max_tokens=150,
+                response_format={"type": "json_object"}
+            )
+            entidades = json.loads(extraccion.choices[0].message.content)
+        except Exception as e:
+            current_app.logger.warning(f"[Análisis entidades] {e}")
+            entidades = {}
+
+        # ── Paso 2: búsqueda web ─────────────────────────────────────────────
+        busquedas = {}
+        queries = []
+        if entidades.get("nombre_persona") and entidades.get("nombre_negocio"):
+            queries.append((
+                "persona",
+                f'{entidades["nombre_persona"]} {entidades.get("ciudad","Argentina")}'
+            ))
+        if entidades.get("nombre_negocio"):
+            queries.append((
+                "negocio",
+                f'{entidades["nombre_negocio"]} {entidades.get("ciudad","Argentina")}'
+            ))
+        if entidades.get("rubro"):
+            queries.append((
+                "rubro",
+                f'automatización {entidades["rubro"]} Argentina tendencias 2024'
+            ))
+
+        for key, q in queries:
+            resultados = web_search(q, max_results=3)
+            if resultados:
+                busquedas[key] = {"query": q, "resultados": resultados}
+
+        # Emitir búsqueda apenas termina
+        if busquedas:
+            socketio.emit("web_research", {
+                "conv_id": conv_id,
+                "entidades": entidades,
+                "busquedas": busquedas
+            }, room="operators")
+
+        # ── Paso 3: estilometría ─────────────────────────────────────────────
+        try:
+            estilo_resp = groq.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[
+                    {"role": "system", "content": (
+                        "Analizá el estilo de escritura del CLIENTE (mensajes USER) del chat. "
+                        "Respondé SOLO JSON con este formato exacto:\n"
+                        "{\n"
+                        '  "nivel_educativo": "alto|medio|bajo",\n'
+                        '  "perfil": "dueño_pyme|empleado|emprendedor|profesional|otro",\n'
+                        '  "tono": "formal|informal|técnico|emotivo",\n'
+                        '  "urgencia_percibida": "alta|media|baja",\n'
+                        '  "capacidad_decision": "alta|media|baja",\n'
+                        '  "resumen_estilo": "1 oración sobre cómo se comunica"\n'
+                        "}"
+                    )},
+                    {"role": "user", "content": f"Historial del chat:\n{history_text}"}
+                ],
+                temperature=0.2,
+                max_tokens=200,
+                response_format={"type": "json_object"}
+            )
+            estilo = json.loads(estilo_resp.choices[0].message.content)
+        except Exception as e:
+            current_app.logger.warning(f"[Estilometría] {e}")
+            estilo = {}
+
+        if estilo:
+            socketio.emit("stilometry_update", {
+                "conv_id": conv_id,
+                "estilo": estilo
+            }, room="operators")
+
+        # ── Paso 4: plan de propuesta (cada 2 mensajes) ──────────────────────
+        if msg_count % 2 == 0:
+            contexto_web = ""
+            if busquedas.get("negocio"):
+                snippets = " | ".join(r["snippet"] for r in busquedas["negocio"]["resultados"][:2])
+                contexto_web = f"\nInfo web del negocio: {snippets[:400]}"
+
+            try:
+                plan_resp = groq.chat.completions.create(
+                    model="llama3-8b-8192",
+                    messages=[
+                        {"role": "system", "content": (
+                            "Sos el estratega de ventas de Zynnos Labs, agencia de automatización IA para pymes argentinas.\n"
+                            "Basándote en la conversación y la info web disponible, armá un plan de propuesta.\n"
+                            "Respondé SOLO JSON:\n"
+                            "{\n"
+                            '  "perfil_cliente": "descripción breve en 1 oración",\n'
+                            '  "problema_detectado": "problema principal identificado",\n'
+                            '  "solucion_recomendada": "nombre de la solución Zynnos más adecuada",\n'
+                            '  "argumentos_venta": ["arg1", "arg2", "arg3"],\n'
+                            '  "precio_sugerido_min": 150000,\n'
+                            '  "precio_sugerido_max": 350000,\n'
+                            '  "tiempo_entrega": "2-3 semanas",\n'
+                            '  "probabilidad_cierre": 65,\n'
+                            '  "proximo_paso": "qué preguntarle o decirle ahora",\n'
+                            '  "senales_compra": ["señal1"],\n'
+                            '  "objeciones_posibles": ["objeción1"]\n'
+                            "}\n"
+                            "Precios en pesos argentinos. Zynnos cobra $80.000–$600.000 según complejidad."
+                            + contexto_web
+                        )},
+                        {"role": "user", "content": f"Conversación:\n{history_text}"}
+                    ],
+                    temperature=0.3,
+                    max_tokens=500,
+                    response_format={"type": "json_object"}
+                )
+                plan = json.loads(plan_resp.choices[0].message.content)
+
+                # Guardar plan en la conversación
+                conv = ChatConversacion.query.get(conv_id)
+                if conv:
+                    conv.budget_est = json.dumps(plan)
+                    conv.profile = plan.get("perfil_cliente", "")
+                    db.session.commit()
+
+                socketio.emit("proposal_update", {
+                    "conv_id": conv_id,
+                    "plan": plan
+                }, room="operators")
+
+            except Exception as e:
+                current_app.logger.warning(f"[Plan propuesta] {e}")
 
 
 # ── Panel del operador ────────────────────────────────────────────────────────
@@ -142,7 +304,7 @@ def panel():
 @chat_bp.route("/<conv_id>")
 @login_required
 def detalle(conv_id):
-    conv = ChatConversacion.query.get_or_404(conv_id)
+    conv  = ChatConversacion.query.get_or_404(conv_id)
     msgs  = ChatMensaje.query.filter_by(conversation_id=conv_id).order_by(ChatMensaje.id).all()
     hints = ChatHint.query.filter_by(conversation_id=conv_id).order_by(ChatHint.id.desc()).all()
     return render_template("chat/detalle.html", conv=conv, messages=msgs, hints=hints)
@@ -160,11 +322,9 @@ def api_start():
     db.session.add(conv)
     db.session.commit()
 
-    # Notificar operador
     send_whatsapp(f"🔔 *Nuevo chat Zynnos*\nDesde: {source or 'sitio web'}\nID: {conv_id}")
 
-    # Emitir al panel en tiempo real
-    from app import socketio  # import tardío para evitar circular
+    from app import socketio
     socketio.emit("new_conversation", {
         "id": conv_id,
         "started_at": now_iso(),
@@ -200,27 +360,40 @@ def api_message():
         "sent_at": now_iso()
     }, room="operators")
 
-    # Obtener historial
+    # Obtener historial completo
     history = ChatMensaje.query.filter_by(conversation_id=conv_id, hidden=False).order_by(ChatMensaje.id).all()
+    history_text = "\n".join(f"{m.role.upper()}: {m.content}" for m in history)
+    user_count = sum(1 for m in history if m.role == "user")
 
-    # Hints del operador pendientes
+    # ── Análisis paralelo (no bloquea la respuesta al visitante) ──────────── ### CAMBIO AQUÍ ###
+    app = current_app._get_current_object()
+    t = threading.Thread(
+        target=_run_analysis,
+        args=(app, conv_id, history_text, content, user_count),
+        daemon=True
+    )
+    t.start()
+
+    # ── Hints del operador pendientes ────────────────────────────────────────
     pending = ChatHint.query.filter_by(conversation_id=conv_id, applied=False).order_by(ChatHint.id).all()
     hint_text = ""
     if pending:
-        hint_text = "\n\nINSTRUCCIONES ESPECIALES DEL EQUIPO (incorporalas naturalmente, el cliente NO debe saber):\n"
+        hint_text = "\n\nINSTRUCCIONES ESPECIALES DEL EQUIPO (incorporalas naturalmente):\n"
         hint_text += "\n".join(f"- {h.hint}" for h in pending)
 
-    system_prompt = f"""Sos el asistente de ventas de Zynnos Labs, una agencia argentina de automatización con IA para negocios locales.
-Tu objetivo: entender qué necesita el negocio del cliente y guiarlo hacia agendar una consulta con el equipo.
-
-Reglas:
-- Hacé UNA sola pregunta a la vez, nunca múltiples
-- Sé amigable, natural, como un asesor humano experto
-- Recopilá: nombre, tipo de negocio, principal problema operativo, si ya usó herramientas digitales
-- Cuando tengas suficiente info, ofrecé un diagnóstico gratuito y pedí el teléfono/email
-- Nunca menciones precios hasta que el cliente pregunte
-- Hablá en español rioplatense informal (vos, tenés, etc.)
-- Respuestas cortas: máximo 3 oraciones{hint_text}"""
+    system_prompt = (
+        "Sos el asesor de Zynnos Labs, agencia argentina de automatización con IA para negocios locales.\n"
+        "Tu objetivo: entender qué necesita el negocio del cliente y guiarlo a agendar una consulta.\n\n"
+        "Reglas:\n"
+        "- Hacé UNA sola pregunta a la vez\n"
+        "- Sé amigable, natural, como un asesor humano\n"
+        "- Recopilá: nombre, tipo de negocio, principal problema, si ya usa herramientas digitales\n"
+        "- Cuando tengas suficiente info, ofrecé un diagnóstico gratuito y pedí el teléfono/email\n"
+        "- Nunca menciones precios hasta que pregunten\n"
+        "- Hablá en español rioplatense informal (vos, tenés, etc.)\n"
+        "- Respuestas cortas: máximo 3 oraciones"
+        + hint_text
+    )
 
     messages_for_groq = [{"role": "system", "content": system_prompt}]
     for m in history:
@@ -256,19 +429,6 @@ Reglas:
         "content": ai_response,
         "sent_at": now_iso()
     }, room="operators")
-
-    # Análisis cada 3 mensajes del cliente
-    user_count = ChatMensaje.query.filter_by(conversation_id=conv_id, role="user").count()
-    if user_count % 3 == 0:
-        analysis = analyze_conversation(conv_id)
-        if analysis:
-            conv.budget_est = json.dumps(analysis)
-            conv.profile    = analysis.get("perfil", "")
-            db.session.commit()
-            socketio.emit("analysis_update", {
-                "conv_id": conv_id,
-                "analysis": analysis
-            }, room="operators")
 
     return jsonify({"ok": True, "response": ai_response})
 

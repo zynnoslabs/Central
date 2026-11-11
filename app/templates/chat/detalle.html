@@ -4,10 +4,11 @@
 {% block extra_head %}
 <style>
 .chat-layout {
-  display: grid; grid-template-columns: 1fr 360px; gap: 1.25rem; align-items: start;
+  display: grid; grid-template-columns: 1fr 400px; gap: 1.25rem; align-items: start;
 }
-@media (max-width: 900px) { .chat-layout { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .chat-layout { grid-template-columns: 1fr; } }
 
+/* Chat */
 .chat-box {
   overflow-y: auto; max-height: 480px;
   display: flex; flex-direction: column; gap: .75rem;
@@ -15,40 +16,90 @@
 }
 .msg { display: flex; flex-direction: column; max-width: 85%; }
 .msg-user   { align-self: flex-start; }
-.msg-ai     { align-self: flex-end; }
+.msg-assistant { align-self: flex-end; }
 .msg-bubble {
   padding: .6rem .9rem; border-radius: var(--r2); font-size: .9375rem; line-height: 1.55;
 }
-.msg-user .msg-bubble   { background: var(--raised); color: var(--fg); border: 1px solid var(--border2); }
-.msg-ai   .msg-bubble   { background: var(--teal-lo); color: var(--fg); border: 1px solid rgba(52,201,148,.2); }
+.msg-user .msg-bubble      { background: var(--raised); color: var(--fg); border: 1px solid var(--border2); }
+.msg-assistant .msg-bubble { background: var(--teal-lo); color: var(--fg); border: 1px solid rgba(52,201,148,.2); }
 .msg-time { font-size: .68rem; color: var(--fg3); margin-top: .2rem; }
-.msg-user .msg-time { align-self: flex-start; }
-.msg-ai   .msg-time { align-self: flex-end; }
+.msg-user .msg-time      { align-self: flex-start; }
+.msg-assistant .msg-time { align-self: flex-end; }
 
-.hint-panel {
-  padding: .9rem 1.25rem; border-top: 1px solid var(--border);
-}
+/* Hint panel */
+.hint-panel { padding: .9rem 1.25rem; border-top: 1px solid var(--border); }
 .hint-label { font-size: .72rem; color: var(--fg3); margin-bottom: .4rem; }
+
+/* Intelligence panels */
+.intel-tabs { display: flex; gap: .2rem; padding: .75rem 1rem .4rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.intel-tab  {
+  font-size: .72rem; padding: .3rem .7rem; border-radius: 100px;
+  border: 1px solid var(--border2); background: none; color: var(--fg3); cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.intel-tab.active { background: var(--teal); color: #0a1409; border-color: var(--teal); font-weight: 600; }
+.intel-panel { display: none; padding: .9rem 1rem; }
+.intel-panel.active { display: block; }
+
+/* KV rows */
+.kv-row { display: flex; justify-content: space-between; align-items: baseline; padding: .35rem 0; border-bottom: 1px solid var(--border); font-size: .875rem; }
+.kv-row:last-child { border-bottom: none; }
+.kv-key   { color: var(--fg3); font-size: .78rem; }
+.kv-val   { font-weight: 500; text-align: right; max-width: 60%; }
+
+/* Prob bar */
+.prob-bar  { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: .4rem 0 .2rem; }
+.prob-fill { height: 100%; background: var(--teal); border-radius: 3px; transition: width .4s; }
+
+/* Búsqueda web */
+.web-result { padding: .6rem .75rem; border: 1px solid var(--border2); border-radius: var(--r); margin-bottom: .5rem; }
+.web-result-title { font-size: .82rem; font-weight: 600; color: var(--teal-d); margin-bottom: .2rem; }
+.web-result-snippet { font-size: .78rem; color: var(--fg3); line-height: 1.4; }
+.web-section-label { font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--fg3); margin: .75rem 0 .4rem; }
+
+/* Señal / objeción chips */
+.signal-chip {
+  display: inline-block; font-size: .72rem; padding: .2rem .55rem; border-radius: 100px;
+  border: 1px solid rgba(52,201,148,.4); background: var(--teal-lo); color: var(--teal-d); margin: .2rem .2rem 0 0;
+}
+.obj-chip {
+  display: inline-block; font-size: .72rem; padding: .2rem .55rem; border-radius: 100px;
+  border: 1px solid rgba(255,107,107,.3); background: rgba(255,107,107,.07); color: #ff9b9b; margin: .2rem .2rem 0 0;
+}
+
+/* Estilo badges */
+.nivel-alto   { color: var(--teal-d); }
+.nivel-medio  { color: var(--warn); }
+.nivel-bajo   { color: var(--fg3); }
+.urgencia-alta { color: #ff9b9b; }
+
+/* Dot pulsante */
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); display: inline-block; margin-right: .3rem; animation: pulse-dot 1.5s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">
+    <h1 class="page-title" id="ph-nombre">
       {{ conv.nombre or 'Visitante' }}
-      {% if conv.rubro %}<span class="text-muted" style="font-size:1rem;font-weight:400;margin-left:.5rem;">· {{ conv.rubro }}</span>{% endif %}
+      {% if conv.rubro %}<span class="text-muted" style="font-size:1rem;font-weight:400;margin-left:.5rem;" id="ph-rubro">· {{ conv.rubro }}</span>{% endif %}
     </h1>
-    {% if conv.telefono %}<p class="page-sub">{{ conv.telefono }}{% if conv.email %} · {{ conv.email }}{% endif %}</p>{% endif %}
+    <p class="page-sub" id="ph-contacto">
+      {% if conv.telefono %}{{ conv.telefono }}{% endif %}
+      {% if conv.email %} · {{ conv.email }}{% endif %}
+      {% if conv.source_url %} · <span class="text-muted">{{ conv.source_url }}</span>{% endif %}
+    </p>
   </div>
-  <span class="badge {% if conv.status == 'active' %}badge-teal{% else %}badge-muted{% endif %}" style="font-size:.875rem;padding:.4rem .8rem;">
-    {{ conv.status }}
+  <span class="badge {% if conv.status == 'active' %}badge-teal{% else %}badge-muted{% endif %}" id="status-badge" style="font-size:.875rem;padding:.4rem .8rem;">
+    {% if conv.status == 'active' %}<span class="live-dot"></span>{% endif %}{{ conv.status }}
   </span>
 </div>
 
 <div class="chat-layout">
 
-  <!-- Chat en vivo -->
+  <!-- ── Chat en vivo ─────────────────────────────────────────────────────── -->
   <div class="card" style="padding:0;">
     <div class="card-header" style="padding:.75rem 1.25rem;margin-bottom:0;">
       <span class="card-title">Conversación</span>
@@ -73,25 +124,83 @@
     </div>
   </div>
 
-  <!-- Panel lateral -->
+  <!-- ── Panel de inteligencia ────────────────────────────────────────────── -->
   <div style="display:flex;flex-direction:column;gap:1rem;">
 
-    <!-- Análisis IA -->
-    <div class="card" id="analysis-card">
-      <div class="card-header" style="margin-bottom:.75rem;">
-        <span class="card-title">Análisis IA</span>
+    <div class="card" style="padding:0;">
+
+      <!-- Tabs -->
+      <div class="intel-tabs">
+        <button class="intel-tab active" onclick="switchTab('propuesta')">📋 Propuesta</button>
+        <button class="intel-tab" onclick="switchTab('estilo')">🧠 Perfil</button>
+        <button class="intel-tab" onclick="switchTab('web')">🌐 Web</button>
       </div>
-      <div id="analysis-body">
-        {% if conv.budget_est %}
-          {% set a = conv.budget_est | from_json %}
-          {% include "chat/_analysis.html" %}
-        {% else %}
-          <p style="font-size:.875rem;color:var(--fg3);">El análisis se genera cada 3 mensajes del cliente.</p>
-        {% endif %}
+
+      <!-- Tab: Propuesta -->
+      <div class="intel-panel active" id="tab-propuesta">
+        <div id="propuesta-body">
+          {% if conv.budget_est %}
+            {% set p = conv.budget_est | from_json %}
+            <p style="font-weight:600;margin-bottom:.3rem;">{{ p.get('perfil_cliente','') }}</p>
+            <p style="font-size:.82rem;color:var(--fg3);margin-bottom:.7rem;">{{ p.get('problema_detectado','') }}</p>
+
+            <div class="kv-row">
+              <span class="kv-key">Solución</span>
+              <span class="kv-val">{{ p.get('solucion_recomendada','—') }}</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Precio</span>
+              <span class="kv-val">${{ "{:,.0f}".format(p.get('precio_sugerido_min',0)) }} – ${{ "{:,.0f}".format(p.get('precio_sugerido_max',0)) }}</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Entrega</span>
+              <span class="kv-val">{{ p.get('tiempo_entrega','—') }}</span>
+            </div>
+            <div style="margin:.8rem 0 .2rem;">
+              <div class="prob-bar"><div class="prob-fill" style="width:{{ p.get('probabilidad_cierre',0) }}%"></div></div>
+              <span style="font-size:.72rem;color:var(--fg3);">Prob. cierre: {{ p.get('probabilidad_cierre',0) }}%</span>
+            </div>
+            {% if p.get('proximo_paso') %}
+            <div style="margin-top:.8rem;padding:.6rem .75rem;border-left:3px solid var(--teal);background:var(--teal-lo);border-radius:0 var(--r) var(--r) 0;">
+              <p style="font-size:.78rem;color:var(--teal-d);font-weight:600;margin-bottom:.15rem;">Próximo paso</p>
+              <p style="font-size:.82rem;margin:0;">{{ p.get('proximo_paso','') }}</p>
+            </div>
+            {% endif %}
+            {% if p.get('senales_compra') %}
+            <div style="margin-top:.7rem;">
+              <p style="font-size:.68rem;color:var(--fg3);margin-bottom:.3rem;">Señales de compra</p>
+              {% for s in p.get('senales_compra',[]) %}<span class="signal-chip">{{ s }}</span>{% endfor %}
+            </div>
+            {% endif %}
+            {% if p.get('objeciones_posibles') %}
+            <div style="margin-top:.7rem;">
+              <p style="font-size:.68rem;color:var(--fg3);margin-bottom:.3rem;">Posibles objeciones</p>
+              {% for o in p.get('objeciones_posibles',[]) %}<span class="obj-chip">{{ o }}</span>{% endfor %}
+            </div>
+            {% endif %}
+          {% else %}
+            <p style="font-size:.875rem;color:var(--fg3);">Se genera a partir del 2º mensaje del cliente.</p>
+          {% endif %}
+        </div>
       </div>
+
+      <!-- Tab: Estilo -->
+      <div class="intel-panel" id="tab-estilo">
+        <div id="estilo-body">
+          <p style="font-size:.875rem;color:var(--fg3);">Se genera desde el primer mensaje.</p>
+        </div>
+      </div>
+
+      <!-- Tab: Web -->
+      <div class="intel-panel" id="tab-web">
+        <div id="web-body">
+          <p style="font-size:.875rem;color:var(--fg3);">La búsqueda se dispara cuando el cliente menciona su nombre o negocio.</p>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Historial de hints -->
+    <!-- Hints enviados -->
     {% if hints %}
     <div class="card" style="padding:0;">
       <div class="card-header" style="padding:.75rem 1.25rem;margin-bottom:0;">
@@ -107,7 +216,6 @@
     </div>
     {% endif %}
 
-    <!-- Cerrar conversación -->
     {% if conv.status == 'active' %}
     <button class="btn btn-danger" id="close-btn" style="width:100%;">Cerrar conversación</button>
     {% endif %}
@@ -127,42 +235,163 @@ socket.emit('join_conversation', { conv_id: CONV_ID });
 const box = document.getElementById('chat-box');
 box.scrollTop = box.scrollHeight;
 
+// ── Tabs ────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.intel-tab').forEach((t,i) => {
+    const names = ['propuesta','estilo','web'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.intel-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Mensajes nuevos ──────────────────────────────────────────────────────────
 socket.on('new_message', (data) => {
   if (data.conv_id !== CONV_ID) return;
-  const isUser = data.role === 'user';
   const div = document.createElement('div');
   div.className = `msg msg-${data.role}`;
-  div.innerHTML = `
-    <div class="msg-bubble">${data.content}</div>
-    <div class="msg-time">${isUser ? 'Cliente' : 'IA'} · ahora</div>`;
+  const label = data.role === 'user' ? 'Cliente' : 'IA';
+  div.innerHTML = `<div class="msg-bubble">${escHtml(data.content)}</div>
+                   <div class="msg-time">${label} · ahora</div>`;
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
 });
 
-socket.on('analysis_update', (data) => {
+// ── Datos del lead actualizados ──────────────────────────────────────────────
+socket.on('conversation_updated', (data) => {
   if (data.conv_id !== CONV_ID) return;
-  const a = data.analysis;
-  const urg  = a.urgencia === 'alta' ? 'badge-danger' : a.urgencia === 'media' ? 'badge-warn' : 'badge-info';
-  const cap  = a.capacidad_pago === 'alta' ? 'badge-teal' : a.capacidad_pago === 'media' ? 'badge-warn' : 'badge-danger';
-  document.getElementById('analysis-body').innerHTML = `
-    <p style="font-weight:600;margin-bottom:.3rem;">${a.perfil}</p>
-    <p style="font-size:.875rem;color:var(--fg2);margin-bottom:.6rem;">${a.intencion}</p>
-    <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem;">
-      <span class="badge ${urg}">Urgencia: ${a.urgencia}</span>
-      <span class="badge ${cap}">Capacidad: ${a.capacidad_pago}</span>
-    </div>
-    <p style="font-size:.875rem;margin-bottom:.3rem;"><strong>Solución:</strong> ${a.solucion_recomendada}</p>
-    <p style="font-size:.875rem;margin-bottom:.3rem;"><strong>Precio:</strong> $${a.precio_min.toLocaleString('es-AR')} – $${a.precio_max.toLocaleString('es-AR')}</p>
-    <p style="font-size:.875rem;margin-bottom:.6rem;"><strong>Entrega:</strong> ${a.tiempo_entrega}</p>
-    <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:.3rem;">
-      <div style="height:100%;width:${a.probabilidad_cierre}%;background:var(--teal);border-radius:3px;"></div>
-    </div>
-    <p style="font-size:.72rem;color:var(--fg3);margin-bottom:.6rem;">Prob. cierre: ${a.probabilidad_cierre}%</p>
-    <div style="border-top:1px solid var(--border);padding-top:.6rem;margin-top:.4rem;">
-      <p style="font-size:.875rem;color:var(--warn);"><strong>Consejo:</strong> ${a.notas_vendedor}</p>
-    </div>`;
+  if (data.nombre) document.getElementById('ph-nombre').childNodes[0].textContent = data.nombre + ' ';
+  if (data.rubro) {
+    let el = document.getElementById('ph-rubro');
+    if (!el) {
+      el = document.createElement('span');
+      el.id = 'ph-rubro';
+      el.className = 'text-muted';
+      el.style.cssText = 'font-size:1rem;font-weight:400;margin-left:.5rem;';
+      document.getElementById('ph-nombre').appendChild(el);
+    }
+    el.textContent = '· ' + data.rubro;
+  }
+  const contactParts = [];
+  if (data.telefono) contactParts.push(data.telefono);
+  if (data.email) contactParts.push(data.email);
+  if (contactParts.length) {
+    const el = document.getElementById('ph-contacto');
+    if (el) el.childNodes[0] && (el.childNodes[0].textContent = contactParts.join(' · '));
+  }
 });
 
+// ── Estilometría ─────────────────────────────────────────────────────────────
+socket.on('stilometry_update', (data) => {   // ### CAMBIO AQUÍ ###
+  if (data.conv_id !== CONV_ID) return;
+  const e = data.estilo;
+  const nivelCls = e.nivel_educativo === 'alto' ? 'nivel-alto' : e.nivel_educativo === 'medio' ? 'nivel-medio' : 'nivel-bajo';
+  const urgCls   = e.urgencia_percibida === 'alta' ? 'urgencia-alta' : '';
+  document.getElementById('estilo-body').innerHTML = `
+    <div class="kv-row"><span class="kv-key">Nivel educativo</span>
+      <span class="kv-val ${nivelCls}">${e.nivel_educativo || '—'}</span></div>
+    <div class="kv-row"><span class="kv-key">Perfil</span>
+      <span class="kv-val">${e.perfil || '—'}</span></div>
+    <div class="kv-row"><span class="kv-key">Tono</span>
+      <span class="kv-val">${e.tono || '—'}</span></div>
+    <div class="kv-row"><span class="kv-key">Urgencia percibida</span>
+      <span class="kv-val ${urgCls}">${e.urgencia_percibida || '—'}</span></div>
+    <div class="kv-row"><span class="kv-key">Capacidad de decisión</span>
+      <span class="kv-val">${e.capacidad_decision || '—'}</span></div>
+    <div style="margin-top:.7rem;padding:.55rem .7rem;background:var(--raised);border-radius:var(--r);font-size:.82rem;color:var(--fg2);font-style:italic;">
+      "${e.resumen_estilo || ''}"
+    </div>`;
+  // Cambiar tab activo si no hay propuesta todavía
+  if (document.getElementById('tab-propuesta').querySelector('p')?.style?.color === '') {
+    switchTab('estilo');
+  }
+});
+
+// ── Investigación web ────────────────────────────────────────────────────────
+socket.on('web_research', (data) => {   // ### CAMBIO AQUÍ ###
+  if (data.conv_id !== CONV_ID) return;
+  const { entidades, busquedas } = data;
+  let html = '';
+
+  // Entidades detectadas
+  const ents = Object.entries(entidades).filter(([,v]) => v);
+  if (ents.length) {
+    html += '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem;">';
+    ents.forEach(([k, v]) => {
+      const labels = {nombre_persona:'👤',nombre_negocio:'🏪',rubro:'🔧',ciudad:'📍'};
+      html += `<span class="signal-chip">${labels[k]||''} ${escHtml(v)}</span>`;
+    });
+    html += '</div>';
+  }
+
+  // Resultados por categoría
+  const catLabels = {persona:'Persona',negocio:'Negocio',rubro:'Rubro / sector'};
+  Object.entries(busquedas).forEach(([cat, info]) => {
+    html += `<div class="web-section-label">${catLabels[cat] || cat} — búsqueda: "${escHtml(info.query)}"</div>`;
+    info.resultados.forEach(r => {
+      html += `<div class="web-result">
+        <div class="web-result-title">${escHtml(r.title)}</div>
+        <div class="web-result-snippet">${escHtml(r.snippet)}</div>
+        ${r.url ? `<a href="${escHtml(r.url)}" target="_blank" style="font-size:.72rem;color:var(--teal-d);">${escHtml(r.url.substring(0,60))}…</a>` : ''}
+      </div>`;
+    });
+  });
+
+  if (!html) html = '<p style="font-size:.875rem;color:var(--fg3);">Sin resultados.</p>';
+  document.getElementById('web-body').innerHTML = html;
+});
+
+// ── Plan de propuesta ────────────────────────────────────────────────────────
+socket.on('proposal_update', (data) => {   // ### CAMBIO AQUÍ ###
+  if (data.conv_id !== CONV_ID) return;
+  const p = data.plan;
+  const pMin = (p.precio_sugerido_min || 0).toLocaleString('es-AR');
+  const pMax = (p.precio_sugerido_max || 0).toLocaleString('es-AR');
+  const prob = p.probabilidad_cierre || 0;
+
+  let args = '';
+  if (p.argumentos_venta?.length) {
+    args = '<ul style="margin:.4rem 0 0 1rem;padding:0;font-size:.82rem;">';
+    p.argumentos_venta.forEach(a => { args += `<li style="margin-bottom:.2rem;">${escHtml(a)}</li>`; });
+    args += '</ul>';
+  }
+
+  let senales = '';
+  if (p.senales_compra?.length) {
+    senales = '<div style="margin-top:.7rem;"><p style="font-size:.68rem;color:var(--fg3);margin-bottom:.3rem;">Señales de compra</p>';
+    p.senales_compra.forEach(s => { senales += `<span class="signal-chip">${escHtml(s)}</span>`; });
+    senales += '</div>';
+  }
+
+  let objs = '';
+  if (p.objeciones_posibles?.length) {
+    objs = '<div style="margin-top:.7rem;"><p style="font-size:.68rem;color:var(--fg3);margin-bottom:.3rem;">Posibles objeciones</p>';
+    p.objeciones_posibles.forEach(o => { objs += `<span class="obj-chip">${escHtml(o)}</span>`; });
+    objs += '</div>';
+  }
+
+  document.getElementById('propuesta-body').innerHTML = `
+    <p style="font-weight:600;margin-bottom:.3rem;">${escHtml(p.perfil_cliente||'')}</p>
+    <p style="font-size:.82rem;color:var(--fg3);margin-bottom:.7rem;">${escHtml(p.problema_detectado||'')}</p>
+    <div class="kv-row"><span class="kv-key">Solución</span><span class="kv-val">${escHtml(p.solucion_recomendada||'—')}</span></div>
+    <div class="kv-row"><span class="kv-key">Precio</span><span class="kv-val">$${pMin} – $${pMax}</span></div>
+    <div class="kv-row"><span class="kv-key">Entrega</span><span class="kv-val">${escHtml(p.tiempo_entrega||'—')}</span></div>
+    <div style="margin:.8rem 0 .2rem;">
+      <div class="prob-bar"><div class="prob-fill" style="width:${prob}%"></div></div>
+      <span style="font-size:.72rem;color:var(--fg3);">Prob. cierre: ${prob}%</span>
+    </div>
+    ${p.proximo_paso ? `
+    <div style="margin-top:.8rem;padding:.6rem .75rem;border-left:3px solid var(--teal);background:var(--teal-lo);border-radius:0 var(--r) var(--r) 0;">
+      <p style="font-size:.78rem;color:var(--teal-d);font-weight:600;margin-bottom:.15rem;">Próximo paso</p>
+      <p style="font-size:.82rem;margin:0;">${escHtml(p.proximo_paso)}</p>
+    </div>` : ''}
+    ${args ? `<div style="margin-top:.7rem;"><p style="font-size:.68rem;color:var(--fg3);margin-bottom:.2rem;">Argumentos de venta</p>${args}</div>` : ''}
+    ${senales}${objs}`;
+
+  switchTab('propuesta');
+});
+
+// ── Hint ─────────────────────────────────────────────────────────────────────
 document.getElementById('hint-btn').addEventListener('click', async () => {
   const inp = document.getElementById('hint-input');
   const hint = inp.value.trim();
@@ -175,6 +404,7 @@ document.getElementById('hint-btn').addEventListener('click', async () => {
   inp.value = '';
 });
 
+// ── Cerrar conversación ───────────────────────────────────────────────────────
 const closeBtn = document.getElementById('close-btn');
 if (closeBtn) {
   closeBtn.addEventListener('click', async () => {
@@ -186,6 +416,11 @@ if (closeBtn) {
     });
     location.reload();
   });
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 {% endblock %}
