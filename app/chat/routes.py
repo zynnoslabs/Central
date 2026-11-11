@@ -168,7 +168,37 @@ _KB_DEFAULTS = [
         "Amigable, directo, sin tecnicismos. Español rioplatense informal. "
         "El asesor se llama Matías. Nunca sonar a robot ni a telemarketing. "
         "Máximo 3 oraciones por mensaje. Una sola pregunta a la vez."},
-    {"clave": "limites_legales", "titulo": "Límites legales — OBLIGATORIO respetar", "orden": 8, "contenido":
+    {"clave": "precios", "titulo": "Estructura de precios", "orden": 8, "contenido":
+        "PRECIOS EN USD — referencia interna para orientar al operador. NUNCA dar precios exactos al cliente por chat.\n\n"
+        "=== PRODUCTOS INDIVIDUALES ===\n"
+        "- Sitio web completo (tienda, restaurante, barbería, etc.) con panel admin + legales: $500 USD · mant. $50/mes\n"
+        "- Sistema de gestión a medida (CRM, reservas, stock, facturación, ARCA): $800–1.200 USD · mant. $80/mes\n"
+        "- Agente IA de ventas (chat con embudo, extracción de leads, alertas): $600–900 USD · mant. $70/mes\n"
+        "- Asistente financiero (WhatsApp/Telegram, gastos por foto, reportes, PDFs): $400–600 USD · mant. $40/mes\n"
+        "- Gestión estratégica Airbnb (precios dinámicos, análisis competencia, aprendizaje): $700–1.000 USD · mant. $80/mes\n"
+        "- Trading automatizado con IA (análisis redes + exchanges, operaciones automáticas): $1.500–2.500 USD · mant. $150/mes\n"
+        "- App móvil Android (chat, emergencias, mapas, calendario, herramientas): $1.200–2.000 USD · mant. $100/mes\n"
+        "- Monitoreo y seguridad en tiempo real (ubicación, vuelos, sismos, cámaras): $800–1.500 USD · mant. $100/mes\n\n"
+        "=== COMBOS FIJOS ===\n"
+        "- Negocio Digital (Sitio web + Agente IA de ventas): $950 USD · mant. $100/mes\n"
+        "- Negocio Completo (Sitio + Agente IA + Sistema de gestión): $1.700 USD · mant. $170/mes\n"
+        "- Combo Finanzas (Asistente financiero + Sistema de gestión): $1.200 USD · mant. $110/mes\n"
+        "- Airbnb Pro (Gestión Airbnb + Agente IA para huéspedes): $1.200 USD · mant. $130/mes\n\n"
+        "=== LÓGICA PARA COMBOS PERSONALIZADOS ===\n"
+        "Si el cliente necesita una combinación no listada: sumar los precios individuales (tomar el valor medio)\n"
+        "y aplicar 15–20% de descuento. La mensualidad siempre se suma completa sin descuento.\n"
+        "Ejemplo: Sitio ($500) + Finanzas ($500) + Airbnb ($850) = $1.850 → combo $1.480 USD · mant. $170/mes\n\n"
+        "=== FORMA DE COBRO ===\n"
+        "- 50% antes de empezar (reserva el proyecto)\n"
+        "- 50% al entregar el sistema funcionando\n"
+        "- Mensualidad arranca el mes siguiente a la entrega\n"
+        "- Moneda: USD de referencia, cobro en ARS al tipo de cambio del día\n\n"
+        "=== USO EN EL CHAT ===\n"
+        "Esta información es SOLO para orientar al operador en el resumen del lead y para que la IA\n"
+        "entienda el rango de inversión. NUNCA citar precios exactos al cliente. Si pregunta el precio,\n"
+        "responder: 'Depende de lo que necesitás exactamente — en el diagnóstico armamos la propuesta a medida.'\n"
+        "Si insiste, se puede decir que los proyectos arrancan desde los $400 USD sin dar más detalle."},
+    {"clave": "limites_legales", "titulo": "Límites legales — OBLIGATORIO respetar", "orden": 9, "contenido":
         "REGLAS QUE NUNCA SE PUEDEN VIOLAR EN EL CHAT:\n"
         "1. NUNCA mencionar precios concretos, rangos de precio ni estimaciones de costo. "
         "Si el cliente pregunta cuánto cuesta, responder: 'El precio depende de cada proyecto, "
@@ -223,6 +253,7 @@ def _kb_to_system_context(kb: dict) -> str:
         f"=== CÓMO MANEJAR OBJECIONES ===\n{kb.get('objeciones','')}\n\n"
         f"=== OBJETIVO DEL CHAT ===\n{kb.get('objetivo_chat','')}\n\n"
         f"=== TONO Y ESTILO ===\n{kb.get('tono','')}\n\n"
+        f"=== ESTRUCTURA DE PRECIOS (uso interno — no citar al cliente) ===\n{kb.get('precios','')}\n\n"
         f"=== ⚠️ LÍMITES LEGALES — CUMPLIMIENTO OBLIGATORIO ===\n{kb.get('limites_legales','')}"
     )
 
