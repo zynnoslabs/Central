@@ -151,7 +151,7 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
         # ── Paso 1: extraer entidades ────────────────────────────────────────
         try:
             extraccion = groq.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {"role": "system", "content": (
                         "Extraé del texto las entidades mencionadas. "
@@ -205,7 +205,7 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
         # ── Paso 3: estilometría ─────────────────────────────────────────────
         try:
             estilo_resp = groq.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {"role": "system", "content": (
                         "Analizá el estilo de escritura del CLIENTE (mensajes USER) del chat. "
@@ -245,7 +245,7 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
 
             try:
                 plan_resp = groq.chat.completions.create(
-                    model="llama3-8b-8192",
+                    model="llama-3.1-8b-instant",
                     messages=[
                         {"role": "system", "content": (
                             "Sos el estratega de ventas de Zynnos Labs, agencia de automatización IA para pymes argentinas.\n"
@@ -408,7 +408,7 @@ def api_message():
         current_app.logger.error("[Groq] GROQ_API_KEY no configurada en Render")
         print("[Groq] ERROR: GROQ_API_KEY no configurada", flush=True)
     else:
-        for modelo in ["llama3-8b-8192", "mixtral-8x7b-32768"]:  ### CAMBIO AQUÍ ### fallback de modelos
+        for modelo in ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]:  ### CAMBIO AQUÍ ### fallback de modelos
             try:
                 resp = groq.chat.completions.create(
                     model=modelo,
@@ -548,7 +548,7 @@ def api_diagnostico():
         if key:
             client = groq_lib.Groq(api_key=key)
             resp = client.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
                 messages=[{"role": "user", "content": "di OK"}],
                 max_tokens=5
             )
