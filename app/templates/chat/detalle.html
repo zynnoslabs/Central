@@ -3,219 +3,305 @@
 
 {% block extra_head %}
 <style>
+/* ── Layout ──────────────────────────────────────────────────────────────── */
 .chat-layout {
-  display: grid; grid-template-columns: 1fr 400px; gap: 1.25rem; align-items: start;
+  display: grid; grid-template-columns: 1fr 380px; gap: 1.25rem; align-items: start;
 }
 @media (max-width: 1000px) { .chat-layout { grid-template-columns: 1fr; } }
 
-/* Chat */
+/* ── Header del cliente ──────────────────────────────────────────────────── */
+.client-header {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+}
+.client-avatar {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--teal), #1a6644);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 700; color: #0a1409;
+}
+.client-name  { font-size: 1rem; font-weight: 600; line-height: 1.2; }
+.client-meta  { font-size: .78rem; color: var(--fg3); margin-top: .15rem; }
+.client-badge {
+  margin-left: auto; display: flex; align-items: center; gap: .4rem;
+  font-size: .72rem; font-weight: 600; padding: .3rem .7rem;
+  border-radius: 100px; letter-spacing: .03em;
+}
+.badge-active  { background: rgba(52,201,148,.12); color: var(--teal-d); border: 1px solid rgba(52,201,148,.3); }
+.badge-closed  { background: var(--raised); color: var(--fg3); border: 1px solid var(--border2); }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: pulse-dot 1.5s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── Chat ────────────────────────────────────────────────────────────────── */
 .chat-box {
-  overflow-y: auto; max-height: 480px;
-  display: flex; flex-direction: column; gap: .75rem;
-  padding: 1rem; scroll-behavior: smooth;
+  overflow-y: auto; height: 420px;
+  display: flex; flex-direction: column; gap: .6rem;
+  padding: 1.1rem 1.25rem; scroll-behavior: smooth;
 }
-.msg { display: flex; flex-direction: column; max-width: 85%; }
-.msg-user   { align-self: flex-start; }
+.msg { display: flex; flex-direction: column; max-width: 80%; }
+.msg-user      { align-self: flex-start; }
 .msg-assistant { align-self: flex-end; }
+
 .msg-bubble {
-  padding: .6rem .9rem; border-radius: var(--r2); font-size: .9375rem; line-height: 1.55;
+  padding: .6rem .95rem; border-radius: 16px; font-size: .9rem; line-height: 1.55; word-break: break-word;
 }
-.msg-user .msg-bubble      { background: var(--raised); color: var(--fg); border: 1px solid var(--border2); }
-.msg-assistant .msg-bubble { background: var(--teal-lo); color: var(--fg); border: 1px solid rgba(52,201,148,.2); }
-.msg-time { font-size: .68rem; color: var(--fg3); margin-top: .2rem; }
-.msg-user .msg-time      { align-self: flex-start; }
-.msg-assistant .msg-time { align-self: flex-end; }
+.msg-user      .msg-bubble { background: var(--raised); color: var(--fg); border-bottom-left-radius: 4px; border: 1px solid var(--border2); }
+.msg-assistant .msg-bubble { background: var(--teal); color: #071008; border-bottom-right-radius: 4px; font-weight: 500; }
 
-/* Hint panel */
-.hint-panel { padding: .9rem 1.25rem; border-top: 1px solid var(--border); }
-.hint-label { font-size: .72rem; color: var(--fg3); margin-bottom: .4rem; }
+.msg-meta { font-size: .68rem; color: var(--fg3); margin-top: .25rem; display: flex; align-items: center; gap: .3rem; }
+.msg-user      .msg-meta { align-self: flex-start; }
+.msg-assistant .msg-meta { align-self: flex-end; }
+.msg-role-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .5; }
 
-/* Intelligence panels */
-.intel-tabs { display: flex; gap: .2rem; padding: .75rem 1rem .4rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.intel-tab  {
-  font-size: .72rem; padding: .3rem .7rem; border-radius: 100px;
-  border: 1px solid var(--border2); background: none; color: var(--fg3); cursor: pointer;
-  transition: background .15s, color .15s;
+/* ── Hint box ────────────────────────────────────────────────────────────── */
+.hint-box {
+  padding: .85rem 1.25rem; border-top: 1px solid var(--border);
+  background: rgba(52,201,148,.03);
 }
-.intel-tab.active { background: var(--teal); color: #0a1409; border-color: var(--teal); font-weight: 600; }
-.intel-panel { display: none; padding: .9rem 1rem; }
+.hint-label {
+  font-size: .7rem; font-weight: 600; color: var(--teal-d); letter-spacing: .06em;
+  text-transform: uppercase; margin-bottom: .45rem; display: flex; align-items: center; gap: .4rem;
+}
+.hint-label::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+
+/* ── Intel panel ─────────────────────────────────────────────────────────── */
+.intel-tabs {
+  display: flex; padding: .75rem 1rem .5rem; gap: .3rem; border-bottom: 1px solid var(--border);
+}
+.intel-tab {
+  font-size: .75rem; padding: .32rem .75rem; border-radius: 8px;
+  border: 1px solid transparent; background: none; color: var(--fg3); cursor: pointer;
+  transition: all .15s; font-weight: 500;
+}
+.intel-tab:hover  { background: var(--raised); color: var(--fg2); }
+.intel-tab.active { background: var(--raised); color: var(--fg); border-color: var(--border2); }
+.intel-panel      { display: none; padding: .9rem 1.1rem; }
 .intel-panel.active { display: block; }
 
-/* KV rows */
-.kv-row { display: flex; justify-content: space-between; align-items: baseline; padding: .35rem 0; border-bottom: 1px solid var(--border); font-size: .875rem; }
+/* ── KV rows ─────────────────────────────────────────────────────────────── */
+.kv-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: .4rem 0; border-bottom: 1px solid var(--border); font-size: .86rem;
+}
 .kv-row:last-child { border-bottom: none; }
-.kv-key   { color: var(--fg3); font-size: .78rem; }
-.kv-val   { font-weight: 500; text-align: right; max-width: 60%; }
+.kv-key { color: var(--fg3); font-size: .78rem; }
+.kv-val { font-weight: 500; text-align: right; max-width: 60%; }
 
-/* Prob bar */
-.prob-bar  { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: .4rem 0 .2rem; }
-.prob-fill { height: 100%; background: var(--teal); border-radius: 3px; transition: width .4s; }
+/* ── Prob bar ────────────────────────────────────────────────────────────── */
+.prob-wrap  { margin: .9rem 0 .3rem; }
+.prob-label { display: flex; justify-content: space-between; font-size: .72rem; color: var(--fg3); margin-bottom: .3rem; }
+.prob-bar   { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.prob-fill  { height: 100%; background: var(--teal); border-radius: 3px; transition: width .6s ease; }
 
-/* Búsqueda web */
-.web-result { padding: .6rem .75rem; border: 1px solid var(--border2); border-radius: var(--r); margin-bottom: .5rem; }
-.web-result-title { font-size: .82rem; font-weight: 600; color: var(--teal-d); margin-bottom: .2rem; }
-.web-result-snippet { font-size: .78rem; color: var(--fg3); line-height: 1.4; }
-.web-section-label { font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--fg3); margin: .75rem 0 .4rem; }
-
-/* Señal / objeción chips */
-.signal-chip {
-  display: inline-block; font-size: .72rem; padding: .2rem .55rem; border-radius: 100px;
-  border: 1px solid rgba(52,201,148,.4); background: var(--teal-lo); color: var(--teal-d); margin: .2rem .2rem 0 0;
+/* ── Proximo paso card ───────────────────────────────────────────────────── */
+.next-step {
+  margin-top: .85rem; padding: .6rem .85rem;
+  border-left: 3px solid var(--teal); background: var(--teal-lo);
+  border-radius: 0 8px 8px 0;
 }
-.obj-chip {
-  display: inline-block; font-size: .72rem; padding: .2rem .55rem; border-radius: 100px;
-  border: 1px solid rgba(255,107,107,.3); background: rgba(255,107,107,.07); color: #ff9b9b; margin: .2rem .2rem 0 0;
-}
+.next-step-label { font-size: .68rem; font-weight: 700; color: var(--teal-d); letter-spacing: .05em; text-transform: uppercase; margin-bottom: .2rem; }
+.next-step-text  { font-size: .84rem; color: var(--fg); margin: 0; }
 
-/* Estilo badges */
-.nivel-alto   { color: var(--teal-d); }
-.nivel-medio  { color: var(--warn); }
-.nivel-bajo   { color: var(--fg3); }
+/* ── Chips ───────────────────────────────────────────────────────────────── */
+.chips-row { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .4rem; }
+.chip-green {
+  font-size: .71rem; padding: .2rem .55rem; border-radius: 100px;
+  border: 1px solid rgba(52,201,148,.35); background: rgba(52,201,148,.08); color: var(--teal-d);
+}
+.chip-red {
+  font-size: .71rem; padding: .2rem .55rem; border-radius: 100px;
+  border: 1px solid rgba(255,107,107,.3); background: rgba(255,107,107,.07); color: #ff9b9b;
+}
+.chip-section { font-size: .68rem; color: var(--fg3); margin: .75rem 0 .25rem; display: block; }
+
+/* ── Web results ─────────────────────────────────────────────────────────── */
+.web-result {
+  padding: .6rem .8rem; border: 1px solid var(--border2); border-radius: 8px; margin-bottom: .45rem;
+  transition: border-color .15s;
+}
+.web-result:hover { border-color: rgba(52,201,148,.4); }
+.web-result-title   { font-size: .82rem; font-weight: 600; color: var(--teal-d); margin-bottom: .15rem; }
+.web-result-snippet { font-size: .78rem; color: var(--fg3); line-height: 1.45; }
+.web-result-url     { font-size: .68rem; color: var(--fg3); margin-top: .2rem; display: block; }
+.web-section-label  { font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--fg3); margin: .8rem 0 .35rem; font-weight: 600; }
+
+/* ── Estilo kv colores ───────────────────────────────────────────────────── */
+.nivel-alto { color: var(--teal-d); }
+.nivel-medio { color: var(--warn); }
+.nivel-bajo { color: var(--fg3); }
 .urgencia-alta { color: #ff9b9b; }
 
-/* Dot pulsante */
-.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); display: inline-block; margin-right: .3rem; animation: pulse-dot 1.5s infinite; }
-@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+/* ── Resumen estilo ──────────────────────────────────────────────────────── */
+.estilo-resumen {
+  margin-top: .85rem; padding: .65rem .85rem;
+  background: var(--raised); border-radius: 8px;
+  font-size: .82rem; color: var(--fg2); font-style: italic; line-height: 1.5;
+  border-left: 3px solid var(--border2);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty-state { padding: 1.5rem 1rem; text-align: center; }
+.empty-state-icon { font-size: 1.75rem; display: block; margin-bottom: .5rem; opacity: .5; }
+.empty-state-text { font-size: .84rem; color: var(--fg3); line-height: 1.5; }
+
+/* ── Hints enviados ──────────────────────────────────────────────────────── */
+.hint-sent {
+  padding: .55rem 1.1rem; border-bottom: 1px solid var(--border);
+  font-size: .84rem; display: flex; align-items: center; gap: .5rem;
+}
+.hint-sent:last-child { border-bottom: none; }
+.hint-sent-text { flex: 1; color: var(--fg2); }
+.hint-sent-text.applied { color: var(--fg3); text-decoration: line-through; }
 </style>
 {% endblock %}
 
 {% block content %}
+
+<!-- ── Page header ────────────────────────────────────────────────────────── -->
 <div class="page-header">
   <div>
-    <h1 class="page-title" id="ph-nombre">
-      {{ conv.nombre or 'Visitante' }}
-      {% if conv.rubro %}<span class="text-muted" style="font-size:1rem;font-weight:400;margin-left:.5rem;" id="ph-rubro">· {{ conv.rubro }}</span>{% endif %}
-    </h1>
-    <p class="page-sub" id="ph-contacto">
-      {% if conv.telefono %}{{ conv.telefono }}{% endif %}
-      {% if conv.email %} · {{ conv.email }}{% endif %}
-      {% if conv.source_url %} · <span class="text-muted">{{ conv.source_url }}</span>{% endif %}
-    </p>
+    <h1 class="page-title">Conversación en vivo</h1>
+    <p class="page-sub">ID: <code style="font-size:.8rem;">{{ conv.id }}</code></p>
   </div>
-  <span class="badge {% if conv.status == 'active' %}badge-teal{% else %}badge-muted{% endif %}" id="status-badge" style="font-size:.875rem;padding:.4rem .8rem;">
-    {% if conv.status == 'active' %}<span class="live-dot"></span>{% endif %}{{ conv.status }}
-  </span>
 </div>
 
 <div class="chat-layout">
 
-  <!-- ── Chat en vivo ─────────────────────────────────────────────────────── -->
-  <div class="card" style="padding:0;">
-    <div class="card-header" style="padding:.75rem 1.25rem;margin-bottom:0;">
-      <span class="card-title">Conversación</span>
-      <span class="text-subtle text-xs">{{ conv.id }}</span>
+  <!-- ── Columna izquierda: chat ────────────────────────────────────────── -->
+  <div class="card" style="padding:0;overflow:hidden;">
+
+    <!-- Cabecera del cliente -->
+    <div class="client-header">
+      <div class="client-avatar" id="avatar-initials">
+        {{ (conv.nombre or 'V')[0].upper() }}
+      </div>
+      <div>
+        <div class="client-name" id="ph-nombre">{{ conv.nombre or 'Visitante' }}
+          {% if conv.rubro %}<span id="ph-rubro" style="font-weight:400;color:var(--fg3);font-size:.88rem;margin-left:.4rem;">· {{ conv.rubro }}</span>{% endif %}
+        </div>
+        <div class="client-meta" id="ph-contacto">
+          {% if conv.telefono %}{{ conv.telefono }}{% endif %}
+          {% if conv.email %}{% if conv.telefono %} · {% endif %}{{ conv.email }}{% endif %}
+          {% if conv.source_url %}<span style="opacity:.6;"> · {{ conv.source_url }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="client-badge {% if conv.status == 'active' %}badge-active{% else %}badge-closed{% endif %}">
+        {% if conv.status == 'active' %}<span class="live-dot"></span>{% endif %}
+        {{ 'En línea' if conv.status == 'active' else 'Cerrado' }}
+      </div>
     </div>
 
+    <!-- Mensajes -->
     <div class="chat-box" id="chat-box">
       {% for m in messages %}
       <div class="msg msg-{{ m.role }}">
         <div class="msg-bubble">{{ m.content }}</div>
-        <div class="msg-time">{{ 'Cliente' if m.role == 'user' else 'IA' }} · {{ m.sent_at.strftime('%H:%M') }}</div>
+        <div class="msg-meta">
+          <span class="msg-role-dot"></span>
+          {{ 'Cliente' if m.role == 'user' else 'IA' }} · {{ m.sent_at.strftime('%H:%M') }}
+        </div>
       </div>
       {% endfor %}
     </div>
 
-    <div class="hint-panel">
-      <div class="hint-label">Instrucción secreta para la IA (el cliente no la ve)</div>
+    <!-- Instrucción secreta -->
+    {% if conv.status == 'active' %}
+    <div class="hint-box">
+      <div class="hint-label">Instrucción secreta — solo la ve la IA</div>
       <div style="display:flex;gap:.5rem;">
-        <input type="text" id="hint-input" placeholder="Ej: Ofrecele 10% de descuento si cierra hoy">
-        <button class="btn btn-warning btn-sm" id="hint-btn" style="flex-shrink:0;">Enviar</button>
+        <input type="text" id="hint-input" placeholder="Ej: Ofrecele 15% de descuento si cierra hoy" style="flex:1;">
+        <button class="btn btn-warning btn-sm" id="hint-btn" style="flex-shrink:0;white-space:nowrap;">Enviar</button>
       </div>
     </div>
+    {% endif %}
   </div>
 
-  <!-- ── Panel de inteligencia ────────────────────────────────────────────── -->
+  <!-- ── Columna derecha: inteligencia + acciones ────────────────────────── -->
   <div style="display:flex;flex-direction:column;gap:1rem;">
 
-    <div class="card" style="padding:0;">
-
-      <!-- Tabs -->
+    <!-- Panel de inteligencia -->
+    <div class="card" style="padding:0;overflow:hidden;">
       <div class="intel-tabs">
         <button class="intel-tab active" onclick="switchTab('propuesta')">📋 Propuesta</button>
-        <button class="intel-tab" onclick="switchTab('estilo')">🧠 Perfil</button>
-        <button class="intel-tab" onclick="switchTab('web')">🌐 Web</button>
+        <button class="intel-tab"        onclick="switchTab('estilo')">🧠 Perfil</button>
+        <button class="intel-tab"        onclick="switchTab('web')">🌐 Web</button>
       </div>
 
-      <!-- Tab: Propuesta -->
+      <!-- Propuesta -->
       <div class="intel-panel active" id="tab-propuesta">
         <div id="propuesta-body">
           {% if conv.budget_est %}
             {% set p = conv.budget_est | from_json %}
-            <p style="font-weight:600;margin-bottom:.3rem;">{{ p.get('perfil_cliente','') }}</p>
-            <p style="font-size:.82rem;color:var(--fg3);margin-bottom:.7rem;">{{ p.get('problema_detectado','') }}</p>
-
-            <div class="kv-row">
-              <span class="kv-key">Solución</span>
-              <span class="kv-val">{{ p.get('solucion_recomendada','—') }}</span>
-            </div>
-            <div class="kv-row">
-              <span class="kv-key">Precio</span>
-              <span class="kv-val">${{ "{:,.0f}".format(p.get('precio_sugerido_min',0)) }} – ${{ "{:,.0f}".format(p.get('precio_sugerido_max',0)) }}</span>
-            </div>
-            <div class="kv-row">
-              <span class="kv-key">Entrega</span>
-              <span class="kv-val">{{ p.get('tiempo_entrega','—') }}</span>
-            </div>
-            <div style="margin:.8rem 0 .2rem;">
-              <div class="prob-bar"><div class="prob-fill" style="width:{{ p.get('probabilidad_cierre',0) }}%"></div></div>
-              <span style="font-size:.72rem;color:var(--fg3);">Prob. cierre: {{ p.get('probabilidad_cierre',0) }}%</span>
+            <p style="font-weight:600;margin-bottom:.2rem;">{{ p.get('perfil_cliente','') }}</p>
+            <p style="font-size:.82rem;color:var(--fg3);margin-bottom:.75rem;line-height:1.45;">{{ p.get('problema_detectado','') }}</p>
+            <div class="kv-row"><span class="kv-key">Solución</span><span class="kv-val">{{ p.get('solucion_recomendada','—') }}</span></div>
+            <div class="kv-row"><span class="kv-key">Precio</span><span class="kv-val">${{ "{:,.0f}".format(p.get('precio_sugerido_min',0)) }} – ${{ "{:,.0f}".format(p.get('precio_sugerido_max',0)) }}</span></div>
+            <div class="kv-row"><span class="kv-key">Entrega</span><span class="kv-val">{{ p.get('tiempo_entrega','—') }}</span></div>
+            {% set prob = p.get('probabilidad_cierre', 0) %}
+            <div class="prob-wrap">
+              <div class="prob-label"><span>Probabilidad de cierre</span><span style="font-weight:600;">{{ prob }}%</span></div>
+              <div class="prob-bar"><div class="prob-fill" style="width:{{ prob }}%"></div></div>
             </div>
             {% if p.get('proximo_paso') %}
-            <div style="margin-top:.8rem;padding:.6rem .75rem;border-left:3px solid var(--teal);background:var(--teal-lo);border-radius:0 var(--r) var(--r) 0;">
-              <p style="font-size:.78rem;color:var(--teal-d);font-weight:600;margin-bottom:.15rem;">Próximo paso</p>
-              <p style="font-size:.82rem;margin:0;">{{ p.get('proximo_paso','') }}</p>
+            <div class="next-step">
+              <div class="next-step-label">Próximo paso</div>
+              <p class="next-step-text">{{ p.get('proximo_paso') }}</p>
             </div>
             {% endif %}
             {% if p.get('senales_compra') %}
-            <div style="margin-top:.7rem;">
-              <p style="font-size:.68rem;color:var(--fg3);margin-bottom:.3rem;">Señales de compra</p>
-              {% for s in p.get('senales_compra',[]) %}<span class="signal-chip">{{ s }}</span>{% endfor %}
-            </div>
+            <span class="chip-section">Señales de compra</span>
+            <div class="chips-row">{% for s in p.get('senales_compra',[]) %}<span class="chip-green">{{ s }}</span>{% endfor %}</div>
             {% endif %}
             {% if p.get('objeciones_posibles') %}
-            <div style="margin-top:.7rem;">
-              <p style="font-size:.68rem;color:var(--fg3);margin-bottom:.3rem;">Posibles objeciones</p>
-              {% for o in p.get('objeciones_posibles',[]) %}<span class="obj-chip">{{ o }}</span>{% endfor %}
-            </div>
+            <span class="chip-section">Posibles objeciones</span>
+            <div class="chips-row">{% for o in p.get('objeciones_posibles',[]) %}<span class="chip-red">{{ o }}</span>{% endfor %}</div>
             {% endif %}
           {% else %}
-            <p style="font-size:.875rem;color:var(--fg3);">Se genera a partir del 2º mensaje del cliente.</p>
+            <div class="empty-state">
+              <span class="empty-state-icon">📊</span>
+              <p class="empty-state-text">La propuesta se genera a partir del 2° mensaje del cliente.</p>
+            </div>
           {% endif %}
         </div>
       </div>
 
-      <!-- Tab: Estilo -->
+      <!-- Perfil estilométrico -->
       <div class="intel-panel" id="tab-estilo">
         <div id="estilo-body">
-          <p style="font-size:.875rem;color:var(--fg3);">Se genera desde el primer mensaje.</p>
+          <div class="empty-state">
+            <span class="empty-state-icon">🧠</span>
+            <p class="empty-state-text">El perfil se construye desde el primer mensaje.</p>
+          </div>
         </div>
       </div>
 
-      <!-- Tab: Web -->
+      <!-- Investigación web -->
       <div class="intel-panel" id="tab-web">
         <div id="web-body">
-          <p style="font-size:.875rem;color:var(--fg3);">La búsqueda se dispara cuando el cliente menciona su nombre o negocio.</p>
+          <div class="empty-state">
+            <span class="empty-state-icon">🌐</span>
+            <p class="empty-state-text">La búsqueda se dispara cuando el cliente menciona su nombre o negocio.</p>
+          </div>
         </div>
       </div>
-
     </div>
 
-    <!-- Hints enviados -->
+    <!-- Instrucciones enviadas -->
     {% if hints %}
-    <div class="card" style="padding:0;">
-      <div class="card-header" style="padding:.75rem 1.25rem;margin-bottom:0;">
-        <span class="card-title">Instrucciones enviadas</span>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="card-header" style="padding:.65rem 1.1rem;margin-bottom:0;">
+        <span class="card-title" style="font-size:.82rem;">Instrucciones enviadas</span>
       </div>
       {% for h in hints %}
-      <div style="padding:.6rem 1.25rem;border-bottom:1px solid var(--border);font-size:.875rem;
-                  color:{% if h.applied %}var(--fg3){% else %}var(--fg2){% endif %};">
-        {{ h.hint }}
-        {% if h.applied %}<span class="badge badge-teal" style="margin-left:.4rem;">aplicada</span>{% endif %}
+      <div class="hint-sent">
+        <span class="hint-sent-text {% if h.applied %}applied{% endif %}">{{ h.hint }}</span>
+        {% if h.applied %}<span class="badge badge-teal" style="font-size:.68rem;">aplicada</span>{% endif %}
       </div>
       {% endfor %}
     </div>
     {% endif %}
 
+    <!-- Cerrar conversación -->
     {% if conv.status == 'active' %}
     <button class="btn btn-danger" id="close-btn" style="width:100%;">Cerrar conversación</button>
     {% endif %}
@@ -228,172 +314,148 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <script>
 const CONV_ID = "{{ conv.id }}";
-const socket = io({ transports: ['websocket'] });
+const socket  = io({ transports: ['websocket'] });
 socket.emit('join_operators');
 socket.emit('join_conversation', { conv_id: CONV_ID });
 
 const box = document.getElementById('chat-box');
 box.scrollTop = box.scrollHeight;
 
-// ── Tabs ────────────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────
 function switchTab(name) {
-  document.querySelectorAll('.intel-tab').forEach((t,i) => {
-    const names = ['propuesta','estilo','web'];
-    t.classList.toggle('active', names[i] === name);
-  });
+  const names = ['propuesta','estilo','web'];
+  document.querySelectorAll('.intel-tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
   document.querySelectorAll('.intel-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
 }
 
-// ── Mensajes nuevos ──────────────────────────────────────────────────────────
+// ── Mensaje nuevo ──────────────────────────────────────────────────────────
 socket.on('new_message', (data) => {
   if (data.conv_id !== CONV_ID) return;
-  const div = document.createElement('div');
-  div.className = `msg msg-${data.role}`;
+  const wrap = document.createElement('div');
+  wrap.className = `msg msg-${data.role}`;
   const label = data.role === 'user' ? 'Cliente' : 'IA';
-  div.innerHTML = `<div class="msg-bubble">${escHtml(data.content)}</div>
-                   <div class="msg-time">${label} · ahora</div>`;
-  box.appendChild(div);
+  wrap.innerHTML = `<div class="msg-bubble">${esc(data.content)}</div>
+                    <div class="msg-meta"><span class="msg-role-dot"></span>${label} · ahora</div>`;
+  box.appendChild(wrap);
   box.scrollTop = box.scrollHeight;
 });
 
-// ── Datos del lead actualizados ──────────────────────────────────────────────
+// ── Datos del cliente actualizados ────────────────────────────────────────
 socket.on('conversation_updated', (data) => {
   if (data.conv_id !== CONV_ID) return;
-  if (data.nombre) document.getElementById('ph-nombre').childNodes[0].textContent = data.nombre + ' ';
+  if (data.nombre) {
+    const el = document.getElementById('ph-nombre');
+    el.childNodes[0].textContent = data.nombre;
+    // avatar inicial
+    document.getElementById('avatar-initials').textContent = data.nombre[0].toUpperCase();
+  }
   if (data.rubro) {
     let el = document.getElementById('ph-rubro');
     if (!el) {
       el = document.createElement('span');
       el.id = 'ph-rubro';
-      el.className = 'text-muted';
-      el.style.cssText = 'font-size:1rem;font-weight:400;margin-left:.5rem;';
+      el.style.cssText = 'font-weight:400;color:var(--fg3);font-size:.88rem;margin-left:.4rem;';
       document.getElementById('ph-nombre').appendChild(el);
     }
     el.textContent = '· ' + data.rubro;
   }
-  const contactParts = [];
-  if (data.telefono) contactParts.push(data.telefono);
-  if (data.email) contactParts.push(data.email);
-  if (contactParts.length) {
+  const parts = [];
+  if (data.telefono) parts.push(data.telefono);
+  if (data.email)    parts.push(data.email);
+  if (parts.length) {
     const el = document.getElementById('ph-contacto');
-    if (el) el.childNodes[0] && (el.childNodes[0].textContent = contactParts.join(' · '));
+    if (el) el.firstChild && (el.firstChild.textContent = parts.join(' · '));
   }
 });
 
-// ── Estilometría ─────────────────────────────────────────────────────────────
-socket.on('stilometry_update', (data) => {   // ### CAMBIO AQUÍ ###
+// ── Estilometría ──────────────────────────────────────────────────────────
+socket.on('stilometry_update', (data) => {
   if (data.conv_id !== CONV_ID) return;
   const e = data.estilo;
-  const nivelCls = e.nivel_educativo === 'alto' ? 'nivel-alto' : e.nivel_educativo === 'medio' ? 'nivel-medio' : 'nivel-bajo';
+  const nivelCls = { alto:'nivel-alto', medio:'nivel-medio', bajo:'nivel-bajo' }[e.nivel_educativo] || '';
   const urgCls   = e.urgencia_percibida === 'alta' ? 'urgencia-alta' : '';
   document.getElementById('estilo-body').innerHTML = `
-    <div class="kv-row"><span class="kv-key">Nivel educativo</span>
-      <span class="kv-val ${nivelCls}">${e.nivel_educativo || '—'}</span></div>
-    <div class="kv-row"><span class="kv-key">Perfil</span>
-      <span class="kv-val">${e.perfil || '—'}</span></div>
-    <div class="kv-row"><span class="kv-key">Tono</span>
-      <span class="kv-val">${e.tono || '—'}</span></div>
-    <div class="kv-row"><span class="kv-key">Urgencia percibida</span>
-      <span class="kv-val ${urgCls}">${e.urgencia_percibida || '—'}</span></div>
-    <div class="kv-row"><span class="kv-key">Capacidad de decisión</span>
-      <span class="kv-val">${e.capacidad_decision || '—'}</span></div>
-    <div style="margin-top:.7rem;padding:.55rem .7rem;background:var(--raised);border-radius:var(--r);font-size:.82rem;color:var(--fg2);font-style:italic;">
-      "${e.resumen_estilo || ''}"
-    </div>`;
-  // Cambiar tab activo si no hay propuesta todavía
-  if (document.getElementById('tab-propuesta').querySelector('p')?.style?.color === '') {
-    switchTab('estilo');
-  }
+    <div class="kv-row"><span class="kv-key">Nivel educativo</span><span class="kv-val ${nivelCls}">${esc(e.nivel_educativo||'—')}</span></div>
+    <div class="kv-row"><span class="kv-key">Perfil</span><span class="kv-val">${esc(e.perfil||'—')}</span></div>
+    <div class="kv-row"><span class="kv-key">Tono</span><span class="kv-val">${esc(e.tono||'—')}</span></div>
+    <div class="kv-row"><span class="kv-key">Urgencia</span><span class="kv-val ${urgCls}">${esc(e.urgencia_percibida||'—')}</span></div>
+    <div class="kv-row"><span class="kv-key">Decisión</span><span class="kv-val">${esc(e.capacidad_decision||'—')}</span></div>
+    ${e.resumen_estilo ? `<div class="estilo-resumen">"${esc(e.resumen_estilo)}"</div>` : ''}`;
 });
 
-// ── Investigación web ────────────────────────────────────────────────────────
-socket.on('web_research', (data) => {   // ### CAMBIO AQUÍ ###
+// ── Investigación web ─────────────────────────────────────────────────────
+socket.on('web_research', (data) => {
   if (data.conv_id !== CONV_ID) return;
   const { entidades, busquedas } = data;
   let html = '';
-
-  // Entidades detectadas
   const ents = Object.entries(entidades).filter(([,v]) => v);
   if (ents.length) {
-    html += '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem;">';
-    ents.forEach(([k, v]) => {
-      const labels = {nombre_persona:'👤',nombre_negocio:'🏪',rubro:'🔧',ciudad:'📍'};
-      html += `<span class="signal-chip">${labels[k]||''} ${escHtml(v)}</span>`;
-    });
+    const icons = { nombre_persona:'👤', nombre_negocio:'🏪', rubro:'🔧', ciudad:'📍' };
+    html += '<div class="chips-row" style="margin-bottom:.8rem;">';
+    ents.forEach(([k,v]) => { html += `<span class="chip-green">${icons[k]||''} ${esc(v)}</span>`; });
     html += '</div>';
   }
-
-  // Resultados por categoría
-  const catLabels = {persona:'Persona',negocio:'Negocio',rubro:'Rubro / sector'};
+  const catLabels = { persona:'Persona', negocio:'Negocio', rubro:'Rubro / sector' };
   Object.entries(busquedas).forEach(([cat, info]) => {
-    html += `<div class="web-section-label">${catLabels[cat] || cat} — búsqueda: "${escHtml(info.query)}"</div>`;
+    html += `<span class="web-section-label">${catLabels[cat]||cat} — "${esc(info.query)}"</span>`;
     info.resultados.forEach(r => {
       html += `<div class="web-result">
-        <div class="web-result-title">${escHtml(r.title)}</div>
-        <div class="web-result-snippet">${escHtml(r.snippet)}</div>
-        ${r.url ? `<a href="${escHtml(r.url)}" target="_blank" style="font-size:.72rem;color:var(--teal-d);">${escHtml(r.url.substring(0,60))}…</a>` : ''}
+        <div class="web-result-title">${esc(r.title)}</div>
+        <div class="web-result-snippet">${esc(r.snippet)}</div>
+        ${r.url ? `<a href="${esc(r.url)}" target="_blank" class="web-result-url">${esc(r.url.substring(0,55))}…</a>` : ''}
       </div>`;
     });
   });
-
-  if (!html) html = '<p style="font-size:.875rem;color:var(--fg3);">Sin resultados.</p>';
+  if (!html) html = '<div class="empty-state"><span class="empty-state-icon">🌐</span><p class="empty-state-text">Sin resultados.</p></div>';
   document.getElementById('web-body').innerHTML = html;
 });
 
-// ── Plan de propuesta ────────────────────────────────────────────────────────
-socket.on('proposal_update', (data) => {   // ### CAMBIO AQUÍ ###
+// ── Propuesta ─────────────────────────────────────────────────────────────
+socket.on('proposal_update', (data) => {
   if (data.conv_id !== CONV_ID) return;
   const p = data.plan;
-  const pMin = (p.precio_sugerido_min || 0).toLocaleString('es-AR');
-  const pMax = (p.precio_sugerido_max || 0).toLocaleString('es-AR');
+  const pMin = (p.precio_sugerido_min||0).toLocaleString('es-AR');
+  const pMax = (p.precio_sugerido_max||0).toLocaleString('es-AR');
   const prob = p.probabilidad_cierre || 0;
 
   let args = '';
   if (p.argumentos_venta?.length) {
-    args = '<ul style="margin:.4rem 0 0 1rem;padding:0;font-size:.82rem;">';
-    p.argumentos_venta.forEach(a => { args += `<li style="margin-bottom:.2rem;">${escHtml(a)}</li>`; });
+    args = `<span class="chip-section">Argumentos de venta</span><ul style="margin:.3rem 0 0 1.1rem;padding:0;font-size:.82rem;color:var(--fg2);">`;
+    p.argumentos_venta.forEach(a => { args += `<li style="margin-bottom:.2rem;">${esc(a)}</li>`; });
     args += '</ul>';
   }
-
   let senales = '';
   if (p.senales_compra?.length) {
-    senales = '<div style="margin-top:.7rem;"><p style="font-size:.68rem;color:var(--fg3);margin-bottom:.3rem;">Señales de compra</p>';
-    p.senales_compra.forEach(s => { senales += `<span class="signal-chip">${escHtml(s)}</span>`; });
+    senales = `<span class="chip-section">Señales de compra</span><div class="chips-row">`;
+    p.senales_compra.forEach(s => { senales += `<span class="chip-green">${esc(s)}</span>`; });
     senales += '</div>';
   }
-
   let objs = '';
   if (p.objeciones_posibles?.length) {
-    objs = '<div style="margin-top:.7rem;"><p style="font-size:.68rem;color:var(--fg3);margin-bottom:.3rem;">Posibles objeciones</p>';
-    p.objeciones_posibles.forEach(o => { objs += `<span class="obj-chip">${escHtml(o)}</span>`; });
+    objs = `<span class="chip-section">Posibles objeciones</span><div class="chips-row">`;
+    p.objeciones_posibles.forEach(o => { objs += `<span class="chip-red">${esc(o)}</span>`; });
     objs += '</div>';
   }
 
   document.getElementById('propuesta-body').innerHTML = `
-    <p style="font-weight:600;margin-bottom:.3rem;">${escHtml(p.perfil_cliente||'')}</p>
-    <p style="font-size:.82rem;color:var(--fg3);margin-bottom:.7rem;">${escHtml(p.problema_detectado||'')}</p>
-    <div class="kv-row"><span class="kv-key">Solución</span><span class="kv-val">${escHtml(p.solucion_recomendada||'—')}</span></div>
+    <p style="font-weight:600;margin-bottom:.2rem;">${esc(p.perfil_cliente||'')}</p>
+    <p style="font-size:.82rem;color:var(--fg3);margin-bottom:.75rem;line-height:1.45;">${esc(p.problema_detectado||'')}</p>
+    <div class="kv-row"><span class="kv-key">Solución</span><span class="kv-val">${esc(p.solucion_recomendada||'—')}</span></div>
     <div class="kv-row"><span class="kv-key">Precio</span><span class="kv-val">$${pMin} – $${pMax}</span></div>
-    <div class="kv-row"><span class="kv-key">Entrega</span><span class="kv-val">${escHtml(p.tiempo_entrega||'—')}</span></div>
-    <div style="margin:.8rem 0 .2rem;">
+    <div class="kv-row"><span class="kv-key">Entrega</span><span class="kv-val">${esc(p.tiempo_entrega||'—')}</span></div>
+    <div class="prob-wrap">
+      <div class="prob-label"><span>Probabilidad de cierre</span><span style="font-weight:600;color:${prob>=60?'var(--teal-d)':prob>=30?'var(--warn)':'var(--fg3)'};">${prob}%</span></div>
       <div class="prob-bar"><div class="prob-fill" style="width:${prob}%"></div></div>
-      <span style="font-size:.72rem;color:var(--fg3);">Prob. cierre: ${prob}%</span>
     </div>
-    ${p.proximo_paso ? `
-    <div style="margin-top:.8rem;padding:.6rem .75rem;border-left:3px solid var(--teal);background:var(--teal-lo);border-radius:0 var(--r) var(--r) 0;">
-      <p style="font-size:.78rem;color:var(--teal-d);font-weight:600;margin-bottom:.15rem;">Próximo paso</p>
-      <p style="font-size:.82rem;margin:0;">${escHtml(p.proximo_paso)}</p>
-    </div>` : ''}
-    ${args ? `<div style="margin-top:.7rem;"><p style="font-size:.68rem;color:var(--fg3);margin-bottom:.2rem;">Argumentos de venta</p>${args}</div>` : ''}
-    ${senales}${objs}`;
-
+    ${p.proximo_paso ? `<div class="next-step"><div class="next-step-label">Próximo paso</div><p class="next-step-text">${esc(p.proximo_paso)}</p></div>` : ''}
+    ${args}${senales}${objs}`;
   switchTab('propuesta');
 });
 
-// ── Hint ─────────────────────────────────────────────────────────────────────
-document.getElementById('hint-btn').addEventListener('click', async () => {
-  const inp = document.getElementById('hint-input');
+// ── Hint ──────────────────────────────────────────────────────────────────
+document.getElementById('hint-btn')?.addEventListener('click', async () => {
+  const inp  = document.getElementById('hint-input');
   const hint = inp.value.trim();
   if (!hint) return;
   await fetch('/chat/api/hint', {
@@ -402,23 +464,25 @@ document.getElementById('hint-btn').addEventListener('click', async () => {
     body: JSON.stringify({ conv_id: CONV_ID, hint })
   });
   inp.value = '';
+  inp.focus();
 });
 
-// ── Cerrar conversación ───────────────────────────────────────────────────────
-const closeBtn = document.getElementById('close-btn');
-if (closeBtn) {
-  closeBtn.addEventListener('click', async () => {
-    if (!confirm('¿Cerrar esta conversación?')) return;
-    await fetch('/chat/api/close', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ conv_id: CONV_ID })
-    });
-    location.reload();
-  });
-}
+document.getElementById('hint-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('hint-btn').click();
+});
 
-function escHtml(s) {
+// ── Cerrar ────────────────────────────────────────────────────────────────
+document.getElementById('close-btn')?.addEventListener('click', async () => {
+  if (!confirm('¿Cerrar esta conversación?')) return;
+  await fetch('/chat/api/close', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ conv_id: CONV_ID })
+  });
+  location.reload();
+});
+
+function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
