@@ -153,7 +153,16 @@
 
     <!-- Cerrar conversación -->
     {% if conv.status == 'active' %}
-    <button class="btn btn-danger" id="close-btn" style="width:100%;">Cerrar conversación</button>
+    <div id="close-wrap">
+      <button class="btn btn-danger-ghost" id="close-btn" style="width:100%;">Cerrar conversación</button>
+      <div id="close-confirm" style="display:none;background:var(--overlay);border:1px solid var(--danger);border-radius:10px;padding:.85rem 1rem;margin-top:.5rem;">
+        <p style="font-size:.82rem;color:var(--fg2);margin-bottom:.75rem;">¿Cerrar esta conversación?</p>
+        <div style="display:flex;gap:.5rem;">
+          <button class="btn btn-danger" id="close-yes" style="flex:1;">Sí, cerrar</button>
+          <button class="btn" id="close-no" style="flex:1;">Cancelar</button>
+        </div>
+      </div>
+    </div>
     {% endif %}
 
   </div>
@@ -294,8 +303,17 @@ document.getElementById('hint-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('hint-btn').click();
 });
 
-document.getElementById('close-btn')?.addEventListener('click', async () => {
-  if (!confirm('¿Cerrar esta conversación?')) return;
+document.getElementById('close-btn')?.addEventListener('click', () => {
+  document.getElementById('close-confirm').style.display = 'block';
+  document.getElementById('close-btn').style.display = 'none';
+});
+document.getElementById('close-no')?.addEventListener('click', () => {
+  document.getElementById('close-confirm').style.display = 'none';
+  document.getElementById('close-btn').style.display = 'block';
+});
+document.getElementById('close-yes')?.addEventListener('click', async () => {
+  document.getElementById('close-yes').textContent = 'Cerrando…';
+  document.getElementById('close-yes').disabled = true;
   await fetch('/chat/api/close', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
