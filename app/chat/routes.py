@@ -408,7 +408,13 @@ def api_message():
         current_app.logger.error("[Groq] GROQ_API_KEY no configurada en Render")
         print("[Groq] ERROR: GROQ_API_KEY no configurada", flush=True)
     else:
-        for modelo in ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]:  ### CAMBIO AQUÍ ### fallback de modelos
+        for modelo in [   ### CAMBIO AQUÍ ### lista amplia de modelos Groq activos
+            "gemma2-9b-it",
+            "llama-3.3-70b-versatile",
+            "llama-3.1-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768",
+        ]:
             try:
                 resp = groq.chat.completions.create(
                     model=modelo,
@@ -547,13 +553,17 @@ def api_diagnostico():
         result["groq_importado"] = True
         if key:
             client = groq_lib.Groq(api_key=key)
-            resp = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[{"role": "user", "content": "di OK"}],
-                max_tokens=5
-            )
-            result["test_ok"] = True
-            result["test_resp"] = resp.choices[0].message.content
+            modelos = ["gemma2-9b-it","llama-3.3-70b-versatile","llama-3.1-70b-versatile","llama-3.1-8b-instant","mixtral-8x7b-32768"]
+            result["modelos_probados"] = {}
+            for m in modelos:
+                try:
+                    r = client.chat.completions.create(model=m, messages=[{"role":"user","content":"di OK"}], max_tokens=5)
+                    result["modelos_probados"][m] = "OK: " + r.choices[0].message.content
+                    if not result.get("test_ok"):
+                        result["test_ok"] = True
+                        result["modelo_activo"] = m
+                except Exception as e:
+                    result["modelos_probados"][m] = f"FALLO: {type(e).__name__}"
         else:
             result["test_ok"] = False
             result["test_error"] = "key vacía"
