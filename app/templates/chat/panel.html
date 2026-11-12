@@ -67,7 +67,7 @@
         {% endif %}
         <div class="cp-time">{{ c.started_at.strftime('%d/%m %H:%M') }}</div>
         <!-- ### CAMBIO AQUÍ ### — botón eliminar -->
-        <button class="cp-delete-btn" data-id="{{ c.id }}" title="Eliminar conversación" onclick="event.preventDefault();event.stopPropagation();deleteConv('{{ c.id }}',this)">
+        <button class="cp-delete-btn" data-id="{{ c.id }}" title="Eliminar conversación" onclick="event.preventDefault();event.stopPropagation();deleteConv('{{ c.id }}')">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
@@ -131,49 +131,54 @@ function filterConvs(status, btn) {
   const empty = document.getElementById('empty-state');
   if (empty) empty.style.display = visible.length ? 'none' : '';
 }
-// ### CAMBIO AQUÍ ### — aplicar filtro activos al cargar (o el que venga en la URL)
+// ### CAMBIO AQUÍ ### — UN solo DOMContentLoaded para filtro + modal eliminar
+let _deleteTarget = null;
+
+function deleteConv(convId) {
+  _deleteTarget = convId;
+  document.getElementById('delete-modal').style.display = 'flex';
+}
+
+function _closeDeleteModal() {
+  document.getElementById('delete-modal').style.display = 'none';
+  _deleteTarget = null;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Aplicar filtro al cargar
   const params = new URLSearchParams(location.search);
   const f = params.get('filter') || 'active';
   const btn = f === 'all' ? document.querySelector('.cp-filter[onclick*="all"]')
             : f === 'closed' ? document.querySelector('.cp-filter[onclick*="closed"]')
             : document.getElementById('filter-active-btn');
   if (btn) filterConvs(f, btn);
-});
 
-// ### CAMBIO AQUÍ ### — Eliminar con mini-modal inline (sin confirm() del browser)
-let _deleteTarget = null;
-
-function deleteConv(convId, btn) {
-  _deleteTarget = convId;
-  const modal = document.getElementById('delete-modal');
-  modal.style.display = 'flex';
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('delete-cancel').addEventListener('click', () => {
-    document.getElementById('delete-modal').style.display = 'none';
-    _deleteTarget = null;
+  // Modal eliminar
+  document.getElementById('delete-cancel').addEventListener('click', _closeDeleteModal);
+  document.getElementById('delete-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) _closeDeleteModal();
   });
   document.getElementById('delete-confirm').addEventListener('click', async () => {
     if (!_deleteTarget) return;
     const convId = _deleteTarget;
-    document.getElementById('delete-confirm').textContent = 'Eliminando…';
-    document.getElementById('delete-confirm').disabled = true;
-    const r = await fetch('/chat/api/delete', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ conv_id: convId })
-    });
-    document.getElementById('delete-modal').style.display = 'none';
-    document.getElementById('delete-confirm').textContent = 'Sí, eliminar';
-    document.getElementById('delete-confirm').disabled = false;
-    _deleteTarget = null;
-    if (r.ok) {
-      const row = document.getElementById('conv-' + convId);
-      row?.remove();
-      const countEl = document.getElementById('active-count');
-      if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent||'0') - 1);
+    const confirmBtn = document.getElementById('delete-confirm');
+    confirmBtn.textContent = 'Eliminando…';
+    confirmBtn.disabled = true;
+    try {
+      const r = await fetch('/chat/api/delete', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ conv_id: convId })
+      });
+      _closeDeleteModal();
+      if (r.ok) {
+        document.getElementById('conv-' + convId)?.remove();
+        const countEl = document.getElementById('active-count');
+        if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent||'0') - 1);
+      }
+    } finally {
+      confirmBtn.textContent = 'Sí, eliminar';
+      confirmBtn.disabled = false;
     }
   });
 });
@@ -199,7 +204,7 @@ socket.on('new_conversation', (data) => {
     <div class="cp-right">
       <span class="cp-badge-active" id="badge-${data.id}"><span class="live-dot online" id="dot-${data.id}"></span><span id="badge-label-${data.id}">En línea</span></span>
       <div class="cp-time">ahora</div>
-      <button class="cp-delete-btn" title="Eliminar" onclick="event.preventDefault();event.stopPropagation();deleteConv('${data.id}',this)">
+      <button class="cp-delete-btn" title="Eliminar" onclick="event.preventDefault();event.stopPropagation();deleteConv('${data.id}')">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
