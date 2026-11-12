@@ -259,9 +259,11 @@ _KB_DEFAULTS = [
         "si hay una solución dentro de lo que sí hacemos o te derivamos a quien corresponde.'"},
     {"clave": "limites_legales", "titulo": "Límites legales — OBLIGATORIO respetar", "orden": 11, "contenido":
         "REGLAS QUE NUNCA SE PUEDEN VIOLAR EN EL CHAT:\n"
-        "1. NUNCA mencionar precios concretos, rangos de precio ni estimaciones de costo. "
-        "Si el cliente pregunta cuánto cuesta, responder: 'El precio depende de cada proyecto, "
-        "lo definimos juntos en el diagnóstico gratuito después de entender bien lo que necesitás.'\n"
+        "1. PRECIOS: Si el cliente pregunta precio POR PRIMERA VEZ, responder: 'El precio depende de cada proyecto, "
+        "lo definimos juntos en el diagnóstico gratuito.' "
+        "Si el cliente INSISTE en precio (segunda vez o más), dá un rango orientativo CLARO: "
+        "'Un proyecto como el tuyo generalmente arranca en el orden de los $400–$900 USD según complejidad.' "
+        "Nunca repitas la misma respuesta evasiva dos veces seguidas ante la misma pregunta.\n"
         "2. NUNCA prometer plazos de entrega concretos (ni '2 semanas', ni 'un mes', ni ningún número). "
         "Si preguntan cuánto tarda: 'Los tiempos dependen del alcance, lo definimos en la propuesta.'\n"
         "3. NUNCA comprometer funcionalidades específicas ('eso lo podemos hacer', 'ese sistema incluye X'). "
@@ -340,6 +342,28 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
     tiene_contacto = bool(conv.telefono or conv.email)
     expreso_dolor = any(s in combined for s in señales_dolor)
     quiere_cerrar = any(s in combined for s in señales_cierre)
+
+    # ### CAMBIO AQUÍ ### — detectar si el cliente preguntó precio 2+ veces (insistencia)
+    palabras_precio = ["precio", "cuánto cuesta", "cuanto cuesta", "cuánto sale", "cuanto sale",
+                       "cuánto cobran", "cuanto cobran", "cuánto es", "cuanto es",
+                       "planes", "tarifas", "valores", "presupuesto"]
+    veces_pregunto_precio = sum(
+        1 for m in user_msgs
+        if any(p in m for p in palabras_precio)
+    )
+
+    if veces_pregunto_precio >= 2:
+        return {
+            "nombre": "ETAPA 5 — PRECIO INSISTENTE",
+            "instruccion": (
+                "El cliente ya preguntó el precio más de una vez. "
+                "Dá un rango orientativo CLARO y sin rodeos: "
+                "'Un sistema como el que describís generalmente arranca en el orden de los $400–$900 USD, "
+                "dependiendo de los módulos y complejidad. Después del diagnóstico gratuito armamos la propuesta exacta.' "
+                "NO volvás a decir solo 'depende del diagnóstico' sin dar el rango — eso ya lo dijiste y el cliente quiere números. "
+                "Después del rango, podés invitar al diagnóstico para afinar el número, pero el rango es obligatorio."
+            )
+        }
 
     if quiere_cerrar or tiene_contacto:
         return {
