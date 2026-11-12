@@ -3,7 +3,7 @@ services:
     name: zynnos-central
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --worker-class gevent -w 1 run:app
+    startCommand: gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 run:app
     envVars:
       - key: FLASK_SECRET_KEY
         generateValue: true
