@@ -131,7 +131,7 @@ function filterConvs(status, btn) {
   const empty = document.getElementById('empty-state');
   if (empty) empty.style.display = visible.length ? 'none' : '';
 }
-// ### CAMBIO AQUÍ ### — UN solo DOMContentLoaded para filtro + modal eliminar
+// ### CAMBIO AQUÍ ### — UN solo DOMContentLoaded para modal eliminar
 let _deleteTarget = null;
 
 function deleteConv(convId) {
@@ -144,14 +144,17 @@ function _closeDeleteModal() {
   _deleteTarget = null;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Aplicar filtro al cargar
+// ### CAMBIO AQUÍ ### — aplicar filtro AHORA (no esperar DOMContentLoaded)
+(function applyInitialFilter() {
   const params = new URLSearchParams(location.search);
   const f = params.get('filter') || 'active';
   const btn = f === 'all' ? document.querySelector('.cp-filter[onclick*="all"]')
             : f === 'closed' ? document.querySelector('.cp-filter[onclick*="closed"]')
             : document.getElementById('filter-active-btn');
   if (btn) filterConvs(f, btn);
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
 
   // Modal eliminar
   document.getElementById('delete-cancel').addEventListener('click', _closeDeleteModal);
