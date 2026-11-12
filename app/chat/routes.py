@@ -66,6 +66,29 @@ def _cors_preflight(_):
         resp.headers["Access-Control-Max-Age"] = "3600"
     return resp
 
+# ### CAMBIO AQUÍ ### — latido de presencia del visitante
+@chat_bp.route("/api/online", methods=["POST", "OPTIONS"])
+def api_online():
+    """El widget llama esto cada 8s para indicar que el visitante está activo."""
+    if request.method == "OPTIONS":
+        origin = request.headers.get("Origin", "")
+        resp = make_response("", 204)
+        if _cors_allowed(origin):
+            resp.headers["Access-Control-Allow-Origin"] = origin
+            resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+            resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return resp
+    conv_id = (request.get_json(silent=True) or {}).get("conv_id")
+    if conv_id:
+        from app import socketio
+        socketio.emit("client_online", {"conv_id": conv_id}, room="operators")
+    origin = request.headers.get("Origin", "")
+    resp = make_response(jsonify({"ok": True}), 200)
+    if _cors_allowed(origin):
+        resp.headers["Access-Control-Allow-Origin"] = origin
+    return resp
+
+
 # ### CAMBIO AQUÍ ### Endpoint liviano para despertar Render sin crear conversación
 @chat_bp.route("/api/ping", methods=["GET", "POST"])
 def ping():
@@ -541,6 +564,60 @@ def _verificar_objetivo(app, conv_id: str, history_text: str, msg_count: int):
             current_app.logger.warning(f"[Verificador] {e}")
 
 
+# ### CAMBIO AQUÍ ### — genera perfil del prospecto para estudiar antes de llamarlo
+def _generar_perfil_prospecto(app, conv_id: str):
+    """Genera un resumen estructurado del prospecto al cerrar la conversación."""
+    with app.app_context():
+        from app import socketio as _sio
+        from app.models import db, ChatConversacion, ChatMensaje
+        conv = ChatConversacion.query.get(conv_id)
+        if not conv:
+            return
+        mensajes = ChatMensaje.query.filter_by(conversation_id=conv_id).order_by(ChatMensaje.sent_at).all()
+        historia = "\n".join(
+            f"{'Cliente' if m.role=='user' else 'Zynnos'}: {m.content}"
+            for m in mensajes if not m.hidden
+        )
+        if not historia.strip():
+            return
+        try:
+            groq = get_groq()
+            resp = groq.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{
+                    "role": "system",
+                    "content": (
+                        "Eres un asistente de ventas de Zynnos. "
+                        "Genera un resumen conciso del prospecto para que el vendedor lo estudie antes de llamarlo. "
+                        "Formato:\n"
+                        "NOMBRE: ...\n"
+                        "NEGOCIO/RUBRO: ...\n"
+                        "PROBLEMA PRINCIPAL: ...\n"
+                        "SOLUCIÓN PROPUESTA: ...\n"
+                        "OBJECIONES DETECTADAS: ...\n"
+                        "SEÑALES DE INTERÉS: ...\n"
+                        "DATOS DE CONTACTO: ...\n"
+                        "RECOMENDACIÓN PARA LA LLAMADA: ...\n"
+                        "Sé directo y útil. Máximo 200 palabras."
+                    )
+                }, {
+                    "role": "user",
+                    "content": f"Historial de la conversación:\n\n{historia}"
+                }],
+                max_tokens=400,
+                temperature=0.3,
+            )
+            profile_text = resp.choices[0].message.content.strip()
+            conv.profile = profile_text
+            db.session.commit()
+            _sio.emit("prospect_profile", {
+                "conv_id": conv_id,
+                "profile": profile_text
+            }, room="operators")
+        except Exception as e:
+            app.logger.warning(f"[perfil_prospecto] {e}")
+
+
 def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count: int):
     """
     Se ejecuta en un thread separado. Hace:
@@ -974,6 +1051,10 @@ def api_message():
             f"Desde: {conv.source_url or 'sitio web'}\n"
             f"ID: {conv_id}"
         )
+        # ### CAMBIO AQUÍ ### — generar perfil del prospecto al capturar el contacto
+        from app import socketio as _sio
+        app = current_app._get_current_object()
+        _sio.start_background_task(_generar_perfil_prospecto, app, conv_id)
 
     return jsonify({"ok": True, "response": ai_response_limpia, "call_requested": solicito_llamada})
 
@@ -1042,6 +1123,27 @@ def api_close():
         db.session.commit()
     from app import socketio
     socketio.emit("conversation_closed", {"conv_id": conv_id}, room="operators")
+
+    # ### CAMBIO AQUÍ ### — generar perfil del prospecto al cerrar (en background)
+    if conv and conv.nombre:
+        from app import socketio as _sio
+        app = current_app._get_current_object()
+        _sio.start_background_task(_generar_perfil_prospecto, app, conv_id)
+
+    return jsonify({"ok": True})
+
+
+# ### CAMBIO AQUÍ ### — Eliminar conversación
+@chat_bp.route("/api/delete", methods=["POST"])
+@login_required
+def api_delete():
+    conv_id = (request.json or {}).get("conv_id")
+    if not conv_id:
+        return jsonify({"ok": False}), 400
+    conv = ChatConversacion.query.get(conv_id)
+    if conv:
+        db.session.delete(conv)
+        db.session.commit()
     return jsonify({"ok": True})
 
 

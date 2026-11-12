@@ -108,6 +108,16 @@ def create_app(config_class=Config):
         if conv_id:
             join_room(f"conv_{conv_id}")
 
+    # ### CAMBIO AQUÍ ### — latido de presencia del cliente en el widget
+    @socketio.on("client_online")
+    def on_client_online(data):
+        """El widget del visitante emite esto cada 8s mientras está abierto."""
+        conv_id = data.get("conv_id")
+        if conv_id:
+            # reenviar a operadores para actualizar el indicador en el panel
+            from flask_socketio import emit as sio_emit
+            socketio.emit("client_online", {"conv_id": conv_id}, room="operators")
+
     return app
 
 

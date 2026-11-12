@@ -26,11 +26,12 @@
 </div>
 
 <!-- Filtros -->
+<!-- ### CAMBIO AQUÍ ### — Activos es el tab por defecto -->
 <div style="display:flex;gap:.3rem;margin-bottom:1rem;">
-  <button class="cp-filter active" onclick="filterConvs('all',this)" data-count="{{ conversations|length }}">
+  <button class="cp-filter" onclick="filterConvs('all',this)" data-count="{{ conversations|length }}">
     Todos <span class="cp-filter-count">{{ conversations|length }}</span>
   </button>
-  <button class="cp-filter" onclick="filterConvs('active',this)" data-count="{{ conversations|selectattr('status','eq','active')|list|length }}">
+  <button class="cp-filter active" id="filter-active-btn" onclick="filterConvs('active',this)" data-count="{{ conversations|selectattr('status','eq','active')|list|length }}">
     Activos <span class="cp-filter-count">{{ conversations|selectattr('status','eq','active')|list|length }}</span>
   </button>
   <button class="cp-filter" onclick="filterConvs('closed',this)" data-count="{{ conversations|selectattr('status','eq','closed')|list|length }}">
@@ -59,11 +60,16 @@
 
       <div class="cp-right">
         {% if c.status == 'active' %}
-          <span class="cp-badge-active"><span class="live-dot"></span>En línea</span>
+          <!-- ### CAMBIO AQUÍ ### — "en línea real" solo si hay latido reciente; default: "activo" -->
+          <span class="cp-badge-active" id="badge-{{ c.id }}"><span class="live-dot" id="dot-{{ c.id }}"></span><span id="badge-label-{{ c.id }}">Activo</span></span>
         {% else %}
           <span class="cp-badge-closed">Cerrado</span>
         {% endif %}
         <div class="cp-time">{{ c.started_at.strftime('%d/%m %H:%M') }}</div>
+        <!-- ### CAMBIO AQUÍ ### — botón eliminar -->
+        <button class="cp-delete-btn" data-id="{{ c.id }}" title="Eliminar conversación" onclick="event.preventDefault();event.stopPropagation();deleteConv('{{ c.id }}',this)">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
 
       <div class="cp-arrow">
@@ -88,16 +94,60 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <script>
 if (window._chatSocket) { window._chatSocket.disconnect(); }
-const socket = io({ transports: ['websocket'] });
+// ### CAMBIO AQUÍ ### — reconexión automática
+const socket = io({
+  transports: ['websocket'],
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionAttempts: 20
+});
 window._chatSocket = socket;
 socket.emit('join_operators');
+socket.on('connect', () => { socket.emit('join_operators'); });
 
+// ### CAMBIO AQUÍ ### — Aplicar filtro "Activos" al cargar
+let currentFilter = 'active';
 function filterConvs(status, btn) {
+  currentFilter = status;
   document.querySelectorAll('.cp-filter').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.cp-row').forEach(row => {
     row.style.display = (status === 'all' || row.dataset.status === status) ? 'flex' : 'none';
   });
+  // mostrar/ocultar empty state
+  const visible = [...document.querySelectorAll('.cp-row')].filter(r => r.style.display !== 'none');
+  const empty = document.getElementById('empty-state');
+  if (empty) empty.style.display = visible.length ? 'none' : '';
+}
+// ### CAMBIO AQUÍ ### — aplicar filtro activos al cargar (o el que venga en la URL)
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(location.search);
+  const f = params.get('filter') || 'active';
+  const btn = f === 'all' ? document.querySelector('.cp-filter[onclick*="all"]')
+            : f === 'closed' ? document.querySelector('.cp-filter[onclick*="closed"]')
+            : document.getElementById('filter-active-btn');
+  if (btn) filterConvs(f, btn);
+});
+
+// ### CAMBIO AQUÍ ### — Eliminar conversación
+async function deleteConv(convId, btn) {
+  if (!confirm('¿Eliminar esta conversación? No se puede deshacer.')) return;
+  btn.disabled = true;
+  const r = await fetch('/chat/api/delete', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ conv_id: convId })
+  });
+  if (r.ok) {
+    const row = document.getElementById('conv-' + convId);
+    row?.remove();
+    // actualizar contador
+    const countEl = document.getElementById('active-count');
+    if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent||'0') - 1);
+  } else {
+    btn.disabled = false;
+    alert('No se pudo eliminar.');
+  }
 }
 
 socket.on('new_conversation', (data) => {
@@ -111,6 +161,7 @@ socket.on('new_conversation', (data) => {
   a.className = 'cp-row new';
   a.dataset.status = 'active';
   a.setAttribute('hx-boost', 'false');
+  // ### CAMBIO AQUÍ ### — mostrar como "En línea" al entrar (recién llegó)
   a.innerHTML = `
     <div class="cp-avatar active">V</div>
     <div class="cp-body">
@@ -118,10 +169,15 @@ socket.on('new_conversation', (data) => {
       <div class="cp-sub">${data.source || 'zynnos.com'}</div>
     </div>
     <div class="cp-right">
-      <span class="cp-badge-active"><span class="live-dot"></span>En línea</span>
+      <span class="cp-badge-active" id="badge-${data.id}"><span class="live-dot online" id="dot-${data.id}"></span><span id="badge-label-${data.id}">En línea</span></span>
       <div class="cp-time">ahora</div>
+      <button class="cp-delete-btn" title="Eliminar" onclick="event.preventDefault();event.stopPropagation();deleteConv('${data.id}',this)">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
     <div class="cp-arrow"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+  // si el filtro actual es 'active' o 'all', mostrar; si no, ocultar
+  if (currentFilter === 'closed') a.style.display = 'none';
   list.prepend(a);
   setTimeout(() => a.classList.remove('new'), 3000);
 });
@@ -149,6 +205,22 @@ socket.on('conversation_closed', (data) => {
   if (badge) { badge.className = 'cp-badge-closed'; badge.innerHTML = 'Cerrado'; }
   const countEl = document.getElementById('active-count');
   countEl.textContent = Math.max(0, parseInt(countEl.textContent || '0') - 1);
+  // ### CAMBIO AQUÍ ### — si estamos filtrando activos, ocultar la fila cerrada
+  if (currentFilter === 'active') row.style.display = 'none';
+});
+
+// ### CAMBIO AQUÍ ### — indicador "En línea" real: latidos desde el widget
+socket.on('client_online', (data) => {
+  const dot = document.getElementById('dot-' + data.conv_id);
+  const label = document.getElementById('badge-label-' + data.conv_id);
+  if (dot) { dot.classList.add('online'); }
+  if (label) label.textContent = 'En línea';
+  // apagar tras 12s sin latido
+  clearTimeout(window['_online_' + data.conv_id]);
+  window['_online_' + data.conv_id] = setTimeout(() => {
+    if (dot) dot.classList.remove('online');
+    if (label) label.textContent = 'Activo';
+  }, 12000);
 });
 </script>
 {% endblock %}
