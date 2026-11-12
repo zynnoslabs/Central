@@ -117,8 +117,8 @@ window._chatSocket = socket;
 socket.emit('join_operators');
 socket.on('connect', () => { socket.emit('join_operators'); });
 
-// ### CAMBIO AQUÍ ### — Aplicar filtro "Activos" al cargar
-let currentFilter = 'active';
+// ### CAMBIO AQUÍ ### — var para que HTMX pueda re-ejecutar sin "already declared"
+var currentFilter = 'active';
 function filterConvs(status, btn) {
   currentFilter = status;
   document.querySelectorAll('.cp-filter').forEach(t => t.classList.remove('active'));
@@ -131,17 +131,17 @@ function filterConvs(status, btn) {
   const empty = document.getElementById('empty-state');
   if (empty) empty.style.display = visible.length ? 'none' : '';
 }
-// ### CAMBIO AQUÍ ### — UN solo DOMContentLoaded para modal eliminar
-let _deleteTarget = null;
+// ### CAMBIO AQUÍ ### — var en lugar de let para que HTMX pueda re-ejecutar el script sin romper
+var _deleteTarget = null;
 
 function deleteConv(convId) {
-  _deleteTarget = convId;
+  window._deleteTarget = convId;
   document.getElementById('delete-modal').style.display = 'flex';
 }
 
 function _closeDeleteModal() {
   document.getElementById('delete-modal').style.display = 'none';
-  _deleteTarget = null;
+  window._deleteTarget = null;
 }
 
 // ### CAMBIO AQUÍ ### — inicializar filtro y listeners (funciona con HTMX y recarga normal)
@@ -169,8 +169,8 @@ function _initPanel() {
   newCancel.addEventListener('click', _closeDeleteModal);
   modal.addEventListener('click', (e) => { if (e.target === modal) _closeDeleteModal(); });
   newConfirm.addEventListener('click', async () => {
-    if (!_deleteTarget) return;
-    const convId = _deleteTarget;
+    if (!window._deleteTarget) return;
+    const convId = window._deleteTarget;
     newConfirm.textContent = 'Eliminando…';
     newConfirm.disabled = true;
     try {
