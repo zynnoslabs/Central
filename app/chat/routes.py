@@ -817,22 +817,15 @@ def api_message():
     user_count = sum(1 for m in history if m.role == "user")
 
     # ── Análisis paralelo (no bloquea la respuesta al visitante) ──────────── ### CAMBIO AQUÍ ###
+    # Usar socketio.start_background_task en vez de threading.Thread
+    # porque con async_mode="gevent" los threads normales no pueden emitir por websocket
+    from app import socketio as _sio
     app = current_app._get_current_object()
-    t = threading.Thread(
-        target=_run_analysis,
-        args=(app, conv_id, history_text, content, user_count),
-        daemon=True
-    )
-    t.start()
+    _sio.start_background_task(_run_analysis, app, conv_id, history_text, content, user_count)
 
     # ── Verificador de objetivo (cada 3 mensajes del cliente) ──────────────
     if user_count % 3 == 0 and user_count > 0:
-        t_ver = threading.Thread(
-            target=_verificar_objetivo,
-            args=(app, conv_id, history_text, user_count),
-            daemon=True
-        )
-        t_ver.start()
+        _sio.start_background_task(_verificar_objetivo, app, conv_id, history_text, user_count)
 
     # ── Hints del operador pendientes ────────────────────────────────────────
     pending = ChatHint.query.filter_by(conversation_id=conv_id, applied=False).order_by(ChatHint.id).all()
