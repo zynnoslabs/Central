@@ -23,7 +23,31 @@
   </div>
 </div>
 
-<div class="card" style="padding:0;overflow:hidden;">
+<!-- ### CAMBIO AQUÍ ### Skeleton de carga -->
+<div class="card" id="leads-skeleton" style="padding:0;overflow:hidden;">
+  <div class="ld-thead">
+    <span style="flex:1;">Contacto</span>
+    <span style="width:120px;">Recibido</span>
+    <span style="width:200px;text-align:right;">Acciones</span>
+  </div>
+  {% for _ in range(4) %}
+  <div class="ld-row" style="pointer-events:none;">
+    <div class="ld-avatar sk-pulse" style="background:var(--sk-color);color:transparent;">A</div>
+    <div class="ld-body" style="gap:.4rem;">
+      <div class="sk-pulse" style="height:13px;width:140px;border-radius:4px;background:var(--sk-color);"></div>
+      <div class="sk-pulse" style="height:11px;width:100px;border-radius:4px;background:var(--sk-color);"></div>
+    </div>
+    <div class="ld-time sk-pulse" style="height:11px;width:60px;border-radius:4px;background:var(--sk-color);color:transparent;">00/00</div>
+    <div class="ld-actions" style="gap:.5rem;">
+      <div class="sk-pulse" style="height:28px;width:80px;border-radius:6px;background:var(--sk-color);"></div>
+      <div class="sk-pulse" style="height:28px;width:70px;border-radius:6px;background:var(--sk-color);"></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Contenido real (oculto hasta que carga) -->
+<div class="card" id="leads-content" style="padding:0;overflow:hidden;display:none;">
   {% if leads %}
     <!-- Cabecera columnas -->
     <div class="ld-thead">
@@ -78,9 +102,24 @@
 
 {% endblock %}
 
+{% block extra_head %}
+<style>
+  :root { --sk-color: #e8eded; }
+  [data-theme="dark"] { --sk-color: #1e2d2b; }
+  @keyframes sk-shimmer { 0%{opacity:1} 50%{opacity:.45} 100%{opacity:1} }
+  .sk-pulse { animation: sk-shimmer 1.4s ease-in-out infinite; }
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <script>
+// ### CAMBIO AQUÍ ### — Ocultar skeleton y mostrar contenido real
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('leads-skeleton').style.display = 'none';
+  document.getElementById('leads-content').style.display = '';
+});
+
 if (window._chatSocket) { window._chatSocket.disconnect(); }
 const socket = io({ transports: ['websocket'] });
 window._chatSocket = socket;
