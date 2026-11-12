@@ -844,6 +844,21 @@ def panel():
     return render_template("chat/panel.html", conversations=convs)
 
 
+@chat_bp.route("/api/conversations")
+@login_required
+def api_conversations():
+    """### CAMBIO AQUÍ ### — devuelve lista de conversaciones en JSON para sync en tiempo real."""
+    convs = ChatConversacion.query.order_by(ChatConversacion.started_at.desc()).limit(50).all()
+    return jsonify([{
+        "id": c.id,
+        "nombre": c.nombre or "Visitante",
+        "rubro": c.rubro or "",
+        "status": c.status,
+        "source_url": c.source_url or "zynnos.com",
+        "started_at": c.started_at.strftime("%d/%m %H:%M") if c.started_at else ""
+    } for c in convs])
+
+
 @chat_bp.route("/<conv_id>")
 @login_required
 def detalle(conv_id):

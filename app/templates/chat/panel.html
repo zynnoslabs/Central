@@ -192,6 +192,60 @@ window.confirmDeleteConv = async function(convId) {
     window._chatSocket = null;
   }
 
+  // ### CAMBIO AQUÍ ### — sincroniza el DOM con el servidor tras reconexión
+  function _syncConversations() {
+    fetch('/chat/api/conversations')
+      .then(function(r) { return r.json(); })
+      .then(function(convs) {
+        var list = document.getElementById('conv-list');
+        if (!list) return;
+        convs.forEach(function(c) {
+          if (document.getElementById('conv-' + c.id)) return; // ya existe
+          var a = document.createElement('a');
+          a.href = '/chat/' + c.id;
+          a.id = 'conv-' + c.id;
+          a.className = 'cp-row';
+          a.dataset.status = c.status;
+          a.setAttribute('hx-boost', 'false');
+          var badgeHtml = c.status === 'active'
+            ? '<span class="cp-badge-active" id="badge-' + c.id + '"><span class="live-dot" id="dot-' + c.id + '"></span><span id="badge-label-' + c.id + '">Activo</span></span>'
+            : '<span class="cp-badge-closed">Cerrado</span>';
+          a.innerHTML =
+            '<div class="cp-avatar ' + c.status + '">' + c.nombre[0].toUpperCase() + '</div>' +
+            '<div class="cp-body"><div class="cp-top"><span class="cp-name">' + c.nombre + '</span>' +
+            (c.rubro ? '<span class="cp-rubro">' + c.rubro + '</span>' : '') + '</div>' +
+            '<div class="cp-sub">' + c.source_url + '</div></div>' +
+            '<div class="cp-right">' + badgeHtml +
+              '<div class="cp-time">' + c.started_at + '</div>' +
+              '<button class="cp-delete-btn" title="Eliminar" onclick="event.preventDefault();event.stopPropagation();window.deleteConv(\'' + c.id + '\')">' +
+                '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+              '</button>' +
+            '</div>' +
+            '<div class="cp-delete-confirm" id="confirm-' + c.id + '" style="display:none;">' +
+              '<span style="font-size:.8rem;color:var(--fg2);">¿Eliminar?</span>' +
+              '<button class="btn btn-danger btn-xs" onclick="event.preventDefault();event.stopPropagation();window.confirmDeleteConv(\'' + c.id + '\')">Sí</button>' +
+              '<button class="btn btn-xs" onclick="event.preventDefault();event.stopPropagation();window.cancelDeleteConv(\'' + c.id + '\')">No</button>' +
+            '</div>' +
+            '<div class="cp-arrow" id="arrow-' + c.id + '">' +
+              '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+            '</div>';
+          // Insertar en orden: activos primero
+          var firstClosed = list.querySelector('.cp-row[data-status="closed"]');
+          if (c.status === 'active' && firstClosed) {
+            list.insertBefore(a, firstClosed);
+          } else {
+            list.appendChild(a);
+          }
+        });
+        // Ocultar filas según filtro activo
+        document.querySelectorAll('.cp-row').forEach(function(row) {
+          var f = window._currentFilter || 'active';
+          row.style.display = (f === 'all' || row.dataset.status === f) ? 'flex' : 'none';
+        });
+        window.updateFilterCounts();
+      }).catch(function() {});
+  }
+
   function _connectSocket() {
     if (typeof io === 'undefined') return;
     var socket = io({
@@ -202,7 +256,10 @@ window.confirmDeleteConv = async function(convId) {
     });
     window._chatSocket = socket;
     socket.emit('join_operators');
-    socket.on('connect', function() { socket.emit('join_operators'); });
+    socket.on('connect', function() {
+      socket.emit('join_operators');
+      _syncConversations(); // ### CAMBIO AQUÍ ### — al reconectar, sincronizar filas
+    });
 
     socket.on('new_conversation', function(data) {
       var countEl = document.getElementById('active-count');
@@ -273,6 +330,8 @@ window.confirmDeleteConv = async function(convId) {
 
   // socket.io se carga en base.html — siempre disponible
   _connectSocket();
+  // ### CAMBIO AQUÍ ### — sync inmediato al cargar el panel (captura convs perdidas)
+  _syncConversations();
 })();
 </script>
 {% endblock %}
