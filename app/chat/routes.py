@@ -895,7 +895,8 @@ def api_message():
         "- Si el cliente ya mencionó su problema o necesidad, tu próximo mensaje debe avanzar (empatizar o presentar solución), NO volver a preguntar lo mismo\n"
         "- Si rechazás algo (pedido ilegal, fuera de scope), siempre reencauzá: decí qué SÍ podemos hacer en 1 oración\n"
         "- CRÍTICO: NO pidas número de teléfono, WhatsApp ni email hasta llegar a ETAPA 5. Seguí el flujo en orden.\n"
-        "- CRÍTICO: NUNCA digas 'en instantes te contactamos' ni 'te vamos a llamar' ni similares. Solo cuando el cliente ya dio su contacto, agradecé y resumí lo que pidió."
+        "- CRÍTICO: NUNCA digas 'en instantes te contactamos' ni 'te vamos a llamar' ni similares. Solo cuando el cliente ya dio su contacto, agradecé y resumí lo que pidió.\n"
+        "- CRÍTICO: NUNCA uses la palabra 'videollamada'. Siempre decí 'diagnóstico', 'charla', 'reunión por WhatsApp' o 'llamada corta'."
         + hint_text
     )
 
