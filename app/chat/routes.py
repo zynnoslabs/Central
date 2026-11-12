@@ -11,6 +11,7 @@ Todo llega al panel Central via SocketIO en tiempo real.
 """
 
 import os
+import re
 import json
 import secrets
 import threading
@@ -341,7 +342,9 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
 
     tiene_nombre = bool(conv.nombre)
     tiene_negocio = bool(conv.rubro)
-    tiene_contacto = bool(conv.telefono or conv.email)
+    # ### CAMBIO AQUÍ ### — también detectar teléfono en el mensaje actual (el hilo async puede no haberlo guardado aún)
+    telefono_en_msg = bool(re.search(r'\b\d[\d\s\-]{6,}\d\b', user_msg))
+    tiene_contacto = bool(conv.telefono or conv.email or telefono_en_msg)
     expreso_dolor = any(s in combined for s in señales_dolor)
     quiere_cerrar = any(s in combined for s in señales_cierre)
 
@@ -923,8 +926,8 @@ def api_message():
         ai_response = "Gracias por la info. ¿Querés que te prepare un diagnóstico gratuito de lo que podríamos automatizar en tu negocio?"
 
     # ### CAMBIO AQUÍ ### — detectar solicitud de llamada en la respuesta IA
-    solicito_llamada = "[SOLICITUD_CONTACTO]" in ai_response
-    ai_response_limpia = ai_response.replace("[SOLICITUD_CONTACTO]", "").strip()
+    solicito_llamada = bool(re.search(r'\[\s*SOLICITUD_CONTACTO\s*\]', ai_response))  # ### CAMBIO AQUÍ ### regex por si el AI agrega espacios
+    ai_response_limpia = re.sub(r'\[\s*SOLICITUD_CONTACTO\s*\]', '', ai_response).strip()
 
     # Marcar hints como aplicados
     for h in pending:
