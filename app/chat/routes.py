@@ -333,9 +333,12 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
     señales_cierre = ["llamame", "llamá", "quiero hablar", "podemos hablar", "cuánto sale",
                       "cuanto sale", "precio", "cuánto cuesta", "cuanto cuesta",
                       "me interesa", "quiero empezar", "cómo arrancamos", "como arrancamos"]
-    # Señales de dolor/problema
+    # Señales de dolor/problema — ### CAMBIO AQUÍ ### ampliado para cubrir más casos
     señales_dolor = ["no puedo", "no tengo tiempo", "me cuesta", "problema", "difícil",
-                     "pierdo", "no llego", "tarde", "manual", "todo a mano", "mucho trabajo"]
+                     "pierdo", "no llego", "tarde", "manual", "todo a mano", "mucho trabajo",
+                     "ventas", "vender", "clientes", "cobros", "cobrar", "reservas", "stock",
+                     "gestión", "organizar", "factura", "turno", "pedido", "entrega",
+                     "generar", "conseguir", "mejorar", "aumentar", "quiero", "necesito"]
 
     tiene_nombre = bool(conv.nombre)
     tiene_negocio = bool(conv.rubro)
@@ -864,12 +867,14 @@ def api_message():
 
         "REGLAS ESTRICTAS:\n"
         "- UNA SOLA PREGUNTA por mensaje. Si querés preguntar dos cosas, elegí la más importante.\n"
-        "- Máximo 2 oraciones en total. Corto y directo.\n"
-        "- Si ya sabés un dato, no lo volvás a preguntar\n"
+        "- Máximo 2-3 oraciones en total. Corto y directo.\n"
+        "- Si ya sabés un dato, no lo volvás a preguntar. JAMÁS repetir una pregunta que el cliente ya respondió.\n"
+        "- Si el cliente ya respondió qué problema tiene, NO volvás a preguntar qué problema tiene. Avanzá a la siguiente etapa.\n"
         "- Nunca des precios hasta que pregunten\n"
         "- Español rioplatense informal, nada de mayúsculas ni exclamaciones exageradas\n"
         "- Si el cliente dice 'llamame' o quiere hablar, activá etapa 5 directo\n"
-        "- NUNCA hagas más de una pregunta en el mismo mensaje, aunque sean distintos temas"
+        "- NUNCA hagas más de una pregunta en el mismo mensaje, aunque sean distintos temas\n"
+        "- Si el cliente ya mencionó su problema o necesidad, tu próximo mensaje debe avanzar (empatizar o presentar solución), NO volver a preguntar lo mismo"
         + hint_text
     )
 
@@ -897,7 +902,7 @@ def api_message():
                     model=modelo,
                     messages=messages_for_groq,
                     temperature=0.7,
-                    max_tokens=350  # ### CAMBIO AQUÍ ### era 200, se cortaban las respuestas
+                    max_tokens=500  # ### CAMBIO AQUÍ ### subido para evitar cortes
                 )
                 ai_response = resp.choices[0].message.content.strip()
                 print(f"[Groq] OK con {modelo}: {ai_response[:80]}", flush=True)
