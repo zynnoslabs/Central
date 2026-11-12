@@ -171,7 +171,7 @@ _KB_DEFAULTS = [
         "- 'No tengo tiempo para implementarlo': 'Nosotros nos encargamos de todo, vos no tenés que hacer nada técnico'"},
     {"clave": "objetivo_chat", "titulo": "Objetivo del chat",      "orden": 6, "contenido":
         "Conseguir que el visitante deje sus datos de contacto (teléfono o email) para coordinar un diagnóstico gratuito. "
-        "El diagnóstico es sin costo y sin compromiso, puede ser por WhatsApp, videollamada o como le quede mejor al cliente. "
+        "El diagnóstico es sin costo y sin compromiso, podemos coordinar por WhatsApp o como le quede mejor al cliente. "
         "No cerrar precios por chat — siempre derivar al diagnóstico."},
     {"clave": "tono",          "titulo": "Tono y estilo",          "orden": 7, "contenido":
         "Amigable, directo, sin tecnicismos. Español rioplatense informal. "
@@ -333,12 +333,13 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
     señales_cierre = ["llamame", "llamá", "quiero hablar", "podemos hablar",
                       "quiero empezar", "cómo arrancamos", "como arrancamos",
                       "manden info", "mandame info", "dejame el contacto", "quiero que me contacten"]
-    # Señales de dolor/problema — ### CAMBIO AQUÍ ### ampliado para cubrir más casos
+    # Señales de dolor/problema — solo palabras que CLARAMENTE indican un problema real
+    # ### CAMBIO AQUÍ ### — quitadas palabras genéricas que disparaban Etapa 2 en el primer mensaje
     señales_dolor = ["no puedo", "no tengo tiempo", "me cuesta", "problema", "difícil",
-                     "pierdo", "no llego", "tarde", "manual", "todo a mano", "mucho trabajo",
-                     "ventas", "vender", "clientes", "cobros", "cobrar", "reservas", "stock",
-                     "gestión", "organizar", "factura", "turno", "pedido", "entrega",
-                     "generar", "conseguir", "mejorar", "aumentar", "quiero", "necesito"]
+                     "pierdo tiempo", "no llego", "todo a mano", "mucho trabajo",
+                     "cobros atrasados", "cobrar cuotas", "turno por whatsapp",
+                     "respondo mensajes", "agenda manual", "se me acumula", "se acumula",
+                     "no doy abasto", "no llego a", "me lleva horas"]
 
     tiene_nombre = bool(conv.nombre)
     tiene_negocio = bool(conv.rubro)
@@ -881,7 +882,9 @@ def api_message():
         "- Si el cliente dice 'llamame' o quiere hablar, activá etapa 5 directo\n"
         "- NUNCA hagas más de una pregunta en el mismo mensaje, aunque sean distintos temas\n"
         "- Si el cliente ya mencionó su problema o necesidad, tu próximo mensaje debe avanzar (empatizar o presentar solución), NO volver a preguntar lo mismo\n"
-        "- Si rechazás algo (pedido ilegal, fuera de scope), siempre reencauzá: decí qué SÍ podemos hacer en 1 oración"
+        "- Si rechazás algo (pedido ilegal, fuera de scope), siempre reencauzá: decí qué SÍ podemos hacer en 1 oración\n"
+        "- CRÍTICO: NO pidas número de teléfono, WhatsApp ni email hasta llegar a ETAPA 5. Seguí el flujo en orden.\n"
+        "- CRÍTICO: NUNCA digas 'en instantes te contactamos' ni 'te vamos a llamar' ni similares. Solo cuando el cliente ya dio su contacto, agradecé y resumí lo que pidió."
         + hint_text
     )
 
