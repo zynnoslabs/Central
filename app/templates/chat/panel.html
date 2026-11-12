@@ -193,9 +193,9 @@ function _initPanel() {
   });
 }
 
-// Correr al cargar (recarga normal) y al hacer swap HTMX
-document.addEventListener('DOMContentLoaded', _initPanel);
-document.addEventListener('htmx:afterSwap', _initPanel);
+// ### CAMBIO AQUÍ ### — llamar _initPanel directamente (el DOM ya existe cuando el script corre,
+// tanto en recarga normal como en swap HTMX que re-ejecuta este script via cloneNode)
+_initPanel();
 
 socket.on('new_conversation', (data) => {
   const countEl = document.getElementById('active-count');
