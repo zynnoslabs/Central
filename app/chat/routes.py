@@ -62,8 +62,18 @@ def _cors_preflight(_):
     if _cors_allowed(origin):
         resp.headers["Access-Control-Allow-Origin"] = origin
         resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        resp.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
         resp.headers["Access-Control-Max-Age"] = "3600"
+    return resp
+
+# ### CAMBIO AQUÍ ### Endpoint liviano para despertar Render sin crear conversación
+@chat_bp.route("/api/ping", methods=["GET", "POST"])
+def ping():
+    """Ping liviano para warm-up del servidor (no crea conversaciones)."""
+    origin = request.headers.get("Origin", "")
+    resp = make_response(jsonify({"ok": True, "pong": True}), 200)
+    if _cors_allowed(origin):
+        resp.headers["Access-Control-Allow-Origin"] = origin
     return resp
 
 # ── Groq client (lazy) ────────────────────────────────────────────────────────
