@@ -100,6 +100,27 @@
 <script>
 // ### CAMBIO AQUÍ ### — panel.html: todo en window.* para sobrevivir re-ejecuciones HTMX
 
+// --- Contadores de filtro ---
+// ### CAMBIO AQUÍ ### — recuenta filas del DOM y actualiza los badges de cada botón
+window.updateFilterCounts = function() {
+  var rows = Array.from(document.querySelectorAll('.cp-row'));
+  var total   = rows.length;
+  var active  = rows.filter(function(r) { return r.dataset.status === 'active'; }).length;
+  var closed  = rows.filter(function(r) { return r.dataset.status === 'closed'; }).length;
+  // Actualizar texto de cada botón de filtro conservando el span .cp-filter-count
+  document.querySelectorAll('.cp-filter').forEach(function(btn) {
+    var cnt = btn.querySelector('.cp-filter-count');
+    if (!cnt) return;
+    var onclick = btn.getAttribute('onclick') || '';
+    if (onclick.includes("'all'"))    cnt.textContent = total;
+    if (onclick.includes("'active'")) cnt.textContent = active;
+    if (onclick.includes("'closed'")) cnt.textContent = closed;
+  });
+  // También sincronizar el badge de activos del header
+  var countEl = document.getElementById('active-count');
+  if (countEl) countEl.textContent = active;
+};
+
 // --- Filtro ---
 window.filterConvs = function(status, btn) {
   window._currentFilter = status;
@@ -146,8 +167,7 @@ window.confirmDeleteConv = async function(convId) {
     if (r.ok) {
       var row = document.getElementById('conv-' + convId);
       if (row) row.remove();
-      var countEl = document.getElementById('active-count');
-      if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent || '0') - 1);
+      window.updateFilterCounts(); // ### CAMBIO AQUÍ ###
     }
   } catch(e) {
     if (yesBtn) { yesBtn.textContent = 'Sí'; yesBtn.disabled = false; }
@@ -211,6 +231,7 @@ window.confirmDeleteConv = async function(convId) {
         '<div class="cp-arrow"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
       if (window._currentFilter === 'closed') a.style.display = 'none';
       list.prepend(a);
+      window.updateFilterCounts(); // ### CAMBIO AQUÍ ###
       setTimeout(function() { a.classList.remove('new'); }, 3000);
     });
 
@@ -233,8 +254,7 @@ window.confirmDeleteConv = async function(convId) {
       row.querySelector('.cp-avatar').className = 'cp-avatar closed';
       var badge = row.querySelector('.cp-badge-active');
       if (badge) { badge.className = 'cp-badge-closed'; badge.innerHTML = 'Cerrado'; }
-      var countEl = document.getElementById('active-count');
-      if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent || '0') - 1);
+      window.updateFilterCounts(); // ### CAMBIO AQUÍ ###
       if (window._currentFilter === 'active') row.style.display = 'none';
     });
 
