@@ -169,10 +169,9 @@ _KB_DEFAULTS = [
         "- 'Ya lo intenté con otro': 'Qué pasó? Muchos vienen después de malas experiencias, nosotros trabajamos diferente'\n"
         "- 'No tengo tiempo para implementarlo': 'Nosotros nos encargamos de todo, vos no tenés que hacer nada técnico'"},
     {"clave": "objetivo_chat", "titulo": "Objetivo del chat",      "orden": 6, "contenido":
-        "Conseguir que el visitante agende una videollamada de diagnóstico gratuito de 30 minutos. "
-        "El diagnóstico es sin costo y sin compromiso. "
-        "Si el visitante prefiere que lo llamen, conseguir su teléfono. "
-        "No cerrar precios por chat — siempre derivar a la llamada."},
+        "Conseguir que el visitante deje sus datos de contacto (teléfono o email) para coordinar un diagnóstico gratuito. "
+        "El diagnóstico es sin costo y sin compromiso, puede ser por WhatsApp, videollamada o como le quede mejor al cliente. "
+        "No cerrar precios por chat — siempre derivar al diagnóstico."},
     {"clave": "tono",          "titulo": "Tono y estilo",          "orden": 7, "contenido":
         "Amigable, directo, sin tecnicismos. Español rioplatense informal. "
         "El asesor se llama Matías. Nunca sonar a robot ni a telemarketing. "
@@ -375,7 +374,7 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
                 "El cliente mostró interés o quiere hablar. "
                 "Pedí su teléfono o email para coordinar el diagnóstico gratuito. "
                 "Si ya lo tenés, confirmá que lo van a contactar pronto. "
-                "Si pide llamada, usá [SOLICITUD_LLAMADA] al final de tu respuesta."
+                "Si el cliente quiere contacto o hablar con alguien, usá [SOLICITUD_LLAMADA] al final de tu respuesta."
             )
         }
     elif expreso_dolor and tiene_negocio:
@@ -490,7 +489,7 @@ def _verificar_objetivo(app, conv_id: str, history_text: str, msg_count: int):
                 messages=[
                     {"role": "system", "content": (
                         "Sos el supervisor de ventas de Zynnos Labs. Analizás conversaciones del chatbot.\n"
-                        "Objetivo del chat: " + (kb_objetivo or "Que el visitante agende una videollamada de diagnóstico gratuito o deje su teléfono.") + "\n\n"
+                        "Objetivo del chat: " + (kb_objetivo or "Que el visitante deje su contacto para coordinar el diagnóstico gratuito.") + "\n\n"
                         "Evaluá la conversación y respondé SOLO JSON:\n"
                         "{\n"
                         '  "en_camino": true/false,\n'
@@ -863,7 +862,7 @@ def api_message():
         "ETAPA 2 — DOLOR: Preguntá qué tarea les consume más tiempo. Cuando lo describa, reflejalo con empatía.\n"
         "ETAPA 3 — CONSECUENCIA: Ayudalo a ver el costo real. '¿Y eso cuánto tiempo te lleva por semana?'\n"
         "ETAPA 4 — SOLUCIÓN: Presentá la solución concreta de Zynnos para ese problema. Ofrecé el diagnóstico.\n"
-        "ETAPA 5 — CIERRE: Pedí contacto. Si pide llamada, decí que lo contactan pronto y usá [SOLICITUD_LLAMADA].\n\n"
+        "ETAPA 5 — CIERRE: Pedí contacto. Si el cliente quiere hablar o que lo contacten, decí que lo contactan pronto y usá [SOLICITUD_LLAMADA].\n\n"
 
         "LO QUE ZYNNOS NO HACE (CRÍTICO — nunca prometás esto):\n"
         "- NO desarrollamos apps nativas para App Store ni Play Store\n"
@@ -955,7 +954,7 @@ def api_message():
             "source": conv.source_url or "sitio web"
         }, room="operators")
         send_whatsapp(
-            f"📞 *Solicitud de llamada*\n"
+            f"📬 *Solicitud de contacto*\n"
             f"Cliente: {nombre_cliente}\n"
             f"Teléfono: {tel_cliente}\n"
             f"Desde: {conv.source_url or 'sitio web'}\n"
