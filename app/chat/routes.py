@@ -353,8 +353,9 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
 
     tiene_nombre = bool(conv.nombre)
     tiene_negocio = bool(conv.rubro)
-    # ### CAMBIO AQUÍ ### — también detectar teléfono en el mensaje actual (el hilo async puede no haberlo guardado aún)
-    telefono_en_msg = bool(re.search(r'\b\d[\d\s\-]{6,}\d\b', user_msg))
+    # ### CAMBIO AQUÍ ### — también detectar teléfono en el último mensaje del historial
+    ultimo_user_msg = user_msgs[-1] if user_msgs else ""
+    telefono_en_msg = bool(re.search(r'\b\d[\d\s\-]{6,}\d\b', ultimo_user_msg))
     tiene_contacto = bool(conv.telefono or conv.email or telefono_en_msg)
     expreso_dolor = any(s in combined for s in señales_dolor)
     quiere_cerrar = any(s in combined for s in señales_cierre)
