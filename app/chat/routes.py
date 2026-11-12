@@ -372,9 +372,9 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
             "nombre": "ETAPA 5 — CIERRE",
             "instruccion": (
                 "El cliente mostró interés o quiere hablar. "
-                "Pedí su teléfono o email para coordinar el diagnóstico gratuito. "
-                "Si ya lo tenés, confirmá que lo van a contactar pronto. "
-                "Si el cliente quiere contacto o hablar con alguien, usá [SOLICITUD_LLAMADA] al final de tu respuesta."
+                "Pedí su número de teléfono o email para coordinar el diagnóstico gratuito. "
+                "Cuando el cliente ya dio su número o email: agradecele, hacé un resumen breve de lo que pidió o comentó, y usá [SOLICITUD_LLAMADA] al final. "
+                "NO digas que lo van a contactar pronto ni pongas tiempos — solo agradecé y resumí."
             )
         }
     elif expreso_dolor and tiene_negocio:
@@ -862,7 +862,7 @@ def api_message():
         "ETAPA 2 — DOLOR: Preguntá qué tarea les consume más tiempo. Cuando lo describa, reflejalo con empatía.\n"
         "ETAPA 3 — CONSECUENCIA: Ayudalo a ver el costo real. '¿Y eso cuánto tiempo te lleva por semana?'\n"
         "ETAPA 4 — SOLUCIÓN: Presentá la solución concreta de Zynnos para ese problema. Ofrecé el diagnóstico.\n"
-        "ETAPA 5 — CIERRE: Pedí contacto. Si el cliente quiere hablar o que lo contacten, decí que lo contactan pronto y usá [SOLICITUD_LLAMADA].\n\n"
+        "ETAPA 5 — CIERRE: Pedí número o email. Cuando lo dé, agradecele y hacé un resumen de lo que pidió. Usá [SOLICITUD_LLAMADA]. No digas que lo contactarán pronto ni pongas tiempos.\n\n"
 
         "LO QUE ZYNNOS NO HACE (CRÍTICO — nunca prometás esto):\n"
         "- NO desarrollamos apps nativas para App Store ni Play Store\n"
