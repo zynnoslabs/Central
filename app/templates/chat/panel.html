@@ -105,6 +105,7 @@
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <script>
+(function() { // ### CAMBIO AQUÍ ### — IIFE para que re-ejecuciones de HTMX no choquen con const/let/var
 if (window._chatSocket) { window._chatSocket.disconnect(); }
 // ### CAMBIO AQUÍ ### — reconexión automática
 const socket = io({
@@ -132,17 +133,17 @@ function filterConvs(status, btn) {
   if (empty) empty.style.display = visible.length ? 'none' : '';
 }
 // ### CAMBIO AQUÍ ### — var en lugar de let para que HTMX pueda re-ejecutar el script sin romper
-var _deleteTarget = null;
+window._deleteTarget = null;
 
-function deleteConv(convId) {
+window.deleteConv = function(convId) {
   window._deleteTarget = convId;
   document.getElementById('delete-modal').style.display = 'flex';
-}
+};
 
-function _closeDeleteModal() {
+window._closeDeleteModal = function() {
   document.getElementById('delete-modal').style.display = 'none';
   window._deleteTarget = null;
-}
+};
 
 // ### CAMBIO AQUÍ ### — inicializar filtro y listeners (funciona con HTMX y recarga normal)
 function _initPanel() {
@@ -268,5 +269,6 @@ socket.on('client_online', (data) => {
     if (label) label.textContent = 'Activo';
   }, 12000);
 });
+})(); // fin IIFE
 </script>
 {% endblock %}
