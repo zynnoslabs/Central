@@ -1806,6 +1806,8 @@ small.text-muted { font-size: .8125rem; color: var(--fg2); margin-top: .2rem; }
   {# ### CAMBIO AQUÍ ### — HTMX: actualiza solo el contenido sin recargar la página #}
   {% block extra_head %}{% endblock %}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.3/htmx.min.js"></script>
+  <!-- ### CAMBIO AQUÍ ### socket.io cargado globalmente para que panel.html lo use sin problemas con HTMX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     htmx.config.defaultSwapStyle = 'innerHTML';
     htmx.config.defaultSwapDelay = 0;

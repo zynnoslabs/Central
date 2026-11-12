@@ -267,17 +267,8 @@ window._closeDeleteModal = function() {
     });
   }
 
-  // Si socket.io ya está cargado, conectar ahora
-  if (typeof io !== 'undefined') {
-    _connectSocket();
-    return;
-  }
-
-  // Si no, cargarlo dinámicamente y conectar al cargar
-  var s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js';
-  s.onload = _connectSocket;
-  document.head.appendChild(s);
+  // socket.io se carga en base.html — siempre disponible
+  _connectSocket();
 })();
 </script>
 {% endblock %}
