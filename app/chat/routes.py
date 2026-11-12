@@ -373,7 +373,7 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
             "instruccion": (
                 "El cliente mostró interés o quiere hablar. "
                 "Pedí su número de teléfono o email para coordinar el diagnóstico gratuito. "
-                "Cuando el cliente ya dio su número o email: agradecele, hacé un resumen breve de lo que pidió o comentó, y usá [SOLICITUD_LLAMADA] al final. "
+                "Cuando el cliente ya dio su número o email: agradecele, hacé un resumen breve de lo que pidió o comentó, y usá [SOLICITUD_CONTACTO] al final. "
                 "NO digas que lo van a contactar pronto ni pongas tiempos — solo agradecé y resumí."
             )
         }
@@ -862,7 +862,7 @@ def api_message():
         "ETAPA 2 — DOLOR: Preguntá qué tarea les consume más tiempo. Cuando lo describa, reflejalo con empatía.\n"
         "ETAPA 3 — CONSECUENCIA: Ayudalo a ver el costo real. '¿Y eso cuánto tiempo te lleva por semana?'\n"
         "ETAPA 4 — SOLUCIÓN: Presentá la solución concreta de Zynnos para ese problema. Ofrecé el diagnóstico.\n"
-        "ETAPA 5 — CIERRE: Pedí número o email. Cuando lo dé, agradecele y hacé un resumen de lo que pidió. Usá [SOLICITUD_LLAMADA]. No digas que lo contactarán pronto ni pongas tiempos.\n\n"
+        "ETAPA 5 — CIERRE: Pedí número o email. Cuando lo dé, agradecele y hacé un resumen de lo que pidió. Usá [SOLICITUD_CONTACTO]. No digas que lo contactarán pronto ni pongas tiempos.\n\n"
 
         "LO QUE ZYNNOS NO HACE (CRÍTICO — nunca prometás esto):\n"
         "- NO desarrollamos apps nativas para App Store ni Play Store\n"
@@ -923,8 +923,8 @@ def api_message():
         ai_response = "Gracias por la info. ¿Querés que te prepare un diagnóstico gratuito de lo que podríamos automatizar en tu negocio?"
 
     # ### CAMBIO AQUÍ ### — detectar solicitud de llamada en la respuesta IA
-    solicito_llamada = "[SOLICITUD_LLAMADA]" in ai_response
-    ai_response_limpia = ai_response.replace("[SOLICITUD_LLAMADA]", "").strip()
+    solicito_llamada = "[SOLICITUD_CONTACTO]" in ai_response
+    ai_response_limpia = ai_response.replace("[SOLICITUD_CONTACTO]", "").strip()
 
     # Marcar hints como aplicados
     for h in pending:
