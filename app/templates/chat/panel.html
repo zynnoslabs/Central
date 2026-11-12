@@ -144,29 +144,35 @@ function _closeDeleteModal() {
   _deleteTarget = null;
 }
 
-// ### CAMBIO AQUÍ ### — aplicar filtro AHORA (no esperar DOMContentLoaded)
-(function applyInitialFilter() {
+// ### CAMBIO AQUÍ ### — inicializar filtro y listeners (funciona con HTMX y recarga normal)
+function _initPanel() {
+  // Filtro inicial
   const params = new URLSearchParams(location.search);
   const f = params.get('filter') || 'active';
   const btn = f === 'all' ? document.querySelector('.cp-filter[onclick*="all"]')
             : f === 'closed' ? document.querySelector('.cp-filter[onclick*="closed"]')
             : document.getElementById('filter-active-btn');
   if (btn) filterConvs(f, btn);
-})();
 
-document.addEventListener('DOMContentLoaded', () => {
+  // Modal eliminar — re-adjuntar listeners cada vez
+  const cancelBtn = document.getElementById('delete-cancel');
+  const confirmBtn = document.getElementById('delete-confirm');
+  const modal = document.getElementById('delete-modal');
+  if (!cancelBtn || !confirmBtn || !modal) return;
 
-  // Modal eliminar
-  document.getElementById('delete-cancel').addEventListener('click', _closeDeleteModal);
-  document.getElementById('delete-modal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) _closeDeleteModal();
-  });
-  document.getElementById('delete-confirm').addEventListener('click', async () => {
+  // Clonar para limpiar listeners viejos
+  const newCancel = cancelBtn.cloneNode(true);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+  const newConfirm = confirmBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+
+  newCancel.addEventListener('click', _closeDeleteModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) _closeDeleteModal(); });
+  newConfirm.addEventListener('click', async () => {
     if (!_deleteTarget) return;
     const convId = _deleteTarget;
-    const confirmBtn = document.getElementById('delete-confirm');
-    confirmBtn.textContent = 'Eliminando…';
-    confirmBtn.disabled = true;
+    newConfirm.textContent = 'Eliminando…';
+    newConfirm.disabled = true;
     try {
       const r = await fetch('/chat/api/delete', {
         method: 'POST',
@@ -180,11 +186,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent||'0') - 1);
       }
     } finally {
-      confirmBtn.textContent = 'Sí, eliminar';
-      confirmBtn.disabled = false;
+      newConfirm.textContent = 'Sí, eliminar';
+      newConfirm.disabled = false;
     }
   });
-});
+}
+
+// Correr al cargar (recarga normal) y al hacer swap HTMX
+document.addEventListener('DOMContentLoaded', _initPanel);
+document.addEventListener('htmx:afterSwap', _initPanel);
 
 socket.on('new_conversation', (data) => {
   const countEl = document.getElementById('active-count');
