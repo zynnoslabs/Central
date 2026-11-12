@@ -829,13 +829,14 @@ def api_message():
         "ETAPA 4 — SOLUCIÓN: Presentá la solución concreta de Zynnos para ese problema. Ofrecé el diagnóstico.\n"
         "ETAPA 5 — CIERRE: Pedí contacto. Si pide llamada, decí que lo contactan pronto y usá [SOLICITUD_LLAMADA].\n\n"
 
-        "REGLAS:\n"
-        "- UNA sola pregunta por mensaje\n"
+        "REGLAS ESTRICTAS:\n"
+        "- UNA SOLA PREGUNTA por mensaje. Si querés preguntar dos cosas, elegí la más importante.\n"
+        "- Máximo 2 oraciones en total. Corto y directo.\n"
         "- Si ya sabés un dato, no lo volvás a preguntar\n"
         "- Nunca des precios hasta que pregunten\n"
-        "- Español rioplatense informal\n"
-        "- Máximo 3 oraciones\n"
-        "- Si el cliente dice 'llamame' o quiere hablar, activá etapa 5 directo"
+        "- Español rioplatense informal, nada de mayúsculas ni exclamaciones exageradas\n"
+        "- Si el cliente dice 'llamame' o quiere hablar, activá etapa 5 directo\n"
+        "- NUNCA hagas más de una pregunta en el mismo mensaje, aunque sean distintos temas"
         + hint_text
     )
 
@@ -863,7 +864,7 @@ def api_message():
                     model=modelo,
                     messages=messages_for_groq,
                     temperature=0.7,
-                    max_tokens=200
+                    max_tokens=350  # ### CAMBIO AQUÍ ### era 200, se cortaban las respuestas
                 )
                 ai_response = resp.choices[0].message.content.strip()
                 print(f"[Groq] OK con {modelo}: {ai_response[:80]}", flush=True)
