@@ -69,7 +69,14 @@
         </button>
       </div>
 
-      <div class="cp-arrow">
+      <!-- ### CAMBIO AQUÍ ### — confirmación inline, se muestra al clickear basura -->
+      <div class="cp-delete-confirm" id="confirm-{{ c.id }}" style="display:none;">
+        <span style="font-size:.8rem;color:var(--fg2);">¿Eliminar?</span>
+        <button class="btn btn-danger btn-xs" onclick="event.preventDefault();event.stopPropagation();window.confirmDeleteConv('{{ c.id }}')">Sí</button>
+        <button class="btn btn-xs" onclick="event.preventDefault();event.stopPropagation();window.cancelDeleteConv('{{ c.id }}')">No</button>
+      </div>
+
+      <div class="cp-arrow" id="arrow-{{ c.id }}">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
     </a>
@@ -85,17 +92,7 @@
   {% endif %}
 </div>
 
-<!-- Modal de confirmación para eliminar -->
-<div id="delete-modal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem 1.75rem;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.35);">
-    <div style="font-size:.95rem;font-weight:600;color:var(--fg);margin-bottom:.4rem;">¿Eliminar esta conversación?</div>
-    <p style="font-size:.82rem;color:var(--fg3);margin-bottom:1.25rem;">Esta acción no se puede deshacer. Se borrarán todos los mensajes.</p>
-    <div style="display:flex;gap:.6rem;">
-      <button class="btn btn-danger" id="delete-confirm" style="flex:1;">Sí, eliminar</button>
-      <button class="btn" id="delete-cancel" style="flex:1;">Cancelar</button>
-    </div>
-  </div>
-</div>
+<!-- ### CAMBIO AQUÍ ### — sin modal overlay; confirmación inline en cada fila -->
 
 {% endblock %}
 
@@ -116,68 +113,55 @@ window.filterConvs = function(status, btn) {
   if (empty) empty.style.display = visible.length ? 'none' : '';
 };
 
-// --- Modal eliminar ---
+// --- Confirmación inline en la fila ---
+// ### CAMBIO AQUÍ ### — sin modal; muestra/oculta el div cp-delete-confirm dentro de la fila
 window.deleteConv = function(convId) {
-  window._deleteTarget = convId;
-  var modal = document.getElementById('delete-modal');
-  if (modal) modal.style.display = 'flex';
+  // Cerrar cualquier confirmación abierta antes
+  document.querySelectorAll('.cp-delete-confirm').forEach(function(el) { el.style.display = 'none'; });
+  document.querySelectorAll('[id^="arrow-"]').forEach(function(el) { el.style.display = ''; });
+  // Mostrar confirmación en esta fila
+  var confirm = document.getElementById('confirm-' + convId);
+  var arrow   = document.getElementById('arrow-' + convId);
+  if (confirm) confirm.style.display = 'flex';
+  if (arrow)   arrow.style.display   = 'none';
 };
 
-window._closeDeleteModal = function() {
-  var modal = document.getElementById('delete-modal');
-  if (modal) modal.style.display = 'none';
-  window._deleteTarget = null;
+window.cancelDeleteConv = function(convId) {
+  var confirm = document.getElementById('confirm-' + convId);
+  var arrow   = document.getElementById('arrow-' + convId);
+  if (confirm) confirm.style.display = 'none';
+  if (arrow)   arrow.style.display   = '';
 };
 
-// --- Inicializar panel: filtro + listeners del modal ---
-// ### CAMBIO AQUÍ ### — se llama directamente (sin esperar eventos), funciona tanto en
-// carga inicial como cuando HTMX re-ejecuta este script via cloneNode tras el swap
+window.confirmDeleteConv = async function(convId) {
+  var confirmDiv = document.getElementById('confirm-' + convId);
+  var yesBtn = confirmDiv ? confirmDiv.querySelector('.btn-danger') : null;
+  if (yesBtn) { yesBtn.textContent = '…'; yesBtn.disabled = true; }
+  try {
+    var r = await fetch('/chat/api/delete', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ conv_id: convId })
+    });
+    if (r.ok) {
+      var row = document.getElementById('conv-' + convId);
+      if (row) row.remove();
+      var countEl = document.getElementById('active-count');
+      if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent || '0') - 1);
+    }
+  } catch(e) {
+    if (yesBtn) { yesBtn.textContent = 'Sí'; yesBtn.disabled = false; }
+  }
+};
+
+// --- Inicializar panel: solo aplica filtro ---
 (function _initPanel() {
-  // Aplicar filtro inicial (default: activos)
   var params = new URLSearchParams(location.search);
   var f = params.get('filter') || 'active';
   var btn = f === 'all'    ? document.querySelector('.cp-filter[onclick*="all"]')
           : f === 'closed' ? document.querySelector('.cp-filter[onclick*="closed"]')
           : document.getElementById('filter-active-btn');
   window.filterConvs(f, btn);
-
-  // Re-adjuntar listeners del modal (clonar para limpiar los viejos)
-  var cancelBtn  = document.getElementById('delete-cancel');
-  var confirmBtn = document.getElementById('delete-confirm');
-  var modal      = document.getElementById('delete-modal');
-  if (!cancelBtn || !confirmBtn || !modal) return;
-
-  var newCancel  = cancelBtn.cloneNode(true);
-  var newConfirm = confirmBtn.cloneNode(true);
-  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
-  confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
-
-  newCancel.addEventListener('click', window._closeDeleteModal);
-  modal.addEventListener('click', function(e) { if (e.target === modal) window._closeDeleteModal(); });
-
-  newConfirm.addEventListener('click', async function() {
-    if (!window._deleteTarget) return;
-    var convId = window._deleteTarget;
-    newConfirm.textContent = 'Eliminando…';
-    newConfirm.disabled = true;
-    try {
-      var r = await fetch('/chat/api/delete', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ conv_id: convId })
-      });
-      window._closeDeleteModal();
-      if (r.ok) {
-        var row = document.getElementById('conv-' + convId);
-        if (row) row.remove();
-        var countEl = document.getElementById('active-count');
-        if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent || '0') - 1);
-      }
-    } finally {
-      newConfirm.textContent = 'Sí, eliminar';
-      newConfirm.disabled = false;
-    }
-  });
 })();
 
 // --- Socket.io: cargar dinámicamente si no está disponible, luego conectar ---
