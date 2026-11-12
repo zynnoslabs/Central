@@ -26,7 +26,7 @@ from app.chat import chat_bp
 from app.models import db, ChatConversacion, ChatMensaje, ChatHint, ChatLead, ChatKB
 
 # ── CORS para la API pública del widget ──────────────────────────────────────  ### CAMBIO AQUÍ ###
-_CORS_ORIGINS = {
+_CORS_ORIGINS_EXACT = {
     "https://zynnos.com",
     "https://www.zynnos.com",
     "https://zynnos-site.vercel.app",
@@ -34,10 +34,19 @@ _CORS_ORIGINS = {
     "http://127.0.0.1:5500",
 }
 
+def _cors_allowed(origin: str) -> bool:
+    """### CAMBIO AQUÍ ### — acepta dominios exactos + cualquier preview de Vercel."""
+    if origin in _CORS_ORIGINS_EXACT:
+        return True
+    # Vercel genera URLs de preview únicas por deploy, ej: zynnos-site-abc123-org.vercel.app
+    if origin.startswith("https://") and origin.endswith(".vercel.app"):
+        return True
+    return False
+
 @chat_bp.after_request
 def _add_cors(response):
     origin = request.headers.get("Origin", "")
-    if origin in _CORS_ORIGINS:
+    if _cors_allowed(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
         response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
@@ -49,7 +58,7 @@ def _cors_preflight(_):
     """Responde preflight OPTIONS para cualquier ruta /chat/api/*."""
     origin = request.headers.get("Origin", "")
     resp = make_response("", 204)
-    if origin in _CORS_ORIGINS:
+    if _cors_allowed(origin):
         resp.headers["Access-Control-Allow-Origin"] = origin
         resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
         resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
