@@ -330,9 +330,9 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
     combined = " ".join(user_msgs)
 
     # Señales de cierre inminente
-    señales_cierre = ["llamame", "llamá", "quiero hablar", "podemos hablar", "cuánto sale",
-                      "cuanto sale", "precio", "cuánto cuesta", "cuanto cuesta",
-                      "me interesa", "quiero empezar", "cómo arrancamos", "como arrancamos"]
+    señales_cierre = ["llamame", "llamá", "quiero hablar", "podemos hablar",
+                      "quiero empezar", "cómo arrancamos", "como arrancamos",
+                      "manden info", "mandame info", "dejame el contacto", "quiero que me contacten"]
     # Señales de dolor/problema — ### CAMBIO AQUÍ ### ampliado para cubrir más casos
     señales_dolor = ["no puedo", "no tengo tiempo", "me cuesta", "problema", "difícil",
                      "pierdo", "no llego", "tarde", "manual", "todo a mano", "mucho trabajo",
@@ -370,11 +370,14 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
             )
         }
 
-    if quiere_cerrar or tiene_contacto:
+    # ### CAMBIO AQUÍ ### — Etapa 5 solo si YA hubo conversación real (mínimo 3 mensajes del cliente)
+    # o si ya tiene contacto guardado. Evita saltar al cierre en el primer mensaje.
+    cierre_prematuro = quiere_cerrar and user_count < 3
+    if (quiere_cerrar and not cierre_prematuro) or tiene_contacto:
         return {
             "nombre": "ETAPA 5 — CIERRE",
             "instruccion": (
-                "El cliente mostró interés o quiere hablar. "
+                "El cliente mostró interés real tras una conversación. "
                 "Pedí su número de teléfono o email para coordinar el diagnóstico gratuito. "
                 "Cuando el cliente ya dio su número o email: agradecele, hacé un resumen breve de lo que pidió o comentó, y usá [SOLICITUD_CONTACTO] al final. "
                 "NO digas que lo van a contactar pronto ni pongas tiempos — solo agradecé y resumí."
