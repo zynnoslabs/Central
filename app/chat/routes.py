@@ -982,7 +982,23 @@ def api_debug_analysis(conv_id):
             ],
             max_tokens=100, temperature=0.1
         )
-        result["entidades_raw"] = extraccion.choices[0].message.content
+        msg = extraccion.choices[0].message
+        result["entidades_raw"] = msg.content
+        result["finish_reason"] = extraccion.choices[0].finish_reason
+        result["usage"] = {"prompt": extraccion.usage.prompt_tokens, "completion": extraccion.usage.completion_tokens}
+        # intentar con modelo alternativo si vacio
+        if not msg.content:
+            result["fallback_intent"] = "content vacio, probando gpt-oss-120b"
+            ext2 = groq.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=[
+                    {"role": "system", "content": "Extraé nombre y rubro del cliente en JSON: {\"nombre_persona\":null,\"rubro\":null}"},
+                    {"role": "user", "content": history_text[:2000]}
+                ],
+                max_tokens=100, temperature=0.1
+            )
+            result["fallback_raw"] = ext2.choices[0].message.content
+            result["fallback_finish"] = ext2.choices[0].finish_reason
     except Exception as e:
         result["entidades_error"] = str(e)
         return jsonify({"ok": False, **result})
