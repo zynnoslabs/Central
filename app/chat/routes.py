@@ -985,14 +985,20 @@ def api_message():
         "- Si ya explicó su problema o lo que busca: demostrá que entendiste y avanzá. No preguntés lo que ya te dijo.\n"
         "- Si el problema no está claro todavía: hacé UNA pregunta para entenderlo mejor, la más útil.\n"
         "- Si el problema está claro: explicá brevemente cómo Zynnos puede ayudar.\n"
-        "- Cuando tenga sentido natural en la conversación: ofrecé una charla corta o diagnóstico gratuito y pedí contacto (número o email). Cuando lo dé, usá [SOLICITUD_CONTACTO].\n\n"
+        "- Cuando tenga sentido natural en la conversación: ofrecé una charla corta o diagnóstico gratuito y pedí contacto (número o email). Con uno solo alcanza, no pidas los dos. Cuando lo dé, usá [SOLICITUD_CONTACTO].\n\n"
+
+        "LÍMITES ESTRICTOS — cosas que el bot nunca puede hacer:\n"
+        "- No tenés número propio ni email propio para dar. Nunca ofrezcas 'pasarle tu número' ni nada similar.\n"
+        "- No podés agendar reuniones, mandar invitaciones ni confirmar fechas y horarios. Si el cliente pregunta cuándo, decí que el equipo se va a comunicar con él para coordinar. Nada más.\n"
+        "- No des estimaciones de precio ni de tiempo sin haber hecho el diagnóstico.\n"
+        "- No prometás entregas antes de una fecha sin saber el alcance.\n\n"
 
         "FORMA DE ESCRIBIR:\n"
         "- Máximo 2-3 oraciones por mensaje.\n"
         "- Una sola pregunta por mensaje, si hace falta preguntar.\n"
         "- Nunca repitas una pregunta que ya fue respondida.\n"
-        "- Nunca des precios hasta que los pidan.\n"
-        "- Nunca digas que los van a contactar pronto ni pongas tiempos. Solo agradecé cuando den el contacto.\n"
+        "- Nunca des precios hasta que los pidan, y aun así remití al diagnóstico.\n"
+        "- Nunca digas que los van a contactar pronto ni pongas tiempos. Cuando den el contacto, agradecé y confirmá que el equipo se comunica.\n"
         "- Nunca uses la palabra 'videollamada'. Decí 'charla', 'llamada corta' o 'diagnóstico'.\n"
         + hint_text
     )
@@ -1064,12 +1070,20 @@ def api_message():
             "telefono": tel_cliente,
             "source": conv.source_url or "sitio web"
         }, room="operators")
+        # ### CAMBIO AQUÍ ### — incluir resumen de la conv para que el operador tenga contexto
+        ultimos = history[-6:] if len(history) > 6 else history
+        resumen_conv = "\n".join(
+            f"{'Cliente' if m.role == 'user' else 'Bot'}: {m.content[:120]}"
+            for m in ultimos
+        )
         send_whatsapp(
             f"📬 *Solicitud de contacto*\n"
             f"Cliente: {nombre_cliente}\n"
             f"Teléfono: {tel_cliente}\n"
+            f"Email: {conv.email or '(no dejó)'}\n"
             f"Desde: {conv.source_url or 'sitio web'}\n"
-            f"ID: {conv_id}"
+            f"ID: {conv_id}\n\n"
+            f"Últimos mensajes:\n{resumen_conv}"
         )
         # ### CAMBIO AQUÍ ### — generar perfil del prospecto al capturar el contacto
         from app import socketio as _sio
