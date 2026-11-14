@@ -549,9 +549,8 @@ def _verificar_objetivo(app, conv_id: str, history_text: str, msg_count: int):
                 ],
                 temperature=0.1,
                 max_tokens=250,
-                response_format={"type": "json_object"}
             )
-            evaluacion = json.loads(resp.choices[0].message.content)
+            evaluacion = _parse_json_response(resp.choices[0].message.content)  ### CAMBIO AQUÍ ###
 
             # Solo emitir si hay algo relevante para el operador
             if evaluacion.get("nivel_alerta") in ("advertencia", "critico"):
@@ -619,6 +618,28 @@ def _generar_perfil_prospecto(app, conv_id: str):
             app.logger.warning(f"[perfil_prospecto] {e}")
 
 
+def _parse_json_response(text):  ### CAMBIO AQUÍ ### — robusto: saca ```json``` y parsea
+    """Extrae JSON de una respuesta que puede tener markdown o texto extra."""
+    import re
+    if not text:
+        return {}
+    # quitar bloques ```json ... ```
+    text = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
+    # buscar primer { ... } o [ ... ]
+    for start_char, end_char in [('{', '}'), ('[', ']')]:
+        start = text.find(start_char)
+        end = text.rfind(end_char)
+        if start != -1 and end != -1 and end > start:
+            try:
+                return json.loads(text[start:end+1])
+            except Exception:
+                pass
+    try:
+        return json.loads(text)
+    except Exception:
+        return {}
+
+
 def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count: int):
     """
     Se ejecuta en un thread separado. Hace:
@@ -661,9 +682,8 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
                 ],
                 temperature=0.0,
                 max_tokens=300,
-                response_format={"type": "json_object"}
             )
-            entidades = json.loads(extraccion.choices[0].message.content)
+            entidades = _parse_json_response(extraccion.choices[0].message.content)  ### CAMBIO AQUÍ ###
 
             # ### CAMBIO AQUÍ ### — actualizar BD con datos extraídos si no los teníamos
             conv_upd = ChatConversacion.query.get(conv_id)
@@ -754,9 +774,8 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
                 ],
                 temperature=0.2,
                 max_tokens=200,
-                response_format={"type": "json_object"}
             )
-            estilo = json.loads(estilo_resp.choices[0].message.content)
+            estilo = _parse_json_response(estilo_resp.choices[0].message.content)  ### CAMBIO AQUÍ ###
         except Exception as e:
             current_app.logger.warning(f"[Estilometría] {e}")
             estilo = {}
@@ -831,9 +850,8 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
                     ],
                     temperature=0.3,
                     max_tokens=600,
-                    response_format={"type": "json_object"}
                 )
-                plan = json.loads(plan_resp.choices[0].message.content)
+                plan = _parse_json_response(plan_resp.choices[0].message.content)  ### CAMBIO AQUÍ ###
 
                 # Guardar plan en la conversación
                 conv = ChatConversacion.query.get(conv_id)
