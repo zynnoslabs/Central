@@ -332,6 +332,13 @@ window.confirmDeleteConv = async function(convId) {
   _connectSocket();
   // ### CAMBIO AQUÍ ### — sync inmediato al cargar el panel (captura convs perdidas)
   _syncConversations();
+  // ### CAMBIO AQUÍ ### — polling cada 15s como respaldo cuando el socket se desconecta
+  if (window._syncInterval) clearInterval(window._syncInterval);
+  window._syncInterval = setInterval(function() {
+    if (!window._chatSocket || !window._chatSocket.connected) {
+      _syncConversations();
+    }
+  }, 15000);
 })();
 </script>
 {% endblock %}
