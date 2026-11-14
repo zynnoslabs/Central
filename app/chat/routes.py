@@ -915,6 +915,29 @@ def api_analysis(conv_id):
     })
 
 
+@chat_bp.route("/api/reanalysis/<conv_id>", methods=["POST"])  ### CAMBIO AQUÍ ###
+@login_required
+def api_reanalysis(conv_id):
+    """Fuerza re-ejecución del análisis para una conversación existente."""
+    conv = ChatConversacion.query.get(conv_id)
+    if not conv:
+        return jsonify({"ok": False, "error": "Conversación no encontrada"}), 404
+
+    history = ChatMensaje.query.filter_by(conversation_id=conv_id, hidden=False).order_by(ChatMensaje.id).all()
+    if not history:
+        return jsonify({"ok": False, "error": "Sin mensajes"}), 400
+
+    history_text = "\n".join(f"{m.role.upper()}: {m.content}" for m in history)
+    user_count = sum(1 for m in history if m.role == "user")
+    last_user = next((m.content for m in reversed(history) if m.role == "user"), "")
+
+    from app import socketio as _sio
+    app = current_app._get_current_object()
+    _sio.start_background_task(_run_analysis, app, conv_id, history_text, last_user, user_count)
+
+    return jsonify({"ok": True, "msg": f"Re-análisis iniciado ({user_count} msgs cliente)"})
+
+
 @chat_bp.route("/<conv_id>")
 @login_required
 def detalle(conv_id):
