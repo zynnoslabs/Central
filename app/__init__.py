@@ -161,7 +161,9 @@ def _migrar_columnas(app):
 
             migraciones = [
                 # (tabla, columna, definición SQL)
-                ("avisos", "fecha_vencimiento", "DATE"),
+                ("avisos",               "fecha_vencimiento", "DATE"),
+                ("chat_conversaciones",  "estilo_json",       "TEXT"),  ### CAMBIO AQUÍ ###
+                ("chat_conversaciones",  "web_json",          "TEXT"),  ### CAMBIO AQUÍ ###
             ]
 
             for tabla, columna, tipo in migraciones:

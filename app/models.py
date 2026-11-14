@@ -358,9 +358,11 @@ class ChatConversacion(db.Model):
     source_url = db.Column(db.String(500), nullable=True)
 
     # Análisis generado por Groq
-    budget_est = db.Column(db.Text, nullable=True)   # JSON del análisis
+    budget_est = db.Column(db.Text, nullable=True)   # JSON del análisis (propuesta)
     profile    = db.Column(db.Text, nullable=True)   # resumen en texto
     notes      = db.Column(db.Text, nullable=True)
+    estilo_json = db.Column(db.Text, nullable=True)  ### CAMBIO AQUÍ ### — JSON estilometría
+    web_json    = db.Column(db.Text, nullable=True)  ### CAMBIO AQUÍ ### — JSON búsqueda web
 
     mensajes = db.relationship("ChatMensaje", back_populates="conversacion", cascade="all, delete-orphan")
     hints    = db.relationship("ChatHint",    back_populates="conversacion", cascade="all, delete-orphan")

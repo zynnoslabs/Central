@@ -719,6 +719,14 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
 
         # Emitir búsqueda apenas termina
         if busquedas:
+            # ### CAMBIO AQUÍ ### — guardar web en DB para polling REST
+            try:
+                conv_w = ChatConversacion.query.get(conv_id)
+                if conv_w:
+                    conv_w.web_json = json.dumps({"entidades": entidades, "busquedas": busquedas})
+                    db.session.commit()
+            except Exception as _e:
+                current_app.logger.warning(f"[Web save] {_e}")
             socketio.emit("web_research", {
                 "conv_id": conv_id,
                 "entidades": entidades,
@@ -754,6 +762,14 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
             estilo = {}
 
         if estilo:
+            # ### CAMBIO AQUÍ ### — guardar estilo en DB para polling REST
+            try:
+                conv_e = ChatConversacion.query.get(conv_id)
+                if conv_e:
+                    conv_e.estilo_json = json.dumps(estilo)
+                    db.session.commit()
+            except Exception as _e:
+                current_app.logger.warning(f"[Estilo save] {_e}")
             socketio.emit("stilometry_update", {
                 "conv_id": conv_id,
                 "estilo": estilo
@@ -873,6 +889,22 @@ def api_messages(conv_id):
         "role": m.role,
         "content": m.content
     } for m in msgs])
+
+
+@chat_bp.route("/api/analysis/<conv_id>")  ### CAMBIO AQUÍ ###
+@login_required
+def api_analysis(conv_id):
+    """Devuelve análisis guardados (propuesta, estilo, web) para polling desde detalle."""
+    conv = ChatConversacion.query.get(conv_id)
+    if not conv:
+        return jsonify({"ok": False}), 404
+    return jsonify({
+        "ok": True,
+        "propuesta": json.loads(conv.budget_est) if conv.budget_est else None,
+        "profile": conv.profile or None,
+        "estilo": json.loads(conv.estilo_json) if conv.estilo_json else None,
+        "web": json.loads(conv.web_json) if conv.web_json else None,
+    })
 
 
 @chat_bp.route("/<conv_id>")

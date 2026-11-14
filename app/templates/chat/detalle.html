@@ -255,6 +255,91 @@ function _pollMessages() {
 if(window._msgPollInterval) clearInterval(window._msgPollInterval);
 window._msgPollInterval = setInterval(_pollMessages, 5000);
 
+// ### CAMBIO AQUÍ ### — polling de análisis (propuesta, estilo, web) cada 15s
+// Rellena las tabs con datos guardados en DB (funciona sin WebSocket)
+function _renderPropuesta(p) {
+  if (!p) return;
+  var pMin = (p.precio_sugerido_min||0).toLocaleString('es-AR');
+  var pMax = (p.precio_sugerido_max||0).toLocaleString('es-AR');
+  var prob = p.probabilidad_cierre || 0;
+  var probColor  = prob>=60 ? 'var(--teal)' : prob>=30 ? 'var(--warn)' : 'var(--fg3)';
+  var probColorD = prob>=60 ? 'var(--teal-d)' : prob>=30 ? 'var(--warn)' : 'var(--fg3)';
+  var senales = (p.senales_compra||[]).length ? '<div class="cd-chip-section">Señales de compra</div><div class="cd-chips">'+(p.senales_compra.map(function(s){return '<span class="cd-chip green">'+esc(s)+'</span>';}).join(''))+'</div>' : '';
+  var objs    = (p.objeciones_posibles||[]).length ? '<div class="cd-chip-section">Objeciones posibles</div><div class="cd-chips">'+(p.objeciones_posibles.map(function(o){return '<span class="cd-chip red">'+esc(o)+'</span>';}).join(''))+'</div>' : '';
+  var args    = (p.argumentos_venta||[]).length ? '<div class="cd-chip-section">Argumentos de venta</div><ul class="cd-args">'+(p.argumentos_venta.map(function(a){return '<li>'+esc(a)+'</li>';}).join(''))+'</ul>' : '';
+  document.getElementById('propuesta-body').innerHTML =
+    '<p class="cd-prop-perfil">'+esc(p.perfil_cliente||'')+'</p>'+
+    '<p class="cd-prop-problema">'+esc(p.problema_detectado||'')+'</p>'+
+    '<div class="cd-kv"><span class="cd-kv-k">Solución</span><span class="cd-kv-v">'+esc(p.solucion_recomendada||'—')+'</span></div>'+
+    '<div class="cd-kv"><span class="cd-kv-k">Precio</span><span class="cd-kv-v">$'+pMin+' – $'+pMax+'</span></div>'+
+    '<div class="cd-kv"><span class="cd-kv-k">Entrega</span><span class="cd-kv-v">'+esc(p.tiempo_entrega||'—')+'</span></div>'+
+    '<div class="cd-prob"><div class="cd-prob-label"><span>Cierre</span><span style="font-weight:700;color:'+probColorD+';">'+prob+'%</span></div>'+
+    '<div class="cd-prob-track"><div class="cd-prob-fill" style="width:'+prob+'%;background:'+probColor+';"></div></div></div>'+
+    (p.proximo_paso ? '<div class="cd-next"><div class="cd-next-label">Próximo paso</div><p class="cd-next-text">'+esc(p.proximo_paso)+'</p></div>' : '')+
+    args+senales+objs;
+}
+
+function _renderEstilo(e) {
+  if (!e) return;
+  var nivelCls = {alto:'cd-kv-v-green', medio:'', bajo:'cd-kv-v-red'}[e.nivel_educativo] || '';
+  var urgCls   = e.urgencia_percibida === 'alta' ? 'cd-kv-v-red' : '';
+  document.getElementById('estilo-body').innerHTML =
+    '<div class="cd-kv"><span class="cd-kv-k">Nivel educativo</span><span class="cd-kv-v '+nivelCls+'">'+esc(e.nivel_educativo||'—')+'</span></div>'+
+    '<div class="cd-kv"><span class="cd-kv-k">Perfil</span><span class="cd-kv-v">'+esc(e.perfil||'—')+'</span></div>'+
+    '<div class="cd-kv"><span class="cd-kv-k">Tono</span><span class="cd-kv-v">'+esc(e.tono||'—')+'</span></div>'+
+    '<div class="cd-kv"><span class="cd-kv-k">Urgencia</span><span class="cd-kv-v '+urgCls+'">'+esc(e.urgencia_percibida||'—')+'</span></div>'+
+    '<div class="cd-kv"><span class="cd-kv-k">Decisión</span><span class="cd-kv-v">'+esc(e.capacidad_decision||'—')+'</span></div>'+
+    (e.resumen_estilo ? '<div class="cd-estilo-quote">"'+esc(e.resumen_estilo)+'"</div>' : '');
+}
+
+function _renderWeb(data) {
+  if (!data) return;
+  var entidades = data.entidades || {};
+  var busquedas = data.busquedas || {};
+  var html = '';
+  var ents = Object.entries(entidades).filter(function(kv){return kv[1];});
+  if (ents.length) {
+    var icons = {nombre_persona:'👤', nombre_negocio:'🏪', rubro:'🔧', ciudad:'📍'};
+    html += '<div class="cd-chips" style="margin-bottom:.8rem;">';
+    ents.forEach(function(kv){ html += '<span class="cd-chip green">'+(icons[kv[0]]||'')+' '+esc(kv[1])+'</span>'; });
+    html += '</div>';
+  }
+  var catLabels = {persona:'Persona', negocio:'Negocio', rubro:'Rubro / sector'};
+  Object.entries(busquedas).forEach(function(kv){
+    var cat = kv[0]; var info = kv[1];
+    html += '<div class="cd-chip-section">'+(catLabels[cat]||cat)+' — "'+esc(info.query)+'"</div>';
+    info.resultados.forEach(function(r){
+      html += '<div class="cd-web-result"><div class="cd-web-title">'+esc(r.title)+'</div>'+
+              '<div class="cd-web-snippet">'+esc(r.snippet)+'</div>'+
+              (r.url ? '<a href="'+esc(r.url)+'" target="_blank" class="cd-web-url">'+esc(r.url.substring(0,55))+'…</a>' : '')+
+              '</div>';
+    });
+  });
+  if (!html) html = '<div class="cd-panel-empty"><p>Sin resultados.</p></div>';
+  document.getElementById('web-body').innerHTML = html;
+}
+
+function _pollAnalysis() {
+  fetch('/chat/api/analysis/' + CONV_ID)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d.ok) return;
+      if (d.propuesta) _renderPropuesta(d.propuesta);
+      if (d.estilo)    _renderEstilo(d.estilo);
+      if (d.web)       _renderWeb(d.web);
+      if (d.profile) {
+        var body = document.getElementById('resumen-body');
+        if (body) body.innerHTML = '<div style="font-size:.82rem;line-height:1.6;color:var(--fg2);white-space:pre-wrap;">'+esc(d.profile)+'</div>';
+      }
+    })
+    .catch(function(){});
+}
+
+// Cargar análisis al abrir la página (rellena tabs si hay datos previos)
+_pollAnalysis();
+if(window._analysisPollInterval) clearInterval(window._analysisPollInterval);
+window._analysisPollInterval = setInterval(_pollAnalysis, 15000);
+
 function switchTab(name) {
   const names = ['propuesta','estilo','web','resumen']; // ### CAMBIO AQUÍ ### — añadir resumen
   document.querySelectorAll('.cd-intel-tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
