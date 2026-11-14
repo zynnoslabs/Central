@@ -1322,7 +1322,14 @@ def api_diagnostico():
         result["groq_importado"] = True
         if key:
             client = groq_lib.Groq(api_key=key)
-            modelos = ["llama-3.1-8b-instant","openai/gpt-oss-20b","openai/gpt-oss-120b"]  ### CAMBIO AQUÍ ###
+            modelos = [  ### CAMBIO AQUÍ ### modelos activos Groq nov-2026
+                "llama3-8b-8192",
+                "llama3-70b-8192",
+                "mixtral-8x7b-32768",
+                "gemma2-9b-it",
+                "llama-3.1-8b-instant",
+                "llama-3.1-70b-versatile",
+            ]
             result["modelos_probados"] = {}
             for m in modelos:
                 try:
