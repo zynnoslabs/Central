@@ -527,7 +527,7 @@ def _verificar_objetivo(app, conv_id: str, history_text: str, msg_count: int):
 
         try:
             resp = groq.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-8b-instant",  ### CAMBIO AQUÍ ###
                 messages=[
                     {"role": "system", "content": (
                         "Sos el supervisor de ventas de Zynnos Labs. Analizás conversaciones del chatbot.\n"
@@ -639,7 +639,7 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
         # ### CAMBIO AQUÍ ### — modelo más capaz + prompt más preciso + actualizar BD
         try:
             extraccion = groq.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-8b-instant",  ### CAMBIO AQUÍ ###
                 messages=[
                     {"role": "system", "content": (
                         "Analizá esta conversación de ventas y extraé la información del CLIENTE (mensajes USER).\n"
@@ -801,7 +801,7 @@ def _run_analysis(app, conv_id: str, history_text: str, user_msg: str, msg_count
 
             try:
                 plan_resp = groq.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model="llama-3.1-8b-instant",  ### CAMBIO AQUÍ ###
                     messages=[
                         {"role": "system", "content": (
                             "Sos el estratega de ventas de Zynnos Labs, agencia de automatización IA para pymes argentinas.\n"
@@ -957,7 +957,7 @@ def api_debug_analysis(conv_id):
     result = {"user_count": user_count, "groq": "ok"}
     try:
         extraccion = groq.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",  ### CAMBIO AQUÍ ###
             messages=[
                 {"role": "system", "content": "Extraé nombre y rubro del cliente en JSON: {\"nombre_persona\":null,\"rubro\":null}"},
                 {"role": "user", "content": history_text[:2000]}
@@ -1125,7 +1125,6 @@ def api_message():
         print("[Groq] ERROR: GROQ_API_KEY no configurada", flush=True)
     else:
         for modelo in [   ### CAMBIO AQUÍ ### modelos activos Groq nov-2026
-            "llama-3.3-70b-versatile",
             "llama-3.1-8b-instant",
             "openai/gpt-oss-20b",
             "openai/gpt-oss-120b",
@@ -1323,7 +1322,7 @@ def api_diagnostico():
         result["groq_importado"] = True
         if key:
             client = groq_lib.Groq(api_key=key)
-            modelos = ["llama-3.3-70b-versatile","llama-3.1-8b-instant","openai/gpt-oss-20b","openai/gpt-oss-120b"]
+            modelos = ["llama-3.1-8b-instant","openai/gpt-oss-20b","openai/gpt-oss-120b"]  ### CAMBIO AQUÍ ###
             result["modelos_probados"] = {}
             for m in modelos:
                 try:
