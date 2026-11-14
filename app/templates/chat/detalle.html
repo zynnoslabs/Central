@@ -319,23 +319,55 @@ function _renderWeb(data) {
   document.getElementById('web-body').innerHTML = html;
 }
 
+// ### CAMBIO AQUÍ ### — firma de los datos actuales para detectar cambios reales
+var _analysisHash = { propuesta: null, estilo: null, web: null, profile: null };
+
+function _hashStr(obj) { return obj ? JSON.stringify(obj) : null; }
+
 function _pollAnalysis() {
   fetch('/chat/api/analysis/' + CONV_ID)
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d.ok) return;
-      if (d.propuesta) _renderPropuesta(d.propuesta);
-      if (d.estilo)    _renderEstilo(d.estilo);
-      if (d.web)       _renderWeb(d.web);
+      // Solo renderizar si el dato cambió (evita sobreescribir DOM cada 15s con lo mismo)
+      var newHash;
+      if (d.propuesta) {
+        newHash = _hashStr(d.propuesta);
+        if (newHash !== _analysisHash.propuesta) {
+          _renderPropuesta(d.propuesta);
+          // Si la tab propuesta no estaba activa, poner un punto de "nuevo dato"
+          var tabBtn = document.querySelector('.cd-intel-tab:first-child');
+          if (tabBtn && !tabBtn.classList.contains('active')) tabBtn.style.boxShadow = 'inset 0 -2px 0 var(--teal)';
+          _analysisHash.propuesta = newHash;
+        }
+      }
+      if (d.estilo) {
+        newHash = _hashStr(d.estilo);
+        if (newHash !== _analysisHash.estilo) {
+          _renderEstilo(d.estilo);
+          _analysisHash.estilo = newHash;
+        }
+      }
+      if (d.web) {
+        newHash = _hashStr(d.web);
+        if (newHash !== _analysisHash.web) {
+          _renderWeb(d.web);
+          _analysisHash.web = newHash;
+        }
+      }
       if (d.profile) {
-        var body = document.getElementById('resumen-body');
-        if (body) body.innerHTML = '<div style="font-size:.82rem;line-height:1.6;color:var(--fg2);white-space:pre-wrap;">'+esc(d.profile)+'</div>';
+        newHash = d.profile;
+        if (newHash !== _analysisHash.profile) {
+          var body = document.getElementById('resumen-body');
+          if (body) body.innerHTML = '<div style="font-size:.82rem;line-height:1.6;color:var(--fg2);white-space:pre-wrap;">'+esc(d.profile)+'</div>';
+          _analysisHash.profile = newHash;
+        }
       }
     })
     .catch(function(){});
 }
 
-// Cargar análisis al abrir la página (rellena tabs si hay datos previos)
+// Cargar análisis al abrir la página (rellena tabs con datos existentes en DB)
 _pollAnalysis();
 if(window._analysisPollInterval) clearInterval(window._analysisPollInterval);
 window._analysisPollInterval = setInterval(_pollAnalysis, 15000);

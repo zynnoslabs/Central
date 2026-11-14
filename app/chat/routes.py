@@ -898,12 +898,20 @@ def api_analysis(conv_id):
     conv = ChatConversacion.query.get(conv_id)
     if not conv:
         return jsonify({"ok": False}), 404
+
+    def _safe_json(text):
+        """Parsea JSON sin tirar 500 si el texto está malformado."""
+        try:
+            return json.loads(text) if text else None
+        except Exception:
+            return None
+
     return jsonify({
         "ok": True,
-        "propuesta": json.loads(conv.budget_est) if conv.budget_est else None,
-        "profile": conv.profile or None,
-        "estilo": json.loads(conv.estilo_json) if conv.estilo_json else None,
-        "web": json.loads(conv.web_json) if conv.web_json else None,
+        "propuesta": _safe_json(conv.budget_est),
+        "profile":   conv.profile or None,
+        "estilo":    _safe_json(conv.estilo_json),
+        "web":       _safe_json(conv.web_json),
     })
 
 
