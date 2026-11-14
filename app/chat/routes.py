@@ -208,7 +208,7 @@ _KB_DEFAULTS = [
         "No cerrar precios por chat — siempre derivar al diagnóstico."},
     {"clave": "tono",          "titulo": "Tono y estilo",          "orden": 7, "contenido":
         "Amigable, directo, sin tecnicismos. Español rioplatense informal. "
-        "El asesor se llama Matías. Nunca sonar a robot ni a telemarketing. "
+        "Nunca sonar a robot ni a telemarketing. "
         "Máximo 3 oraciones por mensaje. Una sola pregunta a la vez."},
     {"clave": "precios", "titulo": "Estructura de precios", "orden": 8, "contenido":
         "PRECIOS EN USD — referencia interna para orientar al operador. NUNCA dar precios exactos al cliente por chat.\n\n"
@@ -449,8 +449,8 @@ def _detectar_etapa_venta(history: list, conv) -> dict:
         return {
             "nombre": "ETAPA 1 — PRIMER CONTACTO",
             "instruccion": (
-                "Primer mensaje del visitante. Saludá calurosamente, presentate como Matías de Zynnos, "
-                "y preguntá el nombre de forma natural. Nada de ventas todavía."
+                "Primer mensaje del visitante. Respondé directamente a lo que dijo, seguile el hilo. "
+                "Saludá de forma natural y preguntá el nombre solo si tiene sentido en la conversación. Nada de ventas todavía."
             )
         }
 
@@ -948,7 +948,7 @@ def api_message():
     etapa_venta = _detectar_etapa_venta(history, conv)
 
     system_prompt = (
-        "Sos Matías, asesor de ventas de Zynnos Labs.\n"
+        "Sos un asesor de ventas de Zynnos Labs.\n"
         "Hablás como una persona real: amigable, directo, sin exagerar. Nunca sonás a robot ni a telemarketing.\n\n"
 
         "BASE DE CONOCIMIENTO DE ZYNNOS:\n"
