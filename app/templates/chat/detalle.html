@@ -45,7 +45,7 @@
     <!-- Área de mensajes -->
     <div class="cd-messages" id="chat-box">
       {% for m in messages %}
-      <div class="cd-msg {% if m.role == 'user' %}cd-msg-user{% else %}cd-msg-ai{% endif %}">
+      <div class="cd-msg {% if m.role == 'user' %}cd-msg-user{% else %}cd-msg-ai{% endif %}" data-msg-id="{{ m.id }}">
         <div class="cd-msg-wrap">
           <div class="cd-bubble">{{ m.content }}</div>
           <div class="cd-msg-meta">
@@ -222,6 +222,38 @@ socket.on('disconnect', (reason) => {
 
 const box = document.getElementById('chat-box');
 box.scrollTop = box.scrollHeight;
+
+// ### CAMBIO AQUÍ ### — polling de mensajes cada 5s (fallback para cuando WebSocket no conecta en Render)
+var _lastMsgId = (function(){
+  var rows = box.querySelectorAll('.cd-msg');
+  return rows.length ? parseInt(rows[rows.length-1].dataset.msgId || 0) : 0;
+})();
+
+function _appendMsg(role, content) {
+  var wrap = document.createElement('div');
+  wrap.className = 'cd-msg ' + (role === 'user' ? 'cd-msg-user' : 'cd-msg-ai');
+  var label = role === 'user' ? 'Cliente' : '🤖 IA';
+  wrap.innerHTML = '<div class="cd-msg-wrap"><div class="cd-bubble">' + content.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div><div class="cd-msg-meta">' + label + ' · ahora</div></div>';
+  box.appendChild(wrap);
+  box.scrollTop = box.scrollHeight;
+}
+
+function _pollMessages() {
+  fetch('/chat/api/messages/' + CONV_ID + '?since=' + _lastMsgId)
+    .then(function(r){ return r.json(); })
+    .then(function(msgs){
+      msgs.forEach(function(m){
+        if(m.id > _lastMsgId){
+          _appendMsg(m.role, m.content);
+          _lastMsgId = m.id;
+        }
+      });
+    })
+    .catch(function(){});
+}
+
+if(window._msgPollInterval) clearInterval(window._msgPollInterval);
+window._msgPollInterval = setInterval(_pollMessages, 5000);
 
 function switchTab(name) {
   const names = ['propuesta','estilo','web','resumen']; // ### CAMBIO AQUÍ ### — añadir resumen

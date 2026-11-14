@@ -859,6 +859,21 @@ def api_conversations():
     } for c in convs])
 
 
+@chat_bp.route("/api/messages/<conv_id>")
+@login_required
+def api_messages(conv_id):
+    """### CAMBIO AQUÍ ### — devuelve mensajes de una conv en JSON para polling en detalle."""
+    since_id = request.args.get("since", 0, type=int)
+    msgs = ChatMensaje.query.filter_by(conversation_id=conv_id).filter(
+        ChatMensaje.id > since_id
+    ).order_by(ChatMensaje.id).all()
+    return jsonify([{
+        "id": m.id,
+        "role": m.role,
+        "content": m.content
+    } for m in msgs])
+
+
 @chat_bp.route("/<conv_id>")
 @login_required
 def detalle(conv_id):
