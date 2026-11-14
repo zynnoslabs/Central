@@ -938,6 +938,51 @@ def api_reanalysis(conv_id):
     return jsonify({"ok": True, "msg": f"Re-análisis iniciado ({user_count} msgs cliente)"})
 
 
+@chat_bp.route("/api/debug_analysis/<conv_id>")  ### CAMBIO AQUÍ ###
+@login_required
+def api_debug_analysis(conv_id):
+    """Diagnóstico: ejecuta análisis sincrónicamente y retorna errores detallados."""
+    conv = ChatConversacion.query.get(conv_id)
+    if not conv:
+        return jsonify({"ok": False, "error": "conv not found"}), 404
+
+    history = ChatMensaje.query.filter_by(conversation_id=conv_id, hidden=False).order_by(ChatMensaje.id).all()
+    history_text = "\n".join(f"{m.role.upper()}: {m.content}" for m in history)
+    user_count = sum(1 for m in history if m.role == "user")
+
+    groq = get_groq()
+    if not groq:
+        return jsonify({"ok": False, "error": "Groq no disponible (clave faltante)"}), 500
+
+    result = {"user_count": user_count, "groq": "ok"}
+    try:
+        extraccion = groq.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "Extraé nombre y rubro del cliente en JSON: {\"nombre_persona\":null,\"rubro\":null}"},
+                {"role": "user", "content": history_text[:2000]}
+            ],
+            max_tokens=100, temperature=0.1
+        )
+        result["entidades_raw"] = extraccion.choices[0].message.content
+    except Exception as e:
+        result["entidades_error"] = str(e)
+        return jsonify({"ok": False, **result})
+
+    # Test DB save
+    try:
+        conv.web_json = json.dumps({"test": True, "debug": True})
+        db.session.commit()
+        result["db_save"] = "ok"
+        # Limpiar
+        conv.web_json = None
+        db.session.commit()
+    except Exception as e:
+        result["db_save_error"] = str(e)
+
+    return jsonify({"ok": True, **result})
+
+
 @chat_bp.route("/<conv_id>")
 @login_required
 def detalle(conv_id):
