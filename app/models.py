@@ -68,6 +68,18 @@ class Cliente(db.Model):
     pagos = db.relationship("Pago", back_populates="cliente", cascade="all, delete-orphan")
     facturas = db.relationship("Factura", back_populates="cliente", cascade="all, delete-orphan")
 
+    ### CAMBIO AQUÍ ### — credenciales de acceso al portal de clientes
+    portal_email = db.Column(db.String(255), nullable=True, unique=True)
+    portal_password_hash = db.Column(db.String(255), nullable=True)
+
+    def set_portal_password(self, password: str):
+        self.portal_password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+    def check_portal_password(self, password: str) -> bool:
+        if not self.portal_password_hash:
+            return False
+        return bcrypt.checkpw(password.encode(), self.portal_password_hash.encode())
+
     def __repr__(self):
         return f"<Cliente {self.nombre}>"
 

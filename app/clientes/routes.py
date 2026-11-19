@@ -175,6 +175,40 @@ def guardar_notas(cliente_id):
     return redirect(url_for("clientes.detalle", cliente_id=cliente.id))
 
 
+
+
+### CAMBIO AQUÍ ### — ruta para gestionar acceso portal del cliente
+@clientes_bp.route("/<int:cliente_id>/portal-acceso", methods=["POST"])
+@login_required
+def portal_acceso(cliente_id):
+    cliente = Cliente.query.get_or_404(cliente_id)
+    accion = request.form.get("accion")
+    if accion == "set":
+        nuevo_email = request.form.get("portal_email", "").strip().lower()
+        nueva_pass = request.form.get("portal_password", "").strip()
+        if not nuevo_email or not nueva_pass:
+            flash("Email y contraseña son requeridos.", "error")
+            return redirect(url_for("clientes.detalle", cliente_id=cliente_id))
+        # Verificar que el email no esté en uso por otro cliente
+        existente = Cliente.query.filter(
+            Cliente.portal_email == nuevo_email,
+            Cliente.id != cliente_id
+        ).first()
+        if existente:
+            flash("Ese email ya está en uso por otro cliente.", "error")
+            return redirect(url_for("clientes.detalle", cliente_id=cliente_id))
+        cliente.portal_email = nuevo_email
+        cliente.set_portal_password(nueva_pass)
+        _log(current_user.id, cliente.id, "cliente.portal.set", {"portal_email": nuevo_email})
+        db.session.commit()
+        flash(f"Acceso al portal configurado para {nuevo_email}.", "success")
+    elif accion == "revocar":
+        cliente.portal_email = None
+        cliente.portal_password_hash = None
+        _log(current_user.id, cliente.id, "cliente.portal.revocar", {})
+        db.session.commit()
+        flash("Acceso al portal revocado.", "info")
+    return redirect(url_for("clientes.detalle", cliente_id=cliente_id))
 # ─── Helper ────────────────────────────────────────────────────────────────────
 
 def _log(usuario_id, cliente_id, accion, detalle_dict):

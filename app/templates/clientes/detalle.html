@@ -140,4 +140,45 @@
   <a href="{{ url_for('clientes.nueva_instalacion', cliente_id=cliente.id) }}" class="btn btn-primary btn-sm">+ Agregar instalación</a>
 </div>
 {% endif %}
+
+<!-- ### CAMBIO AQUÍ ### — Sección acceso portal de clientes -->
+<div class="section-header" style="margin-top:2.5rem;">
+  <h2 class="section-title">Acceso Portal</h2>
+</div>
+<div class="card" style="margin-bottom:2rem;">
+  {% if cliente.portal_email %}
+  <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem;">
+    <span class="badge badge-ok">● Activo</span>
+    <span style="font-size:.95rem;">{{ cliente.portal_email }}</span>
+  </div>
+  <form method="POST" action="{{ url_for('clientes.portal_acceso', cliente_id=cliente.id) }}"
+        onsubmit="return confirm('¿Revocar el acceso al portal de este cliente?')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="accion" value="revocar">
+    <button type="submit" class="btn btn-danger btn-sm">Revocar acceso</button>
+  </form>
+  {% else %}
+  <p class="text-muted text-small mb-2">Este cliente no tiene acceso al portal. Configuralo para que pueda iniciar sesión.</p>
+  <form method="POST" action="{{ url_for('clientes.portal_acceso', cliente_id=cliente.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="accion" value="set">
+    <div style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end;">
+      <div style="flex:1; min-width:200px;">
+        <label class="form-label">Email de acceso</label>
+        <input type="email" name="portal_email" class="form-control"
+               value="{{ cliente.email }}" required>
+      </div>
+      <div style="flex:1; min-width:200px;">
+        <label class="form-label">Contraseña</label>
+        <input type="text" name="portal_password" class="form-control"
+               placeholder="Mínimo 6 caracteres" required minlength="6">
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">Dar acceso</button>
+      </div>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
 {% endblock %}
